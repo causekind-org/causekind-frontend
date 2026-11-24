@@ -62,7 +62,7 @@ export function CrmStaffPanel() {
   return (
     <div className="space-y-4">
       <div>
-        <h2 className="text-xl font-semibold">CRM staff logins</h2>
+        <h2 className="ck-page-title">CRM staff logins</h2>
         <p className="text-sm text-muted-foreground">
           Staff sign in at <span className="font-mono">/crm</span> with these. They can only use the CRM. Passwords are
           stored encrypted, so nobody can see them later: if one is forgotten, set a new one here.

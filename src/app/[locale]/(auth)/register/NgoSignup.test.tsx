@@ -4,6 +4,9 @@ import userEvent from "@testing-library/user-event";
 import RegisterPage from "./page";
 import { registerNgo, ApiError } from "@/lib/api";
 
+// The full suite runs this file under load; its form-filling tests can pass 15s there.
+vi.setConfig({ testTimeout: 60000 });
+
 const mockPush = vi.fn();
 const mockReplace = vi.fn();
 
@@ -94,7 +97,7 @@ vi.mock("@/hooks/useLocations", () => ({
   }),
 }));
 
-vi.mock("@react-oauth/google", () => ({
+vi.mock("@/lib/lazyGoogleLogin", () => ({
   useGoogleLogin: () => vi.fn(),
 }));
 

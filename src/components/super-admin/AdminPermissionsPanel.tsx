@@ -1,5 +1,6 @@
 "use client";
 
+import { SaLoadError } from "./SaLoadError";
 import { useEffect, useState } from "react";
 import { toast } from "@/lib/toast";
 import {
@@ -24,7 +25,7 @@ const CAPABILITY_GROUPS: { label: string; capabilities: string[] }[] = [
   },
   {
     label: "Communications",
-    capabilities: ["WHATSAPP", "COMMUNICATION_MODERATE"],
+    capabilities: ["COMMUNICATION_MODERATE"],
   },
   {
     label: "Calling CRM",
@@ -50,7 +51,6 @@ const CAPABILITY_LABELS: Record<string, string> = {
   LISTING_REVIEW: "Listings",
   OFFER_REVIEW: "Offers & disputes",
   MATCH_INTERVENE: "Matches",
-  WHATSAPP: "WhatsApp",
   CRM_ACCESS: "Call list",
   CRM_MANAGE: "Manage call list",
   USER_READ: "View users",
@@ -74,12 +74,14 @@ export function AdminPermissionsPanel() {
   const [admins, setAdmins] = useState<AdminAccount[]>([]);
   const [loading, setLoading] = useState(true);
   const [savingKey, setSavingKey] = useState<string | null>(null);
+  const [failed, setFailed] = useState(false);
 
   function load() {
     setLoading(true);
+    setFailed(false);
     superAdminListAdmins()
       .then(setAdmins)
-      .catch(() => toast.error("Failed to load admin accounts."))
+      .catch(() => { setFailed(true); toast.error("Failed to load admin accounts."); })
       .finally(() => setLoading(false));
   }
 
@@ -108,6 +110,8 @@ export function AdminPermissionsPanel() {
   if (loading) {
     return <div className="flex justify-center py-20"><Loader2 className="size-8 animate-spin text-muted-foreground" /></div>;
   }
+
+  if (failed) return <SaLoadError what="admin accounts" onRetry={load} />;
 
   if (admins.length === 0) {
     return <p className="text-sm text-muted-foreground py-10 text-center">No admin accounts found.</p>;

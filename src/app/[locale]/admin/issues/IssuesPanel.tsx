@@ -162,7 +162,7 @@ export function IssuesPanel({ issueKey, onOpenCount }: {
       <div className="flex flex-wrap items-center gap-2">
         {STATUS_TABS.map(([key, label]) => (
           <button key={key} onClick={() => { setStatus(key); setPage(0); }} aria-pressed={status === key}
-            className={`rounded-full px-3.5 py-1.5 text-xs font-bold ${status === key ? "bg-[#b04a15] text-white" : "border border-stone-200 bg-white text-stone-600 hover:text-stone-900"}`}>
+            className={`rounded-full px-3.5 py-1.5 text-xs font-bold ${status === key ? "bg-[#1f66b3] text-white" : "border border-stone-200 bg-white text-stone-600 hover:text-stone-900"}`}>
             {label}{key === "open" && data ? ` · ${data.openCount}` : ""}
           </button>
         ))}
@@ -173,12 +173,12 @@ export function IssuesPanel({ issueKey, onOpenCount }: {
 
       <div className="flex flex-wrap gap-1.5" role="group" aria-label="Filter by where the issue came from">
         <button onClick={() => { setSource(""); setPage(0); }} aria-pressed={source === ""}
-          className={`rounded-lg border px-2.5 py-1 text-xs font-bold ${source === "" ? "border-[#b04a15] bg-[#b04a15]/10 text-[#b04a15]" : "border-stone-200 bg-white text-stone-600"}`}>
+          className={`rounded-lg border px-2.5 py-1 text-xs font-bold ${source === "" ? "border-[#1f66b3] bg-[#1f66b3]/10 text-[#1f66b3]" : "border-stone-200 bg-white text-stone-600"}`}>
           All sources
         </button>
         {SOURCES.map(s => (
           <button key={s} onClick={() => { setSource(s); setPage(0); }} aria-pressed={source === s}
-            className={`rounded-lg border px-2.5 py-1 text-xs font-bold ${source === s ? "border-[#b04a15] bg-[#b04a15]/10 text-[#b04a15]" : "border-stone-200 bg-white text-stone-600"}`}>
+            className={`rounded-lg border px-2.5 py-1 text-xs font-bold ${source === s ? "border-[#1f66b3] bg-[#1f66b3]/10 text-[#1f66b3]" : "border-stone-200 bg-white text-stone-600"}`}>
             {SOURCE_LABEL[s]}{counts[s] ? <span className="ms-1 text-amber-700">{counts[s]}</span> : null}
           </button>
         ))}
@@ -188,7 +188,7 @@ export function IssuesPanel({ issueKey, onOpenCount }: {
         <span className="sr-only">Search issues</span>
         <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-stone-400" aria-hidden />
         <input value={query} onChange={e => setQuery(e.target.value)} placeholder="Search by item, person, email, case number or #id"
-          className="w-full rounded-xl border border-stone-200 bg-white py-2.5 pl-9 pr-3 text-sm text-stone-900 focus:border-[#b04a15] focus:outline-none" />
+          className="w-full rounded-xl border border-stone-200 bg-white py-2.5 pl-9 pr-3 text-sm text-stone-900 focus:border-[#1f66b3] focus:outline-none" />
       </label>
 
       {loading && !data && (
@@ -206,7 +206,7 @@ export function IssuesPanel({ issueKey, onOpenCount }: {
       )}
 
       {data && data.items.length > 0 && (
-        <ul className="space-y-3">
+        <ul className={`space-y-3 transition-opacity ${loading ? "opacity-50" : ""}`} aria-busy={loading}>
           {data.items.map(s => <li key={s.key}><IssueCard s={s} onOpen={() => setSelected(s.key)} /></li>)}
         </ul>
       )}
@@ -234,7 +234,7 @@ function IssueCard({ s, onOpen }: { s: AdminIssueSummary; onOpen: () => void }) 
   const urgent = s.casePriority === "HIGH" || s.casePriority === "URGENT";
   return (
     <button onClick={onOpen} aria-label={`Open issue: ${s.title ?? s.key}`}
-      className="w-full space-y-2.5 rounded-3xl border border-stone-200 bg-white p-5 text-left shadow-sm transition-colors hover:border-[#b04a15]/50">
+      className="w-full space-y-2.5 rounded-3xl border border-stone-200 bg-white p-5 text-left shadow-sm transition-colors hover:border-[#1f66b3]/50">
       <div className="flex flex-wrap items-center gap-1.5">
         <SourceBadge source={s.source} />
         <StatusPill s={s} />
@@ -281,7 +281,7 @@ function FactGrid({ facts }: { facts: { label: string; value: ReactNode }[] }) {
 
 function FactValue({ value }: { value: string }) {
   return /^https?:\/\/\S+$/i.test(value)
-    ? <a href={value} target="_blank" rel="noopener noreferrer nofollow" className="inline-flex items-center gap-1 font-semibold text-[#b04a15] underline">Open link <ExternalLink className="h-3 w-3" aria-hidden /></a>
+    ? <a href={value} target="_blank" rel="noopener noreferrer nofollow" className="inline-flex items-center gap-1 font-semibold text-[#1f66b3] underline">Open link <ExternalLink className="h-3 w-3" aria-hidden /></a>
     : <>{value}</>;
 }
 
@@ -292,7 +292,7 @@ function PersonFact({ p }: { p: AdminIssuePerson | null }) {
       {p.name ?? "Unknown"} <span className="text-stone-500">({roleLabel(p.role)})</span>
       {p.email && <span className="block text-xs text-stone-500">{p.email}</span>}
       {p.userId != null && (
-        <a href={`/admin/dashboard?journeyUser=${p.userId}`} className="text-xs font-semibold text-[#b04a15] underline">User journey</a>
+        <a href={`/admin/dashboard?journeyUser=${p.userId}`} className="text-xs font-semibold text-[#1f66b3] underline">User journey</a>
       )}
     </span>
   );
@@ -316,11 +316,11 @@ function IssueDetailView({ issueKey, nonce, onBack }: { issueKey: string; nonce:
   }, [issueKey, nonce, decided]);
 
   const back = (
-    <button onClick={onBack} className="inline-flex items-center gap-1.5 text-sm font-bold text-[#b04a15]">
+    <button onClick={onBack} className="inline-flex items-center gap-1.5 text-sm font-bold text-[#1f66b3]">
       <ArrowLeft className="h-4 w-4" aria-hidden /> All issues
     </button>
   );
-  if (error) return <div className="space-y-4">{back}<div role="alert" className="rounded-xl border border-red-200 bg-red-50 p-4 text-sm text-red-800">{error}</div></div>;
+  if (error) return <div className="space-y-4">{back}<div role="alert" className="rounded-xl border border-red-200 bg-red-50 p-4 text-sm text-red-800">{error} <button onClick={() => setDecided(x => x + 1)} className="ms-2 font-bold underline">Try again</button></div></div>;
   if (!d || d.summary.key !== issueKey) return <div className="space-y-4">{back}<div className="flex justify-center py-16"><Loader2 className="h-7 w-7 animate-spin text-stone-300" aria-label="Loading issue" /></div></div>;
 
   const s = d.summary;
@@ -336,15 +336,15 @@ function IssueDetailView({ issueKey, nonce, onBack }: { issueKey: string; nonce:
           extra={
             <>
               {decidable && !p.partialDelivery && (
-                <Card title="Decide this problem" icon={<ShieldCheck className="h-4 w-4 text-[#b04a15]" aria-hidden />}>
+                <Card title="Decide this problem" icon={<ShieldCheck className="h-4 w-4 text-[#1f66b3]" aria-hidden />}>
                   <PurchaseIssueResolverFor offerId={s.entityId as number} onDone={() => setDecided(x => x + 1)} />
                 </Card>
               )}
               <details className="group rounded-3xl border border-stone-200 bg-white shadow-sm">
                 <summary className="flex cursor-pointer list-none items-center justify-between px-5 py-4 text-sm font-black uppercase tracking-wide text-stone-500 sm:px-6">
                   More details: transaction, evidence, support case, full history
-                  <span className="text-xs font-bold normal-case tracking-normal text-[#b04a15] group-open:hidden">Show</span>
-                  <span className="hidden text-xs font-bold normal-case tracking-normal text-[#b04a15] group-open:inline">Hide</span>
+                  <span className="text-xs font-bold normal-case tracking-normal text-[#1f66b3] group-open:hidden">Show</span>
+                  <span className="hidden text-xs font-bold normal-case tracking-normal text-[#1f66b3] group-open:inline">Hide</span>
                 </summary>
                 <div className="space-y-4 border-t border-stone-100 p-4 sm:p-5">
                   <IssueRecord d={d} />
@@ -421,8 +421,18 @@ function IssueDetailView({ issueKey, nonce, onBack }: { issueKey: string; nonce:
         )}
       </Card>
 
+      {s.open && !decidable && (
+        // Only purchase and offer-handover problems have an admin decision endpoint
+        // (AdminPurchaseController.resolve-issue). Everything else is settled by a
+        // super admin, so say so instead of leaving the admin looking for a button.
+        <div className="rounded-2xl border border-sky-200 bg-sky-50 p-4 text-sm text-sky-900">
+          <p className="font-bold">Who decides this</p>
+          <p className="mt-1">This kind of issue is settled by a super admin in Disputes and Support cases. You can follow it here, and it will move to Resolved once they act.</p>
+        </div>
+      )}
+
       {decidable && (
-        <Card title="Decide this problem" icon={<ShieldCheck className="h-4 w-4 text-[#b04a15]" aria-hidden />}>
+        <Card title="Decide this problem" icon={<ShieldCheck className="h-4 w-4 text-[#1f66b3]" aria-hidden />}>
           <PurchaseIssueResolverFor offerId={s.entityId as number} onDone={() => setDecided(x => x + 1)} />
         </Card>
       )}
@@ -454,7 +464,7 @@ function IssueRecord({ d }: { d: AdminIssueDetail }) {
                     <span className="text-stone-500">{e.uploadedBy ? ` · ${e.uploadedBy}` : ""}{e.uploadedAt ? ` · ${when(e.uploadedAt)}` : ""}</span>
                   </span>
                   {e.url
-                    ? <a href={e.url} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-1 font-bold text-[#b04a15] underline">View <ExternalLink className="h-3 w-3" aria-hidden /></a>
+                    ? <a href={e.url} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-1 font-bold text-[#1f66b3] underline">View <ExternalLink className="h-3 w-3" aria-hidden /></a>
                     : <span className="text-xs text-stone-400">Link unavailable</span>}
                 </li>
               ))}

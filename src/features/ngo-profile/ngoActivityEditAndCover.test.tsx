@@ -89,10 +89,13 @@ describe("/profile carousel", () => {
 });
 
 describe("Admin Past activity tab", () => {
+  // consentGiven: true. Without it the panel asks window.confirm before publishing
+  // (consent guard added in the admin audit, 415d9b37), which jsdom cannot answer.
   it("labels an application's activities and approves individually", async () => {
-    vi.mocked(getPendingNgoActivities).mockResolvedValue([{ activity: activity(), ngoUserId: 1, organizationName: "Hope", applicationUnderReview: true }] as never);
+    vi.mocked(getPendingNgoActivities).mockResolvedValue([{ activity: activity({ consentGiven: true }), ngoUserId: 1, organizationName: "Hope", applicationUnderReview: true }] as never);
     vi.mocked(approveNgoActivity).mockResolvedValue(activity({ status: "APPROVED" }) as never);
     render(<NgoActivityModerationPanel />);
+    fireEvent.click((await screen.findAllByRole("button", { name: /^Review/ }))[0]);
     expect(await screen.findByTestId("activity-application-label")).toHaveTextContent("NGO application under review");
     fireEvent.click(screen.getByRole("button", { name: "Approve" }));
     await waitFor(() => expect(approveNgoActivity).toHaveBeenCalledWith(3));
@@ -165,6 +168,7 @@ describe("A past activity the admin refused", () => {
   it("the admin queue labels a fixed one Resubmitted", async () => {
     vi.mocked(getPendingNgoActivities).mockResolvedValue([{ activity: activity({ rejectionReason: "Blur" }), ngoUserId: 1, organizationName: "Hope", resubmitted: true }] as never);
     render(<NgoActivityModerationPanel />);
+    fireEvent.click((await screen.findAllByRole("button", { name: /^Review/ }))[0]);
     expect(await screen.findByTestId("activity-resubmitted")).toHaveTextContent("Resubmitted");
   });
 });

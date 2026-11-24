@@ -9,11 +9,14 @@ export type Initiative = {
   color: string;
   purpose: string;
   chapters: { title: string; body: string; focus: string; detail: string }[];
+  /** Optional paragraph shown above the final Donate button (owner-approved text, 23 Nov 2026). */
+  closing?: { intro: string; items: string };
 };
 
 // Informational focus areas, not promises of individual grants or fund allocation.
 export const initiatives: Initiative[] = [
   {
+    closing: { intro: 'Your support for education goes to Sahas Charitable Trust, a registered non-profit in Palghar, Maharashtra.', items: 'You can also give school books and supplies directly to verified students near you through CauseKind requests.' },
     slug: 'education', title: 'Education & Scholarships', shortTitle: 'Education',
     headline: 'Keep a future full of possibility.',
     intro: 'Learning needs more than ambition. Explore how scholarships, grants, and everyday school supplies can help students keep moving forward.',
@@ -42,6 +45,7 @@ export const initiatives: Initiative[] = [
     ],
   },
   {
+    closing: { intro: 'Your support for community welfare goes to Sahas Charitable Trust, a registered non-profit in Palghar, Maharashtra, which helps underprivileged children and families with everyday support.', items: 'Items such as blankets, clothes and kitchen utensils can also be given directly to verified requests near you.' },
     slug: 'community-welfare', title: 'Community Welfare', shortTitle: 'Community welfare',
     headline: 'Stronger communities begin with each other.',
     intro: 'From nutrition support to emergency relief, community welfare connects immediate help with the everyday foundations of a more secure life.',
@@ -56,6 +60,7 @@ export const initiatives: Initiative[] = [
     ],
   },
   {
+    closing: { intro: 'Your support for women and young people goes to Sahas Charitable Trust, a registered non-profit in Palghar, Maharashtra.', items: 'Tools for learning and livelihood, such as books, laptops and work equipment, can also be given directly to verified requests near you.' },
     slug: 'empowerment', title: 'Women & Youth Empowerment', shortTitle: 'Empowerment',
     headline: 'More confidence. More choices. More possibility.',
     intro: 'An inclusive society makes room for women and young people to learn, participate, and shape their own futures.',

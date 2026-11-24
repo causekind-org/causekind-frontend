@@ -130,7 +130,7 @@ export default function BoomerangVideoBg({ src, className }: Props) {
 
   return (
     <div className={className ?? 'absolute inset-0 w-full h-full'}>
-      <video
+      <video aria-hidden="true"
         ref={videoRef}
         src={src}
         className="w-full h-full object-cover"

@@ -5,7 +5,7 @@ import MoneyDonateClient from "./MoneyDonateClient";
 // cannot export it. Mirrors src/app/donate/page.tsx; the canonical is relative
 // and resolves against metadataBase in src/app/layout.tsx.
 export const metadata: Metadata = {
-  title: "Donate Money — CauseKind",
+  title: "Donate Money",
   description:
     "Fund education, healthcare and social welfare through Sahas Charitable Trust. 12A and 80G certified, with every rupee accounted for.",
   alternates: { canonical: "/donate/money" },

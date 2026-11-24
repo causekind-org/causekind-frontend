@@ -140,7 +140,7 @@ export function SearchableSelect({
               </>
             )
           ) : (
-            <span className="text-stone-400">
+            <span className="text-stone-500 dark:text-stone-400">
               {disabled && disabledPlaceholder ? disabledPlaceholder : placeholder}
             </span>
           )}

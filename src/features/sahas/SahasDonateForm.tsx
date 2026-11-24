@@ -1,12 +1,11 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { sameName } from "@/lib/panName";
 import { captureUtm, trackDonationSuccess, trackInitiateCheckout, trackSahasDonateStep } from "@/features/scan-donation/tracking";
 import { useLocale } from "next-intl";
 import Link from "@/components/AppLink";
 import { useAuth } from "@/hooks/useAuth";
-import { ApiError, readPanCard, sahasCampaigns, uploadTrustDonationPanPhoto, type SahasCampaignDetail } from "@/lib/api";
+import { ApiError, sahasCampaigns, type SahasCampaignDetail } from "@/lib/api";
 import { UiText, useUiText } from "@/components/UiText";
 import { PageSkeleton } from "@/components/skeletons";
 import { SAHAS_NAME, formatDate, serif } from "@/features/sahas/sahasUi";
@@ -22,11 +21,11 @@ const SMALL = [10, 20, 50, 100];
  */
 const BUNDLE_CAMPAIGNS = new Set(["feed-stray-animals"]);
 /**
- * Campaigns where PAN, address and the PAN card are asked only from a donor who ticks 80G (owner, 2026-11-13).
+ * Campaigns where PAN and address are asked only from a donor who ticks 80G (owner, 2026-11-13).
  * Every other campaign takes PAN and address from every donor. Keep in step with the backend's
  * DonationService.SAHAS_PAN_ONLY_FOR_80G.
  */
-const PAN_ONLY_FOR_80G = new Set(["feed-stray-animals"]);
+const PAN_ONLY_FOR_80G = new Set(["feed-stray-animals", "diwali-feed-hungry01"]);
 
 export type SahasBundle = { value: number; text: string };
 
@@ -39,7 +38,6 @@ export function bundlesOf(d: SahasCampaignDetail | null | undefined): SahasBundl
 }
 const TIPS = [0, 30, 50, 100];
 const FEE_PERCENT = 5;
-const MAX_PAN_FILE = 5 * 1024 * 1024;
 const field = "min-h-[42px] w-full rounded-lg border border-[#D9C9B8] bg-white px-3 text-[15px] font-normal focus:border-[#b04a15] focus:outline-none dark:border-zinc-700 dark:bg-zinc-950";
 
 function loadCheckout(): Promise<boolean> {
@@ -77,10 +75,6 @@ export function SahasDonateForm({ slug, onClose }: { slug: string; onClose?: () 
   const [wants80g, setWants80g] = useState(false);
   const [pan, setPan] = useState("");
   const [address, setAddress] = useState("");
-  const [panFile, setPanFile] = useState<File | null>(null);
-  const [cardRead, setCardRead] = useState<{ read: boolean; panNumber?: string | null; nameOnCard?: string | null } | null>(null);
-  const [cardReading, setCardReading] = useState(false);
-  const cardFile = useRef<File | null>(null);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [result, setResult] = useState<Result | null>(null);
@@ -106,9 +100,9 @@ export function SahasDonateForm({ slug, onClose }: { slug: string; onClose?: () 
   const shell = (body: React.ReactNode) => (
     onClose
       ? <div className="flex h-full flex-col gap-4 overflow-y-auto p-6 pe-14 text-[#1F140D] dark:text-stone-100">{body}</div>
-      : <main className="min-h-[70vh] bg-[#FBF7F2] px-4 py-10 text-[#1F140D] dark:bg-zinc-950 dark:text-stone-100">
+      : <div className="min-h-[70vh] bg-[#FBF7F2] px-4 py-10 text-[#1F140D] dark:bg-zinc-950 dark:text-stone-100">
           <div className="mx-auto flex max-w-xl flex-col gap-5">{body}</div>
-        </main>
+        </div>
   );
   if (!data || !data.moneyOpen) {
     return shell(<>
@@ -129,28 +123,18 @@ export function SahasDonateForm({ slug, onClose }: { slug: string; onClose?: () 
   const tipValue = customTip === null ? tip : Number(customTip) || 0;
   const total = value + tipValue;
   const panOk = /^[A-Z]{5}[0-9]{4}[A-Z]$/.test(pan);
-  const fileOk = panFile !== null && panFile.size <= MAX_PAN_FILE;
   const detailsOk = (user ? true : nameOk && emailOk) && phoneOk;
-  // Checked here so the donor can fix it before paying. If the reader itself is down, the server's review still applies.
-  const donorName = user?.fullName ?? name;
-  const cardIssue = !wants80g || !panFile ? null
-    : cardReading ? ui("Checking your PAN card…")
-      : !cardRead ? null
-        : !cardRead.read || !cardRead.panNumber ? ui("We couldn't read this card. Upload a clear photo of the front of your PAN card.")
-          : pan.length === 10 && cardRead.panNumber.replace(/\s/g, "").toUpperCase() !== pan ? `${ui("The PAN you typed doesn't match this card. The card shows")} ${cardRead.panNumber}.`
-            : !cardRead.nameOnCard || !sameName(donorName, cardRead.nameOnCard) ? `${ui("The name on this card doesn't match your name. The card shows")} ${cardRead.nameOnCard ?? "—"}.`
-              : null;
   // Most campaigns take PAN and address from every donor; on PAN_ONLY_FOR_80G campaigns only an 80G donor gives them.
   const panOnly80g = PAN_ONLY_FOR_80G.has(c.slug);
   const needTax = !panOnly80g || wants80g;
-  const taxOk = !needTax || (panOk && address.trim().length >= 10 && (!wants80g || (fileOk && !cardIssue)));
+  const taxOk = !needTax || (panOk && address.trim().length >= 10);
   const bundles = bundlesOf(data).filter((b) => b.value <= remaining);
   const amountError = amount === "" ? null : value < MIN ? ui("Enter an amount of ₹1 or more.")
     : value > remaining ? `${ui("This campaign needs only")} ₹${remaining.toLocaleString("en-IN")}.` : null;
   // Says what's left to do, so a disabled button is never a mystery.
   const todo = !valid ? ui("Enter an amount") : !user && !nameOk ? ui("Add your full name") : !user && !emailOk ? ui("Add a valid email")
     : !phoneOk ? ui("Check your phone number") : needTax && !panOk ? ui("Check your PAN") : needTax && address.trim().length < 10 ? ui("Add your full address")
-      : wants80g && !fileOk ? ui("Add your PAN photo, up to 5 MB") : cardIssue ? ui("Check your PAN card") : null;
+      : null;
   const hint = "m-0 text-xs font-normal text-red-700";
 
   const watch = (id: number, token: string, tries = 0) => {
@@ -170,17 +154,6 @@ export function SahasDonateForm({ slug, onClose }: { slug: string; onClose?: () 
     }).catch(() => { if (tries < 20) poll.current = setTimeout(() => watch(id, token, tries + 1), 3000); });
   };
 
-  const pickCard = async (file: File | null) => {
-    setPanFile(file); setCardRead(null); cardFile.current = file;
-    if (!file || file.size > MAX_PAN_FILE) return;
-    setCardReading(true);
-    try {
-      const r = await readPanCard(file);
-      if (cardFile.current === file) setCardRead(r);
-    } catch { /* reader unavailable: not the donor's fault */ }
-    finally { if (cardFile.current === file) setCardReading(false); }
-  };
-
   const pay = async () => {
     setBusy(true); setError(null);
     try {
@@ -190,7 +163,6 @@ export function SahasDonateForm({ slug, onClose }: { slug: string; onClose?: () 
         panNumber: needTax ? pan.trim() : "", address: needTax ? address.trim() : "", wants80g, utm: captureUtm(window.location.search),
       });
       const token = start.panUploadToken ?? "";
-      if (wants80g && panFile) await uploadTrustDonationPanPhoto(start.donationId, panFile, token);
       const order = await sahasCampaigns.donationCheckout(start.donationId, token);
       trackInitiateCheckout(value);
       new window.Razorpay({
@@ -297,18 +269,8 @@ export function SahasDonateForm({ slug, onClose }: { slug: string; onClose?: () 
       {!panOnly80g && panFields}
       <label className="flex items-center gap-2 text-sm"><input type="checkbox" checked={wants80g} onChange={(e) => setWants80g(e.target.checked)} /> <UiText>I want an 80G receipt</UiText></label>
       {panOnly80g && !wants80g && <p className="m-0 text-xs text-[#6B5A4E] dark:text-stone-400"><UiText>You&apos;ll get a donation certificate. Tick this only if you want an 80G receipt; it needs your PAN and address.</UiText></p>}
-      {wants80g && <div className={`flex flex-col gap-3 ${onClose ? "rounded-xl bg-[#FBF7F2] p-3.5 dark:bg-zinc-900" : ""}`}>
-        {panOnly80g && panFields}
-        <div className="flex flex-col gap-1 text-xs sm:text-sm font-semibold text-[#3a0716] dark:text-stone-200">
-          <span><UiText>PAN card photo or PDF</UiText></span>
-          <label className="flex min-h-[44px] w-fit cursor-pointer items-center justify-center rounded-xl border border-[#b04a15] bg-white px-5 text-sm font-semibold text-[#b04a15] focus-within:outline-2 focus-within:outline-offset-2 focus-within:outline-[#b04a15] dark:bg-zinc-900">
-            {panFile ? <UiText>Change file</UiText> : <UiText>Upload PAN card</UiText>}
-            <input type="file" accept="image/*,application/pdf" className="sr-only" onChange={(e) => void pickCard(e.target.files?.[0] ?? null)} />
-          </label>
-          {panFile ? <span className="text-xs font-normal text-[#1E5B42]">✓ {panFile.name}</span> : <span className="text-xs font-normal text-[#6B5A4E]"><UiText>JPG, PNG or PDF, up to 5 MB</UiText></span>}
-        </div>
-        {cardIssue && <p role="alert" className={hint}>{cardIssue} {!cardReading && <UiText>Fix this, or untick 80G to get a certificate only.</UiText>}</p>}
-        {panFile && !fileOk && <p className={hint}><UiText>That file is over 5 MB. Choose a smaller one.</UiText></p>}
+      {wants80g && panOnly80g && <div className={`flex flex-col gap-3 ${onClose ? "rounded-xl bg-[#FBF7F2] p-3.5 dark:bg-zinc-900" : ""}`}>
+        {panFields}
       </div>}
     </section>}
   </>;

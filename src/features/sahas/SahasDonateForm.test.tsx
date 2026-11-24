@@ -76,10 +76,10 @@ describe("SahasDonateForm", () => {
   });
 
   it("still asks every donor for PAN and address on other campaigns", async () => {
-    const diwali = campaign(TIERS);
-    diwali.card = { ...diwali.card, slug: "diwali-feed-hungry01" };
-    detail.mockResolvedValue(diwali);
-    render(<SahasDonateForm slug="diwali-feed-hungry01" />);
+    const other = campaign(TIERS);
+    other.card = { ...other.card, slug: "some-other-campaign" };
+    detail.mockResolvedValue(other);
+    render(<SahasDonateForm slug="some-other-campaign" />);
     await screen.findByLabelText("Amount (₹)");
     fireEvent.click(screen.getByRole("button", { name: "Continue" }));
     fireEvent.change(screen.getByLabelText("Full name"), { target: { value: "Asha Rao" } });
@@ -115,7 +115,8 @@ describe("SahasDonateForm", () => {
     fireEvent.click(screen.getByLabelText("I want an 80G receipt"));
     expect(screen.getByPlaceholderText("ABCDE1234F")).toBeTruthy();
     expect(screen.getByLabelText("Address")).toBeTruthy();
-    expect(screen.getByText("Upload PAN card")).toBeTruthy();
+    // No PAN photo since 2026-11-17: PAN and address are enough.
+    expect(screen.queryByText("Upload PAN card")).toBeNull();
     expect(screen.getByRole("button", { name: "Check your PAN" })).toHaveProperty("disabled", true);
   });
 });

@@ -291,6 +291,7 @@ describe("4. past activity", () => {
       activity: { id: 9, title: "Meal drive", activityDate: "2026-09-01", consentGiven: true, status: "PENDING", sortOrder: 0, media: [] } }]);
     api.rejectNgoActivity.mockResolvedValue({});
     render(<NgoActivityModerationPanel />);
+    fireEvent.click((await screen.findAllByRole("button", { name: /^Review/ }))[0]);
     const item = await screen.findByTestId("admin-activity");
     fireEvent.click(within(item).getByRole("button", { name: "Send back" }));
     expect(api.rejectNgoActivity).not.toHaveBeenCalled();
@@ -362,9 +363,9 @@ describe("6. chat", () => {
 describe("7. FAQ", () => {
   it("/faq has an NGO drives category from the shared keys; the drive page links to it", async () => {
     render(<FaqPageClient />);
-    fireEvent.click(screen.getByRole("button", { name: /NGO drives/ }));
+    fireEvent.click(screen.getByRole("button", { name: /^NGO drives$/ }));
     expect(await screen.findByText("Can I see the NGO's phone number?")).toBeInTheDocument();
-    expect(NGO_DRIVE_FAQ_KEYS).toHaveLength(5);
+    expect(NGO_DRIVE_FAQ_KEYS).toHaveLength(6);
     const drivePage = readFileSync(resolve(__dirname, "../ngo-drives/components/DriveDetailView.tsx"), "utf8");
     // The drive page no longer repeats the FAQ: it links to this category.
     expect(drivePage).not.toContain("Frequently Asked Questions");

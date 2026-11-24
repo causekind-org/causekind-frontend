@@ -1,8 +1,7 @@
 "use client";
 
+import { loadGsap } from "@/lib/gsapLoader";
 import React, { useEffect, useRef, useState } from "react";
-import { gsap } from "gsap";
-import { ScrollTrigger } from "gsap/ScrollTrigger";
 
 // Deterministic scatter offsets for LOCAL letters (L-O-C-A-L)
 const SCATTER_POSITIONS = [
@@ -20,317 +19,329 @@ export function ManifestoSection() {
   const [hoveredWord, setHoveredWord] = useState<string | null>(null);
 
   useEffect(() => {
-    if (typeof window === "undefined") return;
-    gsap.registerPlugin(ScrollTrigger);
+    // gsap loads after the browser is idle (lib/gsapLoader), not in the first bundle.
+    let cancelled = false;
+    let cleanup: void | (() => void);
+    loadGsap().then(({ gsap, ScrollTrigger }) => {
+      if (cancelled) return;
+      cleanup = (() => {
+        if (typeof window === "undefined") return;
+        gsap.registerPlugin(ScrollTrigger);
 
-    const section = sectionRef.current;
-    const stage = stageRef.current;
-    if (!section || !stage) return;
+        const section = sectionRef.current;
+        const stage = stageRef.current;
+        if (!section || !stage) return;
 
-    const mm = gsap.matchMedia();
+        const mm = gsap.matchMedia();
 
-    // ─────────────────────────────────────────────────────────────
-    // 1. DESKTOP SEQUENCE (Pinned, Scrubbed) ≥1024px
-    // ─────────────────────────────────────────────────────────────
-    mm.add("(min-width: 1024px) and (prefers-reduced-motion: no-preference)", () => {
-      // Elements
-      const openingText = stage.querySelector(".act-opening");
-      const localAct = stage.querySelector(".act-local");
-      const localLetters = stage.querySelectorAll(".local-letter");
-      const localCircle = stage.querySelector(".local-circle-path") as SVGPathElement | null;
-      const localCircleGroup = stage.querySelector(".local-circle-group");
-      const localCopy = stage.querySelector(".local-copy");
+        // ─────────────────────────────────────────────────────────────
+        // 1. DESKTOP SEQUENCE (Pinned, Scrubbed) ≥1024px
+        // ─────────────────────────────────────────────────────────────
+        mm.add("(min-width: 1024px) and (prefers-reduced-motion: no-preference)", () => {
+          // Elements
+          const openingText = stage.querySelector(".act-opening");
+          const localAct = stage.querySelector(".act-local");
+          const localLetters = stage.querySelectorAll(".local-letter");
+          const localCircle = stage.querySelector(".local-circle-path") as SVGPathElement | null;
+          const localCircleGroup = stage.querySelector(".local-circle-group");
+          const localCopy = stage.querySelector(".local-copy");
       
-      const chap01 = stage.querySelector(".chap-01");
-      const chap02 = stage.querySelector(".chap-02");
-      const chap03 = stage.querySelector(".chap-03");
-      const chapFin = stage.querySelector(".chap-fin");
+          const chap01 = stage.querySelector(".chap-01");
+          const chap02 = stage.querySelector(".chap-02");
+          const chap03 = stage.querySelector(".chap-03");
+          const chapFin = stage.querySelector(".chap-fin");
 
-      const manifestoPill = stage.querySelector(".manifesto-pill");
-      const pillLocal = stage.querySelector(".pill-local");
-      const pillDirect = stage.querySelector(".pill-direct");
+          const manifestoPill = stage.querySelector(".manifesto-pill");
+          const pillLocal = stage.querySelector(".pill-local");
+          const pillDirect = stage.querySelector(".pill-direct");
 
-      const directAct = stage.querySelector(".act-direct");
-      const directWord = stage.querySelector(".direct-word");
-      const directCopy = stage.querySelector(".direct-copy");
+          const directAct = stage.querySelector(".act-direct");
+          const directWord = stage.querySelector(".direct-word");
+          const directCopy = stage.querySelector(".direct-copy");
 
-      const dignifiedAct = stage.querySelector(".act-dignified");
-      const dignifiedLetters = stage.querySelectorAll(".dignified-letter");
-      const dignifiedCopy = stage.querySelector(".dignified-copy");
-      const privacyBar = stage.querySelector(".privacy-bar");
+          const dignifiedAct = stage.querySelector(".act-dignified");
+          const dignifiedLetters = stage.querySelectorAll(".dignified-letter");
+          const dignifiedCopy = stage.querySelector(".dignified-copy");
+          const privacyBar = stage.querySelector(".privacy-bar");
 
-      const finaleAct = stage.querySelector(".act-finale");
-      const finaleLines = stage.querySelectorAll(".finale-line");
-      const finaleRule = stage.querySelector(".finale-rule");
+          const finaleAct = stage.querySelector(".act-finale");
+          const finaleLines = stage.querySelectorAll(".finale-line");
+          const finaleRule = stage.querySelector(".finale-rule");
 
-      // Setup initial visual states
-      if (localCircle) {
-        const len = localCircle.getTotalLength ? localCircle.getTotalLength() : 800;
-        gsap.set(localCircle, { strokeDasharray: len, strokeDashoffset: len });
-      }
+          // Setup initial visual states
+          if (localCircle) {
+            const len = localCircle.getTotalLength ? localCircle.getTotalLength() : 800;
+            gsap.set(localCircle, { strokeDasharray: len, strokeDashoffset: len });
+          }
 
-      // Initial letter scatter for LOCAL
-      localLetters.forEach((el, i) => {
-        const offset = SCATTER_POSITIONS[i % SCATTER_POSITIONS.length];
-        gsap.set(el, {
-          x: offset.x,
-          y: offset.y,
-          rotation: offset.rot,
-          opacity: 0,
+          // Initial letter scatter for LOCAL
+          localLetters.forEach((el, i) => {
+            const offset = SCATTER_POSITIONS[i % SCATTER_POSITIONS.length];
+            gsap.set(el, {
+              x: offset.x,
+              y: offset.y,
+              rotation: offset.rot,
+              opacity: 0,
+            });
+          });
+
+          // Initial rotation for DIGNIFIED (lying flat along baseline)
+          dignifiedLetters.forEach((el) => {
+            gsap.set(el, {
+              rotationX: 85,
+              y: 40,
+              opacity: 0,
+              transformOrigin: "50% 100%",
+            });
+          });
+
+          // Chapter markers initial state
+          gsap.set([chap02, chap03, chapFin], { opacity: 0 });
+          gsap.set(chap01, { opacity: 1 });
+
+          // Master Pinned Timeline
+          const masterTl = gsap.timeline({
+            scrollTrigger: {
+              trigger: section,
+              start: "top top",
+              end: "+=350%",
+              pin: true,
+              scrub: 0.8,
+              invalidateOnRefresh: true,
+              id: "way-manifesto-pinned",
+            },
+          });
+
+          // ── TIME MAP (Total 100 units) ──
+          // 0  -> 12 : OPENING ("Giving should be...")
+          // 12 -> 35 : ACT 1 (LOCAL letters assemble, 10km circle draws, copy reveals)
+          // 35 -> 40 : TRANSITION 1 (LOCAL shrinks into manifesto list pill)
+          // 40 -> 60 : ACT 2 (DIRECT word, copy reveals)
+          // 60 -> 65 : TRANSITION 2 (DIRECT joins manifesto list)
+          // 65 -> 82 : ACT 3 (DIGNIFIED letters rise upright, privacy bar slides over)
+          // 82 -> 95 : FINALE (Manifesto lockup forms, statement + closing line)
+          // 95 -> 100: Short hold before unpin
+
+          // ── OPENING ──
+          masterTl.to(openingText, { opacity: 1, y: 0, duration: 8, ease: "power2.out" }, 0);
+          masterTl.to(openingText, { opacity: 0, y: -20, duration: 4 }, 10);
+
+          // ── ACT 1 — LOCAL ──
+          masterTl.set(localAct, { opacity: 1, pointerEvents: "auto" }, 10);
+          masterTl.to(
+            localLetters,
+            {
+              x: 0,
+              y: 0,
+              rotation: 0,
+              opacity: 1,
+              duration: 12,
+              stagger: 0.8,
+              ease: "power3.out",
+            },
+            12
+          );
+
+          // Draw dashed 10km circle
+          if (localCircle) {
+            masterTl.to(
+              localCircle,
+              {
+                strokeDashoffset: 0,
+                duration: 8,
+                ease: "power2.out",
+              },
+              18
+            );
+          }
+          masterTl.to(localCircleGroup, { opacity: 1, duration: 4 }, 18);
+          masterTl.to(localCopy, { opacity: 1, y: 0, duration: 6, ease: "power2.out" }, 22);
+
+          // ── TRANSITION 1: Local into Pill ──
+          masterTl.to(
+            [localAct, localCopy, localCircleGroup],
+            { opacity: 0, y: -30, duration: 4, ease: "power2.in" },
+            34
+          );
+          masterTl.set(manifestoPill, { opacity: 1 }, 35);
+          masterTl.to(pillLocal, { opacity: 1, y: 0, duration: 3 }, 35);
+          masterTl.set(localAct, { pointerEvents: "none" }, 38);
+
+          // ── ACT 2 — DIRECT ──
+          masterTl.set(directAct, { opacity: 1, pointerEvents: "auto" }, 38);
+          masterTl.to(chap01, { opacity: 0, duration: 1 }, 38);
+          masterTl.to(chap02, { opacity: 1, duration: 1 }, 38);
+
+          masterTl.fromTo(
+            directWord,
+            { opacity: 0, x: -50 },
+            { opacity: 1, x: 0, duration: 6, ease: "power2.out" },
+            39
+          );
+
+          masterTl.to(directCopy, { opacity: 1, y: 0, duration: 6, ease: "power2.out" }, 52);
+
+          // ── TRANSITION 2: Direct into Pill ──
+          masterTl.to(
+            [directAct, directCopy],
+            { opacity: 0, y: -30, duration: 4, ease: "power2.in" },
+            60
+          );
+          masterTl.to(pillDirect, { opacity: 1, y: 0, duration: 3 }, 61);
+          masterTl.set(directAct, { pointerEvents: "none" }, 64);
+
+          // ── ACT 3 — DIGNIFIED ──
+          masterTl.set(dignifiedAct, { opacity: 1, pointerEvents: "auto" }, 64);
+          masterTl.to(chap02, { opacity: 0, duration: 1 }, 64);
+          masterTl.to(chap03, { opacity: 1, duration: 1 }, 64);
+
+          // Letters rise from lying flat (rotateX 85° -> 0°)
+          masterTl.to(
+            dignifiedLetters,
+            {
+              rotationX: 0,
+              y: 0,
+              opacity: 1,
+              duration: 10,
+              stagger: 0.6,
+              ease: "power3.out",
+            },
+            65
+          );
+
+          masterTl.to(dignifiedCopy, { opacity: 1, y: 0, duration: 5, ease: "power2.out" }, 72);
+
+          // Privacy bar slides over "sharing their story"
+          masterTl.fromTo(
+            privacyBar,
+            { scaleX: 0, transformOrigin: "left center" },
+            { scaleX: 1, duration: 5, ease: "power2.out" },
+            76
+          );
+
+          // ── FINALE ──
+          masterTl.to(
+            [dignifiedAct, dignifiedCopy, manifestoPill],
+            { opacity: 0, y: -20, duration: 4, ease: "power2.in" },
+            82
+          );
+          masterTl.to(chap03, { opacity: 0, duration: 1 }, 83);
+          masterTl.to(chapFin, { opacity: 1, duration: 1 }, 83);
+
+          masterTl.set(finaleAct, { opacity: 1, pointerEvents: "auto" }, 83);
+          masterTl.fromTo(
+            finaleLines,
+            { opacity: 0, y: 30 },
+            { opacity: 1, y: 0, duration: 8, stagger: 1.2, ease: "power3.out" },
+            84
+          );
+
+          masterTl.fromTo(
+            finaleRule,
+            { scaleX: 0, transformOrigin: "center" },
+            { scaleX: 1, duration: 4, ease: "power2.out" },
+            90
+          );
+
+          // ── Desktop Magnetic Interaction in Finale ──
+          const lockupEl = finaleLockupRef.current;
+          if (lockupEl) {
+            const letters = lockupEl.querySelectorAll<HTMLElement>(".mag-char");
+            if (letters.length > 0) {
+              const quickSetters = Array.from(letters).map((letter) => ({
+                el: letter,
+                xTo: gsap.quickTo(letter, "x", { duration: 0.4, ease: "power2.out" }),
+                yTo: gsap.quickTo(letter, "y", { duration: 0.4, ease: "power2.out" }),
+              }));
+
+              const handlePointerMove = (e: PointerEvent) => {
+                // Only active when finale is visible in scroll
+                const isFinaleVisible = masterTl.progress() >= 0.8;
+                if (!isFinaleVisible) return;
+
+                quickSetters.forEach(({ el, xTo, yTo }) => {
+                  const rect = el.getBoundingClientRect();
+                  const charCenterX = rect.left + rect.width / 2;
+                  const charCenterY = rect.top + rect.height / 2;
+                  const dx = e.clientX - charCenterX;
+                  const dy = e.clientY - charCenterY;
+                  const dist = Math.hypot(dx, dy);
+                  const radius = 90;
+
+                  if (dist < radius && dist > 0) {
+                    const power = (1 - dist / radius) * -12; // gentle repel up to ~12px
+                    xTo((dx / dist) * power);
+                    yTo((dy / dist) * power);
+                  } else {
+                    xTo(0);
+                    yTo(0);
+                  }
+                });
+              };
+
+              const handlePointerLeave = () => {
+                quickSetters.forEach(({ xTo, yTo }) => {
+                  xTo(0);
+                  yTo(0);
+                });
+              };
+
+              window.addEventListener("pointermove", handlePointerMove, { passive: true });
+              lockupEl.addEventListener("pointerleave", handlePointerLeave);
+
+              return () => {
+                window.removeEventListener("pointermove", handlePointerMove);
+                lockupEl.removeEventListener("pointerleave", handlePointerLeave);
+              };
+            }
+          }
         });
-      });
 
-      // Initial rotation for DIGNIFIED (lying flat along baseline)
-      dignifiedLetters.forEach((el) => {
-        gsap.set(el, {
-          rotationX: 85,
-          y: 40,
-          opacity: 0,
-          transformOrigin: "50% 100%",
-        });
-      });
-
-      // Chapter markers initial state
-      gsap.set([chap02, chap03, chapFin], { opacity: 0 });
-      gsap.set(chap01, { opacity: 1 });
-
-      // Master Pinned Timeline
-      const masterTl = gsap.timeline({
-        scrollTrigger: {
-          trigger: section,
-          start: "top top",
-          end: "+=350%",
-          pin: true,
-          scrub: 0.8,
-          invalidateOnRefresh: true,
-          id: "way-manifesto-pinned",
-        },
-      });
-
-      // ── TIME MAP (Total 100 units) ──
-      // 0  -> 12 : OPENING ("Giving should be...")
-      // 12 -> 35 : ACT 1 (LOCAL letters assemble, 10km circle draws, copy reveals)
-      // 35 -> 40 : TRANSITION 1 (LOCAL shrinks into manifesto list pill)
-      // 40 -> 60 : ACT 2 (DIRECT word, copy reveals)
-      // 60 -> 65 : TRANSITION 2 (DIRECT joins manifesto list)
-      // 65 -> 82 : ACT 3 (DIGNIFIED letters rise upright, privacy bar slides over)
-      // 82 -> 95 : FINALE (Manifesto lockup forms, statement + closing line)
-      // 95 -> 100: Short hold before unpin
-
-      // ── OPENING ──
-      masterTl.to(openingText, { opacity: 1, y: 0, duration: 8, ease: "power2.out" }, 0);
-      masterTl.to(openingText, { opacity: 0, y: -20, duration: 4 }, 10);
-
-      // ── ACT 1 — LOCAL ──
-      masterTl.set(localAct, { opacity: 1, pointerEvents: "auto" }, 10);
-      masterTl.to(
-        localLetters,
-        {
-          x: 0,
-          y: 0,
-          rotation: 0,
-          opacity: 1,
-          duration: 12,
-          stagger: 0.8,
-          ease: "power3.out",
-        },
-        12
-      );
-
-      // Draw dashed 10km circle
-      if (localCircle) {
-        masterTl.to(
-          localCircle,
-          {
-            strokeDashoffset: 0,
-            duration: 8,
-            ease: "power2.out",
-          },
-          18
-        );
-      }
-      masterTl.to(localCircleGroup, { opacity: 1, duration: 4 }, 18);
-      masterTl.to(localCopy, { opacity: 1, y: 0, duration: 6, ease: "power2.out" }, 22);
-
-      // ── TRANSITION 1: Local into Pill ──
-      masterTl.to(
-        [localAct, localCopy, localCircleGroup],
-        { opacity: 0, y: -30, duration: 4, ease: "power2.in" },
-        34
-      );
-      masterTl.set(manifestoPill, { opacity: 1 }, 35);
-      masterTl.to(pillLocal, { opacity: 1, y: 0, duration: 3 }, 35);
-      masterTl.set(localAct, { pointerEvents: "none" }, 38);
-
-      // ── ACT 2 — DIRECT ──
-      masterTl.set(directAct, { opacity: 1, pointerEvents: "auto" }, 38);
-      masterTl.to(chap01, { opacity: 0, duration: 1 }, 38);
-      masterTl.to(chap02, { opacity: 1, duration: 1 }, 38);
-
-      masterTl.fromTo(
-        directWord,
-        { opacity: 0, x: -50 },
-        { opacity: 1, x: 0, duration: 6, ease: "power2.out" },
-        39
-      );
-
-      masterTl.to(directCopy, { opacity: 1, y: 0, duration: 6, ease: "power2.out" }, 52);
-
-      // ── TRANSITION 2: Direct into Pill ──
-      masterTl.to(
-        [directAct, directCopy],
-        { opacity: 0, y: -30, duration: 4, ease: "power2.in" },
-        60
-      );
-      masterTl.to(pillDirect, { opacity: 1, y: 0, duration: 3 }, 61);
-      masterTl.set(directAct, { pointerEvents: "none" }, 64);
-
-      // ── ACT 3 — DIGNIFIED ──
-      masterTl.set(dignifiedAct, { opacity: 1, pointerEvents: "auto" }, 64);
-      masterTl.to(chap02, { opacity: 0, duration: 1 }, 64);
-      masterTl.to(chap03, { opacity: 1, duration: 1 }, 64);
-
-      // Letters rise from lying flat (rotateX 85° -> 0°)
-      masterTl.to(
-        dignifiedLetters,
-        {
-          rotationX: 0,
-          y: 0,
-          opacity: 1,
-          duration: 10,
-          stagger: 0.6,
-          ease: "power3.out",
-        },
-        65
-      );
-
-      masterTl.to(dignifiedCopy, { opacity: 1, y: 0, duration: 5, ease: "power2.out" }, 72);
-
-      // Privacy bar slides over "sharing their story"
-      masterTl.fromTo(
-        privacyBar,
-        { scaleX: 0, transformOrigin: "left center" },
-        { scaleX: 1, duration: 5, ease: "power2.out" },
-        76
-      );
-
-      // ── FINALE ──
-      masterTl.to(
-        [dignifiedAct, dignifiedCopy, manifestoPill],
-        { opacity: 0, y: -20, duration: 4, ease: "power2.in" },
-        82
-      );
-      masterTl.to(chap03, { opacity: 0, duration: 1 }, 83);
-      masterTl.to(chapFin, { opacity: 1, duration: 1 }, 83);
-
-      masterTl.set(finaleAct, { opacity: 1, pointerEvents: "auto" }, 83);
-      masterTl.fromTo(
-        finaleLines,
-        { opacity: 0, y: 30 },
-        { opacity: 1, y: 0, duration: 8, stagger: 1.2, ease: "power3.out" },
-        84
-      );
-
-      masterTl.fromTo(
-        finaleRule,
-        { scaleX: 0, transformOrigin: "center" },
-        { scaleX: 1, duration: 4, ease: "power2.out" },
-        90
-      );
-
-      // ── Desktop Magnetic Interaction in Finale ──
-      const lockupEl = finaleLockupRef.current;
-      if (lockupEl) {
-        const letters = lockupEl.querySelectorAll<HTMLElement>(".mag-char");
-        if (letters.length > 0) {
-          const quickSetters = Array.from(letters).map((letter) => ({
-            el: letter,
-            xTo: gsap.quickTo(letter, "x", { duration: 0.4, ease: "power2.out" }),
-            yTo: gsap.quickTo(letter, "y", { duration: 0.4, ease: "power2.out" }),
-          }));
-
-          const handlePointerMove = (e: PointerEvent) => {
-            // Only active when finale is visible in scroll
-            const isFinaleVisible = masterTl.progress() >= 0.8;
-            if (!isFinaleVisible) return;
-
-            quickSetters.forEach(({ el, xTo, yTo }) => {
-              const rect = el.getBoundingClientRect();
-              const charCenterX = rect.left + rect.width / 2;
-              const charCenterY = rect.top + rect.height / 2;
-              const dx = e.clientX - charCenterX;
-              const dy = e.clientY - charCenterY;
-              const dist = Math.hypot(dx, dy);
-              const radius = 90;
-
-              if (dist < radius && dist > 0) {
-                const power = (1 - dist / radius) * -12; // gentle repel up to ~12px
-                xTo((dx / dist) * power);
-                yTo((dy / dist) * power);
-              } else {
-                xTo(0);
-                yTo(0);
+        // ─────────────────────────────────────────────────────────────
+        // 2. MOBILE / TABLET SEQUENCE (<1024px, No Pinning)
+        // ─────────────────────────────────────────────────────────────
+        mm.add("(max-width: 1023px) and (prefers-reduced-motion: no-preference)", () => {
+          const blocks = section.querySelectorAll(".mobile-manifesto-block");
+          blocks.forEach((block) => {
+            gsap.fromTo(
+              block,
+              { opacity: 0, y: 35 },
+              {
+                opacity: 1,
+                y: 0,
+                duration: 0.8,
+                ease: "power2.out",
+                scrollTrigger: {
+                  trigger: block,
+                  start: "top 80%",
+                  toggleActions: "play none none reverse",
+                },
               }
-            });
-          };
+            );
+          });
 
-          const handlePointerLeave = () => {
-            quickSetters.forEach(({ xTo, yTo }) => {
-              xTo(0);
-              yTo(0);
-            });
-          };
+        });
 
-          window.addEventListener("pointermove", handlePointerMove, { passive: true });
-          lockupEl.addEventListener("pointerleave", handlePointerLeave);
-
-          return () => {
-            window.removeEventListener("pointermove", handlePointerMove);
-            lockupEl.removeEventListener("pointerleave", handlePointerLeave);
-          };
-        }
-      }
-    });
-
-    // ─────────────────────────────────────────────────────────────
-    // 2. MOBILE / TABLET SEQUENCE (<1024px, No Pinning)
-    // ─────────────────────────────────────────────────────────────
-    mm.add("(max-width: 1023px) and (prefers-reduced-motion: no-preference)", () => {
-      const blocks = section.querySelectorAll(".mobile-manifesto-block");
-      blocks.forEach((block) => {
-        gsap.fromTo(
-          block,
-          { opacity: 0, y: 35 },
-          {
+        // ─────────────────────────────────────────────────────────────
+        // 3. REDUCED MOTION (Static accessible layout)
+        // ─────────────────────────────────────────────────────────────
+        mm.add("(prefers-reduced-motion: reduce)", () => {
+          // Everything visible and static
+          gsap.set(section.querySelectorAll(".act-opening, .act-local, .act-direct, .act-dignified, .act-finale"), {
             opacity: 1,
             y: 0,
-            duration: 0.8,
-            ease: "power2.out",
-            scrollTrigger: {
-              trigger: block,
-              start: "top 80%",
-              toggleActions: "play none none reverse",
-            },
-          }
-        );
-      });
+            pointerEvents: "auto",
+          });
+        });
 
+        return () => {
+          mm.revert();
+        };
+      })();
     });
-
-    // ─────────────────────────────────────────────────────────────
-    // 3. REDUCED MOTION (Static accessible layout)
-    // ─────────────────────────────────────────────────────────────
-    mm.add("(prefers-reduced-motion: reduce)", () => {
-      // Everything visible and static
-      gsap.set(section.querySelectorAll(".act-opening, .act-local, .act-direct, .act-dignified, .act-finale"), {
-        opacity: 1,
-        y: 0,
-        pointerEvents: "auto",
-      });
-    });
-
     return () => {
-      mm.revert();
+      cancelled = true;
+      if (typeof cleanup === "function") cleanup();
     };
   }, []);
 
@@ -422,6 +433,7 @@ export function ManifestoSection() {
               {/* Giant Scattered Letters */}
               <div
                 className="flex items-center justify-center font-serif font-black tracking-tighter leading-none text-stone-950 dark:text-stone-50 select-none text-[clamp(4.5rem,13vw,11rem)]"
+                role="img"
                 aria-label="LOCAL"
               >
                 {["L", "O", "C", "A", "L"].map((char, i) => (
@@ -452,6 +464,7 @@ export function ManifestoSection() {
               {/* Giant DIRECT word */}
               <div
                 className="direct-word font-serif font-black tracking-tighter leading-none text-stone-950 dark:text-stone-50 select-none text-[clamp(4.5rem,13vw,11rem)]"
+                role="img"
                 aria-label="DIRECT"
               >
                 DIRECT
@@ -478,6 +491,7 @@ export function ManifestoSection() {
               {/* Giant DIGNIFIED word (rising upright) */}
               <div
                 className="font-serif font-black tracking-tighter leading-none text-stone-950 dark:text-stone-50 select-none text-[clamp(3.8rem,11.5vw,9.5rem)] flex items-end [perspective:800px]"
+                role="img"
                 aria-label="DIGNIFIED"
               >
                 {["D", "I", "G", "N", "I", "F", "I", "E", "D"].map((char, i) => (
@@ -527,6 +541,7 @@ export function ManifestoSection() {
                 className="finale-line relative group cursor-pointer pointer-events-auto py-0.5"
                 onMouseEnter={() => setHoveredWord("LOCAL")}
                 onMouseLeave={() => setHoveredWord(null)}
+                role="img"
                 aria-label="LOCAL."
               >
                 {["L", "O", "C", "A", "L", "."].map((char, i) => (
@@ -552,6 +567,7 @@ export function ManifestoSection() {
                 className="finale-line relative group cursor-pointer pointer-events-auto py-0.5"
                 onMouseEnter={() => setHoveredWord("DIRECT")}
                 onMouseLeave={() => setHoveredWord(null)}
+                role="img"
                 aria-label="DIRECT."
               >
                 {["D", "I", "R", "E", "C", "T", "."].map((char, i) => (
@@ -577,6 +593,7 @@ export function ManifestoSection() {
                 className="finale-line relative group cursor-pointer pointer-events-auto py-0.5"
                 onMouseEnter={() => setHoveredWord("DIGNIFIED")}
                 onMouseLeave={() => setHoveredWord(null)}
+                role="img"
                 aria-label="DIGNIFIED."
               >
                 {["D", "I", "G", "N", "I", "F", "I", "E", "D", "."].map((char, i) => (

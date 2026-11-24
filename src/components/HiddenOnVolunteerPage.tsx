@@ -1,6 +1,7 @@
 "use client";
 
-import { usePathname } from "next/navigation";
+// Visitor path without the internal /en segment, so server and client agree (React #418).
+import { useSitePathname as usePathname } from "@/lib/useSitePathname";
 import { isCrmPath } from "./AdminRedirect";
 import { STAFF_PATH } from "@/lib/internalTraffic";
 

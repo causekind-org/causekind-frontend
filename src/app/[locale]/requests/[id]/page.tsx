@@ -3,7 +3,7 @@ import type { Metadata } from "next";
 import { getTranslations, setRequestLocale } from "next-intl/server";
 import { useTranslations } from "next-intl";
 import Link from "next/link";
-import { ArrowLeft, Building2, CalendarDays, MapPin, Package, UserRound } from "lucide-react";
+import { ArrowLeft, BadgeCheck, Building2, CalendarDays, Home, MapPin, Package, Siren, UserRound, Users, Wallet, type LucideIcon } from "lucide-react";
 import { ApiError, getPublicItemRequest, type PublicItemRequest } from "@/lib/api";
 import { CATEGORY_VISUALS } from "@/lib/categoryVisuals";
 import { safeInternalPath } from "@/lib/safeRedirect";
@@ -11,6 +11,7 @@ import HelpAction from "./HelpAction";
 import RetryButton from "./RetryButton";
 
 import { UiText, useUiText } from "@/components/UiText";
+import { capTitle } from "@/lib/requestTitle";
 type Props = {
   params: Promise<{ id: string; locale: string }>;
   searchParams: Promise<{ from?: string | string[] }>;
@@ -51,16 +52,22 @@ function backHref(raw: string | string[] | undefined): string {
   return "/requests";
 }
 
+
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const { id, locale } = await params;
   setRequestLocale(locale);
   const res = await load(id);
   const mt = await getTranslations("requestsArea");
   if (res.kind !== "ok") return { title: mt("metaRequestTitle"), robots: { index: false } };
+  // A person's request shows a first name, a city and a free-text need, so it
+  // stays out of search. Only an explicit "NGO" is indexable: a missing or
+  // unknown requesterType falls on the private side.
+  const indexable = res.req.requesterType === "NGO";
   return {
-    title: `${res.req.title} — CauseKind`,
+    title: capTitle(res.req.title),
     description: mt("metaRequestDescription", { city: res.req.city || mt("india") }),
     alternates: { canonical: `/requests/${res.req.id}` },
+    ...(indexable ? {} : { robots: { index: false, follow: true } }),
   };
 }
 
@@ -143,11 +150,18 @@ function RequestDetail({ req }: { req: PublicItemRequest }) {
         </div>
       </div>
 
+      {/* Same three sections a signed-in donor sees on the offer page
+          (owner-approved for guests, 24 Nov 2026). No donee photo here. */}
       {req.description && (
-        <p className="mt-5 whitespace-pre-line break-words text-[0.95rem] leading-relaxed text-stone-700 [overflow-wrap:anywhere] dark:text-stone-300">
-          {req.description}
-        </p>
+        <section className="mt-6">
+          <h2 className="mb-2 text-2xs font-bold uppercase tracking-wide text-stone-500 dark:text-stone-400"><UiText>Request Description</UiText></h2>
+          <div className="rounded-xl border-l-4 border-indigo-300 bg-indigo-50 px-3.5 py-4 sm:px-5 dark:border-indigo-600 dark:bg-indigo-950/30">
+            <p className="whitespace-pre-line break-words text-sm italic leading-relaxed text-stone-700 [overflow-wrap:anywhere] dark:text-stone-300">&ldquo;{req.description}&rdquo;</p>
+          </div>
+        </section>
       )}
+
+      <AboutThisNeed req={req} />
 
       <dl className="mt-5 grid grid-cols-1 gap-3 border-t border-stone-100 pt-5 text-sm dark:border-white/10 sm:grid-cols-2">
         <div>
@@ -185,5 +199,93 @@ function RequestDetail({ req }: { req: PublicItemRequest }) {
         <HelpAction requestId={req.id} />
       </div>
     </article>
+  );
+}
+
+/**
+ * "About This Need" and "Why they can't purchase this themselves", in the same
+ * layout as the offer page's section, minus the donee photo (guests never get
+ * it). Hidden entirely when the request has none of these facts.
+ */
+function AboutThisNeed({ req }: { req: PublicItemRequest }) {
+  const rt = useTranslations("offerFlow");
+  const ui = useUiText();
+  const tierLabel: Record<string, string> = {
+    TIER_1_BASIC: ui("Tier 1 verified"),
+    TIER_2_MODERATE: ui("Tier 2 verified"),
+    TIER_3_HIGH_VALUE: ui("Tier 3 verified · high value"),
+    TIER_4_EMERGENCY: ui("Tier 4 verified · emergency"),
+  };
+  const housingLabel: Record<string, string> = {
+    OWNED: ui("Own home"),
+    RENTED: ui("Rented home"),
+    SHELTER: ui("Living in a shelter"),
+    TEMPORARY: ui("Temporary housing"),
+  };
+  const facts: { icon: LucideIcon; label: string; value: string }[] = [];
+  if (req.householdSize != null) facts.push({ icon: Home, label: ui("Household"), value: rt("householdMembers", { count: req.householdSize }) });
+  if (req.dependents != null) facts.push({ icon: UserRound, label: ui("Dependents"), value: String(req.dependents) });
+  if (req.peopleAffected != null) facts.push({ icon: Users, label: ui("People affected"), value: String(req.peopleAffected) });
+  if (req.housingType && housingLabel[req.housingType]) facts.push({ icon: Home, label: ui("Housing"), value: housingLabel[req.housingType] });
+  if (req.numberOfEarners != null)
+    facts.push({
+      icon: Wallet,
+      label: ui("Earning members"),
+      value: req.numberOfEarners === 0 ? ui("None", "earners") : req.numberOfEarners === 1 ? ui("Single earner") : String(req.numberOfEarners),
+    });
+  const hasBadges = !!req.verificationTier || req.emergency;
+  if (facts.length === 0 && !req.reasonCannotBuy && !hasBadges) return null;
+
+  return (
+    <section className="mt-6">
+      <h2 className="mb-2 text-2xs font-bold uppercase tracking-wide text-stone-500 dark:text-stone-400"><UiText>About This Need</UiText></h2>
+      <div className="overflow-hidden rounded-xl border border-stone-200 bg-white shadow-sm dark:border-white/10 dark:bg-white/[0.03]">
+        <div className="p-3.5 sm:p-5">
+          {hasBadges && (
+            <div className="mb-4 flex flex-wrap items-center gap-2">
+              {req.verificationTier && (
+                <span className="inline-flex items-center gap-1.5 rounded-full border border-emerald-200 bg-emerald-50 px-2.5 py-1 text-2xs font-semibold text-emerald-700 dark:border-emerald-800 dark:bg-emerald-950/40 dark:text-emerald-400">
+                  <BadgeCheck className="h-3.5 w-3.5" aria-hidden="true" />
+                  {tierLabel[req.verificationTier] ?? ui("Verified")}
+                </span>
+              )}
+              {req.emergency && (
+                <span className="inline-flex items-center gap-1.5 rounded-full border border-red-200 bg-red-50 px-2.5 py-1 text-2xs font-semibold text-red-700 dark:border-red-800 dark:bg-red-950/40 dark:text-red-400">
+                  <Siren className="h-3.5 w-3.5" aria-hidden="true" />
+                  <UiText>Emergency need</UiText>
+                </span>
+              )}
+            </div>
+          )}
+          {facts.length > 0 ? (
+            <dl className="grid grid-cols-2 gap-x-6 gap-y-4 sm:grid-cols-3">
+              {facts.map(({ icon: FactIcon, label, value }) => (
+                <div key={label} className="flex items-start gap-2.5">
+                  <span className="mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-stone-100 dark:bg-white/10" aria-hidden="true">
+                    <FactIcon className="h-4 w-4 text-stone-500 dark:text-stone-400" />
+                  </span>
+                  <div>
+                    <dt className="text-3xs font-semibold uppercase tracking-wide text-stone-500 dark:text-stone-400">{label}</dt>
+                    <dd className="text-sm font-semibold text-stone-800 dark:text-stone-200">{value}</dd>
+                  </div>
+                </div>
+              ))}
+            </dl>
+          ) : (
+            <p className="text-sm text-stone-500 dark:text-stone-400"><UiText>Household details for this request are kept private.</UiText></p>
+          )}
+        </div>
+        {req.reasonCannotBuy && (
+          <div className="border-t border-stone-100 bg-amber-50/60 px-3.5 py-4 sm:px-5 dark:border-white/10 dark:bg-amber-950/20">
+            <h3 className="mb-1.5 text-3xs font-bold uppercase tracking-wide text-amber-800/80 dark:text-amber-400/80">
+              <UiText>Why they can&rsquo;t purchase this themselves</UiText>
+            </h3>
+            <p className="whitespace-pre-line break-words text-sm italic leading-relaxed text-stone-700 [overflow-wrap:anywhere] dark:text-stone-300">
+              &ldquo;{req.reasonCannotBuy}&rdquo;
+            </p>
+          </div>
+        )}
+      </div>
+    </section>
   );
 }

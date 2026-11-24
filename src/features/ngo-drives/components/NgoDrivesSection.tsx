@@ -7,7 +7,6 @@ import { getNgoDrives, type PublicNgoDrive } from "@/lib/api";
 import { NgoDriveCard, NgoDriveCardSkeleton } from "./NgoDriveCard";
 import { FEATURES } from "@/lib/features";
 import { sortNgoDrives } from "../ngoDriveFilters";
-import { DiwaliSeam } from "@/components/home/DiwaliMobileLayer";
 import { LiveBoardHeader } from "@/components/home/LiveBoardHeader";
 import { CategoryChipsRow } from "@/components/home/CategoryChipsRow";
 import { LiveBoardBanner } from "@/components/home/LiveBoardBanner";
@@ -117,14 +116,13 @@ function NgoDrivesBoard({ initialDrives, className = "" }: NgoDrivesSectionProps
 
   return (
     <>
-    <DiwaliSeam kind="line" lanterns="right" art="oval" />
     <section
       id="ngo-drives-section"
       aria-labelledby="ngo-drives-heading"
       className={`ck-m-section ck-drives-theme relative w-full lg:bg-[var(--surface-cream,#faf8f5)] lg:dark:bg-zinc-950 ck-live-needs-section overflow-hidden transition-colors ${className}`}
       data-testid="ngo-drives-section"
     >
-      <div className="relative mx-auto max-w-7xl px-0 lg:px-8">
+      <div className="relative mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
         {/* ── Section Header ── */}
         <LiveBoardHeader
           headingId="ngo-drives-heading"
@@ -171,7 +169,7 @@ function NgoDrivesBoard({ initialDrives, className = "" }: NgoDrivesSectionProps
           </div>
         ) : failed && drives.length === 0 ? (
           <div role="alert" data-testid="ngo-drives-error" className="mx-auto flex max-w-2xl flex-col items-center gap-3 rounded-2xl border border-dashed border-stone-300 bg-white/60 px-6 py-10 text-center dark:border-zinc-700 dark:bg-zinc-900/50">
-            <p className="text-sm font-bold text-stone-700 dark:text-stone-200"><UiText>We couldn't load the drives.</UiText></p>
+            <p className="text-sm font-bold text-stone-700 dark:text-stone-200"><UiText>We couldn&apos;t load the drives.</UiText></p>
             <button type="button" onClick={load} className="inline-flex min-h-11 items-center rounded-xl bg-[var(--ck-home-accent,#b04a15)] hover:bg-[var(--ck-home-hover,#963c0d)] text-white px-5 text-xs font-extrabold uppercase tracking-wider">
               <UiText>Retry</UiText>
             </button>

@@ -25,8 +25,8 @@ export default function AdminCampaignReviewPage() {
   }, [cid]);
   useEffect(() => { if (FEATURES.fundraising) load(); }, [load]);
 
-  if (!FEATURES.fundraising) return <div className={a.root}><main className={a.wrap} style={{ paddingTop: 40 }}><p className={a.muted}>Fundraising is switched off.</p></main></div>;
-  if (!data) return <div className={a.root}><main className={a.wrap} style={{ paddingTop: 40 }}>{error ? <p role="alert" className={a.err}>{error}</p> : <div className={a.skel} style={{ width: "40%" }} />}</main></div>;
+  if (!FEATURES.fundraising) return <div className={a.root}><div className={a.wrap} style={{ paddingTop: 40 }}><p className={a.muted}>Fundraising is switched off.</p></div></div>;
+  if (!data) return <div className={a.root}><div className={a.wrap} style={{ paddingTop: 40 }}>{error ? <p role="alert" className={a.err}>{error}</p> : <div className={a.skel} style={{ width: "40%" }} />}</div></div>;
 
   const c = data.campaign;
   const reviewing = c.status === "PUBLICATION_REVIEW";
@@ -48,7 +48,7 @@ export default function AdminCampaignReviewPage() {
       </div>
       {error && <div role="alert" style={{ padding: "10px 28px", background: "#fbeaea" }} className={a.err}>{error} <button type="button" className={`${a.btn} ${a.bs}`} onClick={() => { setError(null); load(); }}>Refresh</button></div>}
 
-      <main data-fr-grid="two" style={{ padding: "20px 28px 48px", display: "grid", gridTemplateColumns: "minmax(0,1fr) 340px", gap: 18, alignItems: "start" }}>
+      <div data-fr-grid="two" style={{ padding: "20px 28px 48px", display: "grid", gridTemplateColumns: "minmax(0,1fr) 340px", gap: 18, alignItems: "start" }}>
         {/* Launch prerequisites first, full width, above everything else (owner, 2026-11-02). */}
           <section className={`${a.card} ${a.pane}`} aria-labelledby="pre" style={{ gridColumn: "1 / -1" }}>
             <h2 id="pre" className={a.h}>Launch prerequisites</h2>
@@ -117,7 +117,7 @@ export default function AdminCampaignReviewPage() {
             {data.internalNote && <p className={a.small}><span className={a.muted}>Internal note:</span> {data.internalNote}</p>}
           </section>
         </div>
-      </main>
+      </div>
 
       {["APPROVED", "PAUSED", "COLLECTIONS_CLOSED", "OUTCOME_REPORTING"].includes(c.status) && <DonorDetails id={c.id} />}
 

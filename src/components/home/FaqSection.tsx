@@ -9,7 +9,6 @@ import {
   HelpCircle,
   Plus,
   ArrowRight,
-  MessageCircle,
   Mail,
 } from "lucide-react";
 import { CONTACT_INFO, LANDING_ROUTES } from "@/lib/landingConstants";
@@ -188,21 +187,11 @@ export function FaqSection() {
                 Still have questions?
               </h3>
               <p className="text-xs text-stone-500 dark:text-stone-400 mt-0.5">
-                We're happy to help.
+                We&apos;re happy to help.
               </p>
 
               {/* Quick Contact Buttons */}
               <div className="flex flex-wrap items-center gap-2 mt-3">
-                <a
-                  href={CONTACT_INFO.whatsappUrl}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-semibold shadow-xs hover:shadow-emerald-500/20 transition-all duration-200 active:scale-95"
-                >
-                  <MessageCircle className="w-3.5 h-3.5" aria-hidden="true" />
-                  <span>WhatsApp us</span>
-                </a>
-
                 <a
                   href={`mailto:${CONTACT_INFO.email}`}
                   className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-stone-100 hover:bg-stone-200 dark:bg-stone-800 dark:hover:bg-stone-700 text-stone-800 dark:text-stone-200 text-xs font-semibold border border-stone-200 dark:border-stone-700 transition-all duration-200 active:scale-95"

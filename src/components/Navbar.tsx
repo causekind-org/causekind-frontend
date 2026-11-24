@@ -3,18 +3,17 @@ import { UiText, useUiText } from "@/components/UiText";
 
 
 import { serverDate } from "@/lib/serverTime";
-import { useState, useEffect, useRef, useCallback } from "react";
-// @ts-expect-error — StaggeredMenu is the JS/CSS React Bits variant (no types shipped)
-import StaggeredMenu from "@/components/StaggeredMenu";
+import { useState, useEffect, useLayoutEffect, useRef, useCallback } from "react";
+import dynamic from "next/dynamic";
+import type { ComponentType } from "react";
 import Link from "@/components/AppLink";
-import { DiwaliVideoLogo } from "@/components/brand/DiwaliVideoLogo";
 import { RakshaBandhanWordmark } from "@/components/brand/RakshaBandhanWordmark";
-import { isDiwaliCampaignActive } from "@/lib/diwali";
 import { isRakshaBandhanCampaignActive } from "@/lib/raksha-bandhan";
 import { LogoVideo } from "@/components/LogoVideo";
-import { useRouter, usePathname } from "next/navigation";
+import { useRouter } from "next/navigation";
+// Visitor path without the internal /en segment, so server and client agree (React #418).
+import { useSitePathname as usePathname } from "@/lib/useSitePathname";
 import { useTranslations } from "next-intl";
-import { motion, AnimatePresence } from "framer-motion";
 import { LanguageSwitcher } from "@/components/LanguageSwitcher";
 import { Menu, X, LogIn, UserPlus, Shield, Sun, Moon, User, LayoutGrid, LogOut, Globe, ChevronRight, ChevronDown, Heart, HandHeart, Compass, HeartHandshake, HelpCircle, Mail, Phone, MessageCircle, ArrowRight, Sparkles, ShieldCheck } from "lucide-react";
 import { useAuth, type AuthUser } from "@/hooks/useAuth";
@@ -26,48 +25,102 @@ import { NotificationBell } from "@/components/NotificationBell";
 import { RakshaBandhanNavAdornment } from "@/components/RakshaBandhanNavAdornment";
 import { GlobalSearch, SearchTrigger } from "@/components/GlobalSearch";
 import { useTilt } from "@/hooks/useTilt";
-import DonateMegaMenu from "@/components/DonateMegaMenu";
+// Only rendered inside the open In-Kind panel; it uses framer-motion, so it is
+// loaded on demand to keep that library out of the shared header bundle.
+const DonateMegaMenu = dynamic(() => import("@/components/DonateMegaMenu"), { ssr: false });
 import { DonateNowButton } from "@/components/donate/DonateNowButton";
-import { openDonateChoice } from "@/components/donate/DonateChoice";
+import { openDonateChoice } from "@/components/donate/donateChoiceEvents";
 import { DONATE_HREF } from "@/lib/donateScroll";
 import { isNgoRole } from "@/lib/isNgoRole";
 import { toast } from "@/lib/toast";
 import { useNgoStatus, triggerNgoLockedToast } from "@/components/ngo-landing/useNgoStatus";
-import {
-  AlertDialog,
-  AlertDialogContent,
-  AlertDialogHeader,
-  AlertDialogTitle,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogCancel,
-  AlertDialogAction,
-} from "@/components/ui/alert-dialog";
-import {
-  DropdownMenu,
-  DropdownMenuTrigger,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuSeparator,
-} from "@/components/ui/dropdown-menu";
+// Radix AlertDialog only loads on the first "Log out" click (Lighthouse, 24 Nov 2026).
+const LogoutConfirmDialog = dynamic(() => import("@/components/LogoutConfirmDialog"), { ssr: false });
 
 
-/** "Cause" reveals a letter at a time; the container only sets the cadence. */
-const logoStagger = {
-  hidden: {},
-  visible: { transition: { staggerChildren: 0.045, delayChildren: 0.08 } },
-};
+/*
+  The header no longer uses framer-motion (Lighthouse, 24 Nov 2026): it was
+  the only reason the library sat in the bundle every page hydrates. The logo
+  entrance, the travelling nav pill and the mega-menu panels are CSS now
+  (styles.css "Header motion"), with the same timings.
+*/
 
-const logoLetterVariants = {
-  hidden:  { opacity: 0, y: 8 },
-  visible: { opacity: 1, y: 0 },
-};
+/**
+ * The one glass pill behind the desktop nav. Each item that should own it
+ * marks itself `data-pill-on="true"`; this measures that item and moves the
+ * pill there with a CSS transition, so it still glides between items as the
+ * framer `layoutId` pill did.
+ *
+ * <p>Before it has measured (the server render and the first client render)
+ * the items draw their own static pill, so the HTML and hydration match and
+ * the active item is highlighted from the first paint. `onReady` tells the
+ * header to stop drawing those.
+ */
+function NavGlassPill({ onReady }: { onReady: () => void }) {
+  const ref = useRef<HTMLSpanElement>(null);
+  const [box, setBox] = useState<{ x: number; y: number; w: number; h: number } | null>(null);
+  const [animate, setAnimate] = useState(false);
+  const [, setResizeTick] = useState(0);
+
+  useEffect(() => {
+    const onResize = () => setResizeTick((t) => t + 1);
+    window.addEventListener("resize", onResize);
+    return () => window.removeEventListener("resize", onResize);
+  }, []);
+
+  // No dependency list on purpose: the owner can change on any header render.
+  useLayoutEffect(() => {
+    const nav = ref.current?.parentElement;
+    if (!nav) return;
+    const owner = nav.querySelector<HTMLElement>('[data-pill-on="true"]');
+    let next: { x: number; y: number; w: number; h: number } | null = null;
+    if (owner) {
+      const n = nav.getBoundingClientRect();
+      const r = owner.getBoundingClientRect();
+      next = { x: r.left - n.left - nav.clientLeft, y: r.top - n.top - nav.clientTop, w: r.width, h: r.height };
+    }
+    setBox((prev) => {
+      if (prev === null && next === null) return prev;
+      if (prev && next && prev.x === next.x && prev.y === next.y && prev.w === next.w && prev.h === next.h) return prev;
+      return next;
+    });
+    onReady();
+  });
+
+  // First placement jumps; every move after that glides.
+  useEffect(() => {
+    if (!box || animate) return;
+    const id = requestAnimationFrame(() => setAnimate(true));
+    return () => cancelAnimationFrame(id);
+  }, [box, animate]);
+
+  return (
+    <span
+      ref={ref}
+      aria-hidden="true"
+      className="glass-pill ck-nav-pill pointer-events-none absolute left-0 top-0 rounded-full"
+      data-animate={animate ? "true" : undefined}
+      style={{
+        width: box?.w ?? 0,
+        height: box?.h ?? 0,
+        transform: box ? `translate(${box.x}px, ${box.y}px)` : undefined,
+        opacity: box ? 1 : 0,
+      }}
+    />
+  );
+}
 
 /** How long the "NGO Approved" navbar pill stays after the NGO first sees its approval. */
 const NGO_APPROVED_PILL_MS = 2 * 60 * 1000;
 
 /** The wordmark per size; md is the header's (small on phones). The icon scales with it via `dimensions`. */
 const WORDMARK_SIZE = { sm: "text-base", md: "text-base sm:text-xl", lg: "text-xl sm:text-2xl" } as const;
+
+/** Calls `onMount` once its own effects run, i.e. after the earlier siblings'. */
+function AfterMount({ onMount }: { onMount: () => void }) {
+  useEffect(() => { onMount(); }, [onMount]);
+  return null;
+}
 
 export function CauseKindLogo({ size = "md", hideIcon = false, seasonal = true }: { size?: "sm" | "md" | "lg"; hideIcon?: boolean; seasonal?: boolean }) {
   const sizes = { sm: "text-base", md: "text-xl", lg: "text-2xl" };
@@ -78,33 +131,15 @@ export function CauseKindLogo({ size = "md", hideIcon = false, seasonal = true }
   // wordmark ended up still flying a flag on 27 August.
   const rakshaBandhan = isRakshaBandhanCampaignActive();
 
-  // The diya sits with the heart, so the Diwali logo keeps its icon on mobile
-  // too, whatever `hideIcon` asked for. Gated like the tie, so it leaves on 13 Nov.
-  // The footer passes seasonal={false} to keep the everyday logo.
-  if (seasonal && isDiwaliCampaignActive()) {
-    return (
-      <span className="flex items-center" aria-label="CauseKind">
-        <DiwaliVideoLogo />
-      </span>
-    );
-  }
-
   return (
-    <motion.span
-      className={`font-extrabold tracking-tight ${sizes[size]} flex items-center gap-2`}
+    <span
+      className={`ck-logo-hover font-extrabold tracking-tight ${sizes[size]} flex items-center gap-2`}
       aria-label="CauseKind"
-      whileHover={{ scale: 1.03 }}
-      transition={{ type: "spring", stiffness: 400, damping: 25 }}
     >
       {!hideIcon && (
-        <motion.div
-          className="shrink-0"
-          initial={{ scale: 0.3, opacity: 0, rotate: -20 }}
-          animate={{ scale: 1, opacity: 1, rotate: 0 }}
-          transition={{ type: "spring", stiffness: 320, damping: 18, delay: 0.05 }}
-        >
+        <div className="ck-logo-icon-in shrink-0">
           <LogoVideo size={dimensions[size].w} />
-        </motion.div>
+        </div>
       )}
 
       {/* Styled text again, not the shipped asset.
@@ -129,35 +164,21 @@ export function CauseKindLogo({ size = "md", hideIcon = false, seasonal = true }
       ) : (
         <span className={`relative flex items-center font-extrabold ${WORDMARK_SIZE[size]}`} aria-hidden="true">
           {/* "Cause" — stagger letter reveal */}
-          <motion.span
-            className="text-stone-900 dark:text-stone-100 tracking-tight flex"
-            variants={logoStagger}
-            initial="hidden"
-            animate="visible"
-          >
+          <span className="text-stone-900 dark:text-stone-100 tracking-tight flex">
             {"Cause".split("").map((l, i) => (
-              <motion.span
-                key={i}
-                variants={logoLetterVariants}
-                transition={{ duration: 0.28, ease: [0.22, 1, 0.36, 1] }}
-              >
+              <span key={i} className="ck-logo-letter-in" style={{ animationDelay: `${0.08 + i * 0.045}s` }}>
                 {l}
-              </motion.span>
+              </span>
             ))}
-          </motion.span>
+          </span>
 
           {/* "Kind" — slides in as one word after "Cause", then shimmers */}
-          <motion.span
-            className="ck-logo-kind-shimmer"
-            initial={{ opacity: 0, y: 6 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.3, ease: [0.22, 1, 0.36, 1], delay: 0.44 }}
-          >
+          <span className="ck-logo-kind-shimmer ck-logo-kind-in">
             Kind
-          </motion.span>
+          </span>
         </span>
       )}
-    </motion.span>
+    </span>
   );
 }
 
@@ -236,7 +257,7 @@ function LoginNudgeBubble({ user }: { user: AuthUser | null }) {
         <button
           onClick={dismiss}
           aria-label={ui("Dismiss")}
-          className="absolute top-2.5 right-2.5 w-5 h-5 rounded-full flex items-center justify-center text-stone-400 hover:text-stone-700 dark:hover:text-stone-200 hover:bg-stone-100 dark:hover:bg-zinc-800 transition-colors"
+          className="absolute top-2.5 right-2.5 w-5 h-5 box-content p-3 -m-3 bg-clip-content rounded-full flex items-center justify-center text-stone-500 hover:text-stone-700 dark:hover:text-stone-200 hover:bg-stone-100 dark:hover:bg-zinc-800 transition-colors"
         >
           <X className="w-3 h-3" />
         </button>
@@ -312,7 +333,34 @@ export function SiteHeader() {
   const roleColors = useRoleColors();
   const router = useRouter();
   const pathname = usePathname();
+  const [navPillReady, setNavPillReady] = useState(false);
+  const markNavPillReady = useCallback(() => setNavPillReady(true), []);
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
+  // The mobile menu (StaggeredMenu + gsap) is code-split out of the shared
+  // bundle and fetched once the browser is idle, so it is ready before the
+  // first tap. It mounts closed and only then receives the real `open` value:
+  // StaggeredMenu ignores `open` on its first mount, so mounting it already
+  // open (a tap before the code arrived) would leave the panel hidden.
+  const [StaggeredMenu, setStaggeredMenu] = useState<ComponentType<any> | null>(null);
+  const [menuMounted, setMenuMounted] = useState(false);
+  useEffect(() => {
+    let cancelled = false;
+    // @ts-expect-error — StaggeredMenu is the JS/CSS React Bits variant (no types shipped)
+    const load = () => import("@/components/StaggeredMenu").then((m) => { if (!cancelled) setStaggeredMenu(() => m.default); });
+    const w = window as Window & { requestIdleCallback?: (cb: () => void, o?: { timeout: number }) => number; cancelIdleCallback?: (id: number) => void };
+    let idleId: number | undefined;
+    let timer: ReturnType<typeof setTimeout> | undefined;
+    if (w.requestIdleCallback) idleId = w.requestIdleCallback(load, { timeout: 2000 });
+    else timer = setTimeout(load, 1200);
+    return () => { cancelled = true; if (idleId !== undefined) w.cancelIdleCallback?.(idleId); if (timer) clearTimeout(timer); };
+  }, []);
+  useEffect(() => {
+    // A tap before the idle load fired: fetch now (import() is cached, so this
+    // never downloads twice).
+    // @ts-expect-error — untyped JS module, see above
+    if (isSidebarOpen && !StaggeredMenu) import("@/components/StaggeredMenu").then((m) => setStaggeredMenu(() => m.default));
+  }, [isSidebarOpen, StaggeredMenu]);
+  const markMenuMounted = useCallback(() => setMenuMounted(true), []);
   // Closing the menu makes it inert, which pushes focus out to <body>. Without
   // this a keyboard user loses their place entirely, so send focus back to the
   // control they opened it with.
@@ -323,6 +371,9 @@ export function SiteHeader() {
     wasSidebarOpen.current = isSidebarOpen;
   }, [isSidebarOpen]);
   const [logoutDialogOpen, setLogoutDialogOpen] = useState(false);
+  // Mount the dialog on first use, then keep it so its close animation runs.
+  const logoutDialogUsed = useRef(false);
+  if (logoutDialogOpen) logoutDialogUsed.current = true;
   const [profile, setProfile] = useState<UserProfile | null>(null);
   const [matches, setMatches] = useState<ItemMatch[]>([]);
   const [avatarDataUrl, setAvatarDataUrl] = useState<string | null>(null);
@@ -400,17 +451,23 @@ export function SiteHeader() {
     let observedHero: Element | null = null;
     const update = () => {
       frame = 0;
-      const hero = document.querySelector(".ck-lead-hero-stage");
+      // The NGO landing (also "/") reuses the same see-through header over its mobile photo.
+      // Its photo exists below 768px only, so it counts only there.
+      const hero = document.querySelector(".ck-lead-hero-stage")
+        ?? (window.matchMedia("(max-width: 767px)").matches ? document.querySelector(".ck-ngo-hero-stage") : null);
       if (hero && hero !== observedHero) {
         resize.disconnect();
         resize.observe(hero);
         crossing.disconnect();
         crossing.observe(hero);
         observedHero = hero;
-        mounted.disconnect();
       }
+      // `mounted` keeps watching: the NGO landing swaps its hero for a new
+      // element once the application status loads, and that must be picked up.
       const bounds = hero?.getBoundingClientRect();
-      setOverMobileHero(mobile.matches && !!bounds && bounds.top <= 0 && bounds.bottom > 0);
+      // The NGO hero can sit a few px off the top mid-layout; allow for it there.
+      const slack = hero?.classList.contains("ck-ngo-hero-stage") ? 16 : 0;
+      setOverMobileHero(mobile.matches && !!bounds && bounds.top <= slack && bounds.bottom > 0);
     };
     const schedule = () => { if (!frame) frame = requestAnimationFrame(update); };
     const resize = new ResizeObserver(schedule);
@@ -796,29 +853,14 @@ export function SiteHeader() {
   return (
     <>
       {/* ── Logout confirmation dialog ── */}
-      <AlertDialog open={logoutDialogOpen} onOpenChange={setLogoutDialogOpen}>
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>{t("logout.title")}</AlertDialogTitle>
-            <AlertDialogDescription>
-              {t("logout.description")}
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel>{t("logout.cancel")}</AlertDialogCancel>
-            <AlertDialogAction
-              onClick={confirmLogout}
-              className="bg-[var(--ck-role-accent)] hover:bg-[var(--ck-role-hover)] text-white border-0"
-            >
-              {t("logout.confirm")}
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
+      {logoutDialogUsed && (
+        <LogoutConfirmDialog open={logoutDialogOpen} onOpenChange={setLogoutDialogOpen} onConfirm={confirmLogout} />
+      )}
 
       <header data-calm-header
         ref={headerRef}
         data-home-hero={pathname === "/" && overMobileHero ? "top" : undefined}
+        data-ngo-hero={pathname === "/" && overMobileHero && isNgoPartner ? "" : undefined}
         style={{
           // Slide only. Animating opacity here made Chrome flatten the glass
           // (backdrop-filter) buttons inside, and on the way back they could
@@ -874,20 +916,7 @@ export function SiteHeader() {
             <NotificationBell />
           </div>
           <Link href="/" className="flex items-center justify-center">
-            {isDiwaliCampaignActive() ? (
-              // Both are rendered and styles.css shows one: whitecause over the
-              // transparent home-hero header and in dark mode, blackcause on the
-              // cream bar everywhere else. Gated on the Diwali switch like the
-              // desktop logo: ungated, it stayed on phones after 13 Nov.
-              <span aria-label="CauseKind" className="flex items-center">
-                {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img src="/images/diwali/blackcause.webp" alt="" width={360} height={120} className="ck-dlogo-mobile-dark block h-10 w-auto" />
-                {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img src="/images/diwali/whitecause.webp" alt="" width={360} height={120} className="ck-dlogo-mobile-light hidden h-10 w-auto" />
-              </span>
-            ) : (
-              <CareNestLogo size="md" hideIcon={true} />
-            )}
+            <CareNestLogo size="md" hideIcon={true} />
           </Link>
           {/* With the bar gone there is nothing behind this button but the
               hero, so it brings its own surface: `glass-pill` is the same
@@ -913,13 +942,14 @@ export function SiteHeader() {
         </div>
 
         {/* Desktop Header */}
-        <div className="relative z-[1] hidden lg:flex w-full max-w-[1440px] mx-auto items-center justify-between py-5 px-10">
+        <div className="relative z-[1] hidden lg:flex w-full max-w-[1440px] mx-auto items-center justify-between py-5 px-10 lg:max-[1440px]:px-6 lg:max-[1440px]:gap-3">
           <Link href="/" className="flex items-center gap-2">
             <CareNestLogo />
           </Link>
 
           {/* Center navigation capsule */}
-          <nav className="glass-liquid hidden lg:flex items-center gap-1 bg-white/55 dark:bg-zinc-900/55 backdrop-blur-xl border border-white/60 dark:border-white/10 ring-1 ring-[#e5e2d5]/50 dark:ring-stone-800/60 rounded-full p-1 shadow-[0_4px_20px_-6px_rgba(28,25,23,0.12),inset_0_1px_0_rgba(255,255,255,0.55)] dark:shadow-[0_4px_20px_-6px_rgba(0,0,0,0.5),inset_0_1px_0_rgba(255,255,255,0.06)]">
+          <nav className="glass-liquid hidden lg:flex flex-nowrap whitespace-nowrap items-center gap-1 lg:max-[1440px]:gap-0.5 bg-white/55 dark:bg-zinc-900/55 backdrop-blur-xl border border-white/60 dark:border-white/10 ring-1 ring-[#e5e2d5]/50 dark:ring-stone-800/60 rounded-full p-1 shadow-[0_4px_20px_-6px_rgba(28,25,23,0.12),inset_0_1px_0_rgba(255,255,255,0.55)] dark:shadow-[0_4px_20px_-6px_rgba(0,0,0,0.5),inset_0_1px_0_rgba(255,255,255,0.06)]">
+            <NavGlassPill onReady={markNavPillReady} />
             {navLinks.map((link) => {
               // FAQ and Contact live inside the "About Us" dropdown on desktop
               // instead of as separate pills — skip them here.
@@ -943,7 +973,8 @@ export function SiteHeader() {
                       type="button"
                       onClick={() => setOpenMegaMenu((prev) => (prev === "about" ? null : "about"))}
                       aria-expanded={isAboutMegaMenuOpen}
-                      className={`group relative text-sm px-4 py-2 transition-all duration-300 rounded-full flex items-center gap-1.5 font-semibold outline-none cursor-pointer ${
+                      data-pill-on={isAboutMegaMenuOpen || (groupActive && !hoveredHref) ? "true" : undefined}
+                      className={`group relative text-sm px-4 py-2 lg:max-[1440px]:px-2.5 whitespace-nowrap transition-all duration-300 rounded-full flex items-center gap-1.5 font-semibold outline-none cursor-pointer ${
                         groupActive || isAboutMegaMenuOpen
                           ? "text-[var(--ck-role-accent)]"
                           : "text-stone-500 hover:text-[var(--ck-role-accent)] dark:text-stone-400 dark:hover:text-[var(--ck-role-accent)]"
@@ -953,13 +984,7 @@ export function SiteHeader() {
                           exactly one element ever claims `nav-glass-pill`. Two
                           claimants at once make Framer pick a winner and the
                           slide stutters. */}
-                      {(isAboutMegaMenuOpen || (groupActive && !hoveredHref)) && (
-                        <motion.span
-                          layoutId="nav-glass-pill"
-                          transition={{ type: "spring", stiffness: 380, damping: 32 }}
-                          className="glass-pill absolute inset-0 rounded-full"
-                        />
-                      )}
+                      {!navPillReady && (isAboutMegaMenuOpen || (groupActive && !hoveredHref)) && <span className="glass-pill absolute inset-0 rounded-full" />}
                       {groupActive && <span className="relative z-10 w-2.5 h-2.5 rounded-full bg-[var(--ck-role-highlight)] shrink-0" />}
                       <span className="relative z-10">{triggerLabel}</span>
                       <ChevronDown
@@ -1004,19 +1029,14 @@ export function SiteHeader() {
                       data-tour="nav-requests"
                       onFocus={handleInKindMouseEnter}
                       aria-expanded={isInKindMegaMenuOpen}
-                      className={`relative text-sm px-4 py-2 transition-colors duration-300 rounded-full flex items-center gap-1.5 font-semibold ${
+                      data-pill-on={isInKindMegaMenuOpen || (active && !hoveredHref) ? "true" : undefined}
+                      className={`relative text-sm px-4 py-2 lg:max-[1440px]:px-2.5 whitespace-nowrap transition-colors duration-300 rounded-full flex items-center gap-1.5 font-semibold ${
                         active || isInKindMegaMenuOpen
                           ? "text-[var(--ck-role-accent)]"
                           : "text-stone-500 hover:text-[var(--ck-role-accent)] dark:text-stone-400 dark:hover:text-[var(--ck-role-accent)]"
                       }`}
                     >
-                      {(isInKindMegaMenuOpen || (active && !hoveredHref)) && (
-                        <motion.span
-                          layoutId="nav-glass-pill"
-                          transition={{ type: "spring", stiffness: 380, damping: 32 }}
-                          className="glass-pill absolute inset-0 rounded-full"
-                        />
-                      )}
+                      {!navPillReady && (isInKindMegaMenuOpen || (active && !hoveredHref)) && <span className="glass-pill absolute inset-0 rounded-full" />}
                       {active && <span className="relative z-10 w-2.5 h-2.5 rounded-full bg-[var(--ck-role-highlight)] shrink-0" />}
                       <span className="relative z-10">{triggerLabel}</span>
                       <ChevronDown
@@ -1044,7 +1064,8 @@ export function SiteHeader() {
                   onMouseLeave={() => setHoveredHref(null)}
                   onFocus={() => { setHoveredHref(link.href); setOpenMegaMenu(null); }}
                   onBlur={() => setHoveredHref(null)}
-                  className={`relative text-sm px-4 py-2 transition-colors duration-300 rounded-full flex items-center gap-2 font-semibold ${active
+                  data-pill-on={hoveredHref === link.href || (active && !hoveredHref) ? "true" : undefined}
+                  className={`relative text-sm px-4 py-2 lg:max-[1440px]:px-2.5 whitespace-nowrap transition-colors duration-300 rounded-full flex items-center gap-2 font-semibold ${active
                       ? "text-[var(--ck-role-accent)]"
                       : "text-stone-500 hover:text-[var(--ck-role-accent)] dark:text-stone-400 dark:hover:text-[var(--ck-role-accent)]"
                     }`}
@@ -1059,13 +1080,7 @@ export function SiteHeader() {
                       `groupActive || isOpen`, and hovering opens the menu, so
                       they got the slide for free. A plain link has no open state,
                       so it needs `hoveredHref` to say the same thing. */}
-                  {(hoveredHref === link.href || (active && !hoveredHref)) && (
-                    <motion.span
-                      layoutId="nav-glass-pill"
-                      transition={{ type: "spring", stiffness: 380, damping: 32 }}
-                      className="glass-pill absolute inset-0 rounded-full"
-                    />
-                  )}
+                  {!navPillReady && (hoveredHref === link.href || (active && !hoveredHref)) && <span className="glass-pill absolute inset-0 rounded-full" />}
                   {active && <span className="relative z-10 w-2.5 h-2.5 rounded-full bg-[var(--ck-role-highlight)] shrink-0" />}
                   <span className="relative z-10">{link.label}</span>
                 </Link>
@@ -1075,7 +1090,7 @@ export function SiteHeader() {
           </nav>
 
           {/* Right buttons */}
-          <div className="flex items-center gap-3 sm:gap-4">
+          <div className="flex shrink-0 items-center gap-3 sm:gap-4 lg:max-[1440px]:gap-1.5">
             <GlobalSearch />
             {user && <span data-tour="search" className="inline-flex"><SearchTrigger /></span>}
             <span data-tour="bell" className="inline-flex"><NotificationBell /></span>
@@ -1116,13 +1131,13 @@ export function SiteHeader() {
                 entry point on the same flag hid a shipped feature. The old
                 Donate3DButton pointed at /donate — the Coming Soon screen. */}
             {!isNgoDashboard && (
-              <DonateNowButton size="sm" label={ui("Donate")} showArrow={false} />
+              <DonateNowButton size="sm" label={ui("Donate")} showArrow={false} className="whitespace-nowrap" />
             )}
 
             {/* The NGO status pill is only ever for a signed-in NGO account. */}
             {isNgo && !(ngoApplicationState === "APPROVED" && ngoApprovedPillExpired) && (
               <Link href="/profile/ngo-details">
-                <Button size="sm" className="rounded-full bg-ngo-700 px-4 py-2 text-xs font-bold text-white hover:bg-ngo-800">
+                <Button size="sm" className="rounded-full bg-ngo-700 px-4 py-2 text-xs font-bold text-white hover:bg-ngo-800 whitespace-nowrap">
                   {ngoApplicationLabel}
                 </Button>
               </Link>
@@ -1135,10 +1150,12 @@ export function SiteHeader() {
               <button
                 type="button"
                 onClick={() => (user ? requestLogout() : router.push("/login"))}
-                className="inline-flex items-center gap-1.5 h-10 rounded-full px-5 text-sm font-bold text-white bg-[var(--ck-role-accent)] hover:bg-[var(--ck-role-hover)] transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--ck-role-accent)]"
+                aria-label={user ? t("nav.signOut") : t("nav.logIn")}
+                data-testid="nav-auth-button"
+                className="inline-flex shrink-0 items-center gap-1.5 h-10 rounded-full px-5 lg:max-[1440px]:px-4 max-[1279px]:px-3 whitespace-nowrap text-sm font-bold text-white bg-[var(--ck-role-accent)] hover:bg-[var(--ck-role-hover)] transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--ck-role-accent)]"
               >
                 {user ? <LogOut className="w-3.5 h-3.5 sm:w-4 sm:h-4" /> : <LogIn className="w-3.5 h-3.5 sm:w-4 sm:h-4" />}
-                {user ? t("nav.signOut") : t("nav.logIn")}
+                <span className="max-[1279px]:sr-only">{user ? t("nav.signOut") : t("nav.logIn")}</span>
               </button>
               <LoginNudgeBubble user={user} />
             </div>
@@ -1148,13 +1165,8 @@ export function SiteHeader() {
 
         {/* Animated Desktop Mega Menu for "In-Kind" — mirrors the About panel's
             chrome, positioning and timing exactly; only the body differs. */}
-        <AnimatePresence>
-          {isInKindMegaMenuOpen && (
-            <motion.div
-              initial={{ opacity: 0, y: -8 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: -8 }}
-              transition={{ duration: 0.22, ease: [0.16, 1, 0.3, 1] }}
+                  {isInKindMegaMenuOpen && (
+            <div
               onMouseEnter={handleInKindMouseEnter}
               onMouseLeave={handleInKindMouseLeave}
               /*
@@ -1178,23 +1190,17 @@ export function SiteHeader() {
                 the honest fix; adding the blur back would need the panel moved
                 out of the header, which is a bigger change than this earns.
               */
-              className="hidden lg:block absolute top-full left-0 right-0 w-full bg-[#faf8f5] dark:bg-stone-900 border-b border-[#e5e2d5] dark:border-stone-800 shadow-[0_25px_60px_-15px_rgba(28,25,23,0.16)] dark:shadow-[0_25px_60px_-15px_rgba(0,0,0,0.65)] z-50 pointer-events-auto"
+              className="ck-nav-panel-in hidden lg:block absolute top-full left-0 right-0 w-full bg-[#faf8f5] dark:bg-stone-900 border-b border-[#e5e2d5] dark:border-stone-800 shadow-[0_25px_60px_-15px_rgba(28,25,23,0.16)] dark:shadow-[0_25px_60px_-15px_rgba(0,0,0,0.65)] z-50 pointer-events-auto"
             >
               <div className="w-full max-w-[1440px] mx-auto px-8 pt-7 pb-6">
                 <DonateMegaMenu onNavigate={() => setOpenMegaMenu(null)} />
               </div>
-            </motion.div>
+            </div>
           )}
-        </AnimatePresence>
 
         {/* Animated Desktop Mega Menu for "About Us" - Full Screen Width & Rich Design */}
-        <AnimatePresence>
-          {isAboutMegaMenuOpen && (
-            <motion.div
-              initial={{ opacity: 0, y: -8 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: -8 }}
-              transition={{ duration: 0.22, ease: [0.16, 1, 0.3, 1] }}
+                  {isAboutMegaMenuOpen && (
+            <div
               onMouseEnter={handleAboutMouseEnter}
               onMouseLeave={handleAboutMouseLeave}
               /*
@@ -1218,7 +1224,7 @@ export function SiteHeader() {
                 the honest fix; adding the blur back would need the panel moved
                 out of the header, which is a bigger change than this earns.
               */
-              className="hidden lg:block absolute top-full left-0 right-0 w-full bg-[#faf8f5] dark:bg-stone-900 border-b border-[#e5e2d5] dark:border-stone-800 shadow-[0_25px_60px_-15px_rgba(28,25,23,0.16)] dark:shadow-[0_25px_60px_-15px_rgba(0,0,0,0.65)] z-50 pointer-events-auto"
+              className="ck-nav-panel-in hidden lg:block absolute top-full left-0 right-0 w-full bg-[#faf8f5] dark:bg-stone-900 border-b border-[#e5e2d5] dark:border-stone-800 shadow-[0_25px_60px_-15px_rgba(28,25,23,0.16)] dark:shadow-[0_25px_60px_-15px_rgba(0,0,0,0.65)] z-50 pointer-events-auto"
             >
               <div className="w-full max-w-[1440px] mx-auto px-8 pt-7 pb-6">
                 <div className="grid grid-cols-12 gap-6">
@@ -1239,9 +1245,9 @@ export function SiteHeader() {
                             Story
                           </UiText></span>
                         </div>
-                        <h4 className="text-sm font-bold text-stone-900 dark:text-stone-100 group-hover:text-[var(--ck-role-accent)] transition-colors mb-1.5 flex items-center gap-1.5">
+                        <p className="text-sm font-bold text-stone-900 dark:text-stone-100 group-hover:text-[var(--ck-role-accent)] transition-colors mb-1.5 flex items-center gap-1.5">
                           {t("nav.about")}
-                        </h4>
+                        </p>
                         <p className="text-xs text-stone-600 dark:text-stone-400 leading-relaxed"><UiText>
                           Our story, mission, and transparent model for direct peer-to-peer giving.
                         </UiText></p>
@@ -1267,9 +1273,9 @@ export function SiteHeader() {
                             Help & Safety
                           </UiText></span>
                         </div>
-                        <h4 className="text-sm font-bold text-stone-900 dark:text-stone-100 group-hover:text-emerald-600 dark:group-hover:text-emerald-400 transition-colors mb-1.5 flex items-center gap-1.5">
+                        <p className="text-sm font-bold text-stone-900 dark:text-stone-100 group-hover:text-emerald-600 dark:group-hover:text-emerald-400 transition-colors mb-1.5 flex items-center gap-1.5">
                           {t("nav.faq")}
-                        </h4>
+                        </p>
                         <p className="text-xs text-stone-600 dark:text-stone-400 leading-relaxed"><UiText>
                           Clear answers on item matching, verification rules, and donor safety.
                         </UiText></p>
@@ -1292,9 +1298,9 @@ export function SiteHeader() {
                         </div>
                         <div>
                           <div className="flex items-center gap-2 mb-0.5">
-                            <h4 className="text-sm font-bold text-stone-900 dark:text-stone-100 group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors">
+                            <p className="text-sm font-bold text-stone-900 dark:text-stone-100 group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors">
                               {t("nav.contact")}
-                            </h4>
+                            </p>
                             <span className="text-[10px] font-bold tracking-wider uppercase px-2 py-0.5 rounded-full bg-blue-500/10 text-blue-700 dark:text-blue-400 border border-blue-500/20"><UiText>
                               Support
                             </UiText></span>
@@ -1320,9 +1326,9 @@ export function SiteHeader() {
                           Direct Giving
                         </UiText></span>
                       </div>
-                      <h4 className="text-base font-bold text-stone-900 dark:text-stone-100 leading-snug mb-2"><UiText>
+                      <p className="text-base font-bold text-stone-900 dark:text-stone-100 leading-snug mb-2"><UiText>
                         Giving Directly to People in Need.
-                      </UiText></h4>
+                      </UiText></p>
                       <p className="text-xs text-stone-600 dark:text-stone-400 leading-relaxed mb-4"><UiText>
                         Zero platform fees on in-kind donations. Every request is vetted to ensure your generosity makes an immediate impact.
                       </UiText></p>
@@ -1365,9 +1371,8 @@ export function SiteHeader() {
                   </Link>
                 </div>
               </div>
-            </motion.div>
+            </div>
           )}
-        </AnimatePresence>
       </header>
 
       {/* ── Mobile menu — StaggeredMenu (replaces the former rich side drawer).
@@ -1375,8 +1380,9 @@ export function SiteHeader() {
           sign-out live in the footer slot; a compact profile line is the header.
           The decorative profile-completion & latest-impact cards were dropped
           in favour of StaggeredMenu's cleaner list. ── */}
-      <StaggeredMenu
-        open={isSidebarOpen}
+      {StaggeredMenu && !menuMounted && <AfterMount onMount={markMenuMounted} />}
+      {StaggeredMenu && <StaggeredMenu
+        open={menuMounted && isSidebarOpen}
         onClose={() => setIsSidebarOpen(false)}
         position="right"
         accentColor={roleColors.accent}
@@ -1435,7 +1441,7 @@ export function SiteHeader() {
         footer={
           <div className="flex flex-col gap-3">
             <div className="flex items-center justify-between">
-              <span className="text-3xs font-black uppercase tracking-widest text-stone-400 dark:text-stone-500"><UiText>Theme</UiText></span>
+              <span className="text-3xs font-black uppercase tracking-widest text-stone-500 dark:text-stone-500"><UiText>Theme</UiText></span>
               <button
                 onClick={toggleTheme}
                 aria-label={t("nav.toggleTheme")}
@@ -1446,7 +1452,7 @@ export function SiteHeader() {
               </button>
             </div>
             <div className="flex items-center justify-between">
-              <span className="text-3xs font-black uppercase tracking-widest text-stone-400 dark:text-stone-500"><UiText>Language</UiText></span>
+              <span className="text-3xs font-black uppercase tracking-widest text-stone-500 dark:text-stone-500"><UiText>Language</UiText></span>
               <LanguageSwitcher dropUp />
             </div>
             {user && (
@@ -1459,7 +1465,7 @@ export function SiteHeader() {
             )}
           </div>
         }
-      />
+      />}
     </>
   );
 }

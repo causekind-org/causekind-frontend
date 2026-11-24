@@ -46,8 +46,8 @@ function fmtDay(iso: string) {
 // ── Role styling — lets the admin tell donors and donees apart at a glance ───
 const ROLE_STYLE: Record<string, { avatarBg: string; avatarText: string; badge: string }> = {
   DONOR: {
-    avatarBg: "bg-[#b04a15]/10", avatarText: "text-[#b04a15]",
-    badge: "border-transparent bg-[#b04a15]/10 text-[#b04a15] dark:bg-orange-950/30 dark:text-orange-400",
+    avatarBg: "bg-[#1f66b3]/10", avatarText: "text-[#1f66b3]",
+    badge: "border-transparent bg-[#1f66b3]/10 text-[#1f66b3] dark:bg-orange-950/30 dark:text-orange-400",
   },
   DONEE: {
     avatarBg: "bg-teal-100 dark:bg-teal-950/40", avatarText: "text-teal-700 dark:text-teal-400",
@@ -60,7 +60,12 @@ function roleStyle(role: string | null) {
   return (role && ROLE_STYLE[role]) || DEFAULT_ROLE_STYLE;
 }
 
-const ROLE_FILTERS = ["ALL", "DONOR", "DONEE"] as const;
+// NGO partners and staff were only reachable under "All" — 8 of 19 users had no filter of their own.
+const ROLE_FILTERS = ["ALL", "DONOR", "DONEE", "NGO_PARTNER", "OTHER"] as const;
+const KNOWN_ROLES = ["DONOR", "DONEE", "NGO_PARTNER"];
+const roleLabel = (r?: string | null) => !r ? "—"
+  : r === "NGO_PARTNER" ? "NGO" : r === "SUPER_ADMIN" ? "Super admin"
+  : r.charAt(0) + r.slice(1).toLowerCase().replace(/_/g, " ");
 type RoleFilter = (typeof ROLE_FILTERS)[number];
 
 /**
@@ -183,11 +188,14 @@ export function UserJourneyPanel({ initialUserId }: { initialUserId?: number | n
   // Alphabetical by name so a long directory stays scannable, with an
   // optional donor/donee filter for when the admin only wants one side.
   const visibleUsers = allUsers
-    .filter((u) => roleFilter === "ALL" || u.role === roleFilter)
+    .filter((u) => roleFilter === "ALL" || u.role === roleFilter
+      || (roleFilter === "OTHER" && !KNOWN_ROLES.includes(u.role ?? "")))
     .slice()
     .sort((a, b) => (a.fullName ?? "").localeCompare(b.fullName ?? ""));
   const donorCount = allUsers.filter((u) => u.role === "DONOR").length;
   const doneeCount = allUsers.filter((u) => u.role === "DONEE").length;
+  const ngoCount = allUsers.filter((u) => u.role === "NGO_PARTNER").length;
+  const otherCount = allUsers.length - donorCount - doneeCount - ngoCount;
 
   return (
     <div className="max-w-3xl">
@@ -209,7 +217,7 @@ export function UserJourneyPanel({ initialUserId }: { initialUserId?: number | n
                 <button
                   key={h.id}
                   onClick={() => { setQuery(""); setJourney(null); loadJourney(h.id); }}
-                  className="flex w-full items-center gap-3 px-4 py-2.5 text-left hover:bg-[#b04a15]/5 transition border-b border-stone-100 dark:border-zinc-800 last:border-0"
+                  className="flex w-full items-center gap-3 px-4 py-2.5 text-left hover:bg-[#1f66b3]/5 transition border-b border-stone-100 dark:border-zinc-800 last:border-0"
                 >
                   <span className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-sm font-black ${rs.avatarBg} ${rs.avatarText}`}>
                     {h.fullName?.charAt(0)?.toUpperCase() ?? "?"}
@@ -248,9 +256,11 @@ export function UserJourneyPanel({ initialUserId }: { initialUserId?: number | n
             {/* Role filter — lets the admin isolate donors or donees instead of scanning a mixed list */}
             <div className="mb-3 flex flex-wrap gap-1.5">
               {ROLE_FILTERS.map((rf) => {
-                const label = rf === "ALL" ? `All · ${allUsers.length}` : rf === "DONOR" ? `Donors · ${donorCount}` : `Donees · ${doneeCount}`;
+                const label = rf === "ALL" ? `All · ${allUsers.length}` : rf === "DONOR" ? `Donors · ${donorCount}`
+                  : rf === "DONEE" ? `Donees · ${doneeCount}` : rf === "NGO_PARTNER" ? `NGOs · ${ngoCount}` : `Staff & other · ${otherCount}`;
+                if (rf === "OTHER" && otherCount === 0) return null;
                 const active = roleFilter === rf;
-                const activeBg = rf === "DONOR" ? "#b04a15" : rf === "DONEE" ? "#0d9488" : "#57534e";
+                const activeBg = rf === "DONOR" ? "#1f66b3" : rf === "DONEE" ? "#0d9488" : rf === "NGO_PARTNER" ? "#1e6b4f" : "#57534e";
                 return (
                   <button
                     key={rf}
@@ -270,7 +280,7 @@ export function UserJourneyPanel({ initialUserId }: { initialUserId?: number | n
               <CardContent className="p-0">
                 <div className="flex items-center justify-between border-b border-stone-100 px-4 py-2.5 dark:border-zinc-800">
                   <p className="text-3xs font-semibold uppercase tracking-wide text-stone-400">
-                    {roleFilter === "ALL" ? "All users" : roleFilter === "DONOR" ? "Donors" : "Donees"} · A–Z
+                    {roleFilter === "ALL" ? "All users" : roleFilter === "DONOR" ? "Donors" : roleFilter === "DONEE" ? "Donees" : roleFilter === "NGO_PARTNER" ? "NGOs" : "Staff & other"} · A–Z
                   </p>
                   <p className="text-xs text-stone-400">{visibleUsers.length}</p>
                 </div>
@@ -283,7 +293,7 @@ export function UserJourneyPanel({ initialUserId }: { initialUserId?: number | n
                       <button
                         key={u.id}
                         onClick={() => loadJourney(u.id)}
-                        className="flex w-full items-center gap-3 px-4 py-2.5 text-left hover:bg-[#b04a15]/5 transition border-b border-stone-100 dark:border-zinc-800 last:border-0"
+                        className="flex w-full items-center gap-3 px-4 py-2.5 text-left hover:bg-[#1f66b3]/5 transition border-b border-stone-100 dark:border-zinc-800 last:border-0"
                       >
                         <span className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-sm font-black ${rs.avatarBg} ${rs.avatarText}`}>
                           {u.fullName?.charAt(0)?.toUpperCase() ?? "?"}
@@ -292,7 +302,7 @@ export function UserJourneyPanel({ initialUserId }: { initialUserId?: number | n
                           <span className="block truncate text-sm font-semibold">{u.fullName}</span>
                           <span className="block truncate text-xs text-stone-500">{u.email}{u.city ? ` · ${u.city}` : ""}</span>
                         </span>
-                        <Badge variant="secondary" className={`shrink-0 ${rs.badge}`}>{u.role ?? "—"}</Badge>
+                        <Badge variant="secondary" className={`shrink-0 ${rs.badge}`}>{roleLabel(u.role)}</Badge>
                       </button>
                     );
                   })
@@ -307,7 +317,7 @@ export function UserJourneyPanel({ initialUserId }: { initialUserId?: number | n
         <>
           <button
             onClick={() => setJourney(null)}
-            className="mb-4 text-xs font-semibold text-[#b04a15] hover:underline"
+            className="mb-4 text-xs font-semibold text-[#1f66b3] hover:underline"
           >
             ← All users
           </button>
@@ -316,14 +326,14 @@ export function UserJourneyPanel({ initialUserId }: { initialUserId?: number | n
             <CardContent className="p-3.5 sm:p-5">
               <div className="flex flex-wrap items-start justify-between gap-3 sm:gap-4">
                 <div className="flex items-center gap-3 sm:gap-4">
-                  <span className="flex h-11 sm:h-14 w-11 sm:w-14 items-center justify-center rounded-xl sm:rounded-2xl bg-gradient-to-br from-[#b04a15] to-[#d97a3d] text-base sm:text-xl font-black text-white shadow">
+                  <span className="flex h-11 sm:h-14 w-11 sm:w-14 items-center justify-center rounded-xl sm:rounded-2xl bg-gradient-to-br from-[#1f66b3] to-[#d97a3d] text-base sm:text-xl font-black text-white shadow">
                     {journey.user.fullName?.charAt(0)?.toUpperCase() ?? "?"}
                   </span>
                   <div>
                     <h2 className="text-base sm:text-xl font-black text-stone-900 dark:text-stone-100">{journey.user.fullName}</h2>
                     <p className="text-sm text-stone-500">{journey.user.email}{journey.user.phone ? ` · ${journey.user.phone}` : ""}</p>
                     <div className="mt-1.5 flex flex-wrap items-center gap-1.5">
-                      <Badge variant="secondary">{journey.user.role ?? "USER"}</Badge>
+                      <Badge variant="secondary">{roleLabel(journey.user.role)}</Badge>
                       {journey.user.city && <Badge variant="outline">{journey.user.city}</Badge>}
                       {journey.user.suspended && (
                         <Badge variant="destructive" className="gap-1">
@@ -337,7 +347,7 @@ export function UserJourneyPanel({ initialUserId }: { initialUserId?: number | n
                 <div className="flex flex-wrap gap-2">
                   {Object.entries(journey.stats).filter(([k]) => k !== "totalEvents").map(([k, v]) => (
                     <div key={k} className="rounded-xl border border-stone-200/70 bg-stone-50 px-3 py-1.5 text-center dark:border-zinc-700/60 dark:bg-zinc-800/60">
-                      <p className="text-base font-black leading-none tabular-nums" style={{ color: k === "fraudFlags" && v > 0 ? "#dc2626" : "#b04a15" }}>{v}</p>
+                      <p className="text-base font-black leading-none tabular-nums" style={{ color: k === "fraudFlags" && v > 0 ? "#dc2626" : "#1f66b3" }}>{v}</p>
                       <p className="mt-0.5 text-3xs font-semibold uppercase tracking-wide text-stone-400">{k.replace(/([A-Z])/g, " $1")}</p>
                     </div>
                   ))}
@@ -411,7 +421,7 @@ export function UserJourneyPanel({ initialUserId }: { initialUserId?: number | n
 
           {/* Timeline */}
           <div className="relative pl-6">
-            <div className="journey-rail absolute left-[9px] top-1 bottom-1 w-[2px] rounded bg-gradient-to-b from-[#b04a15]/60 via-stone-300 to-stone-200 dark:via-zinc-700 dark:to-zinc-800" />
+            <div className="journey-rail absolute left-[9px] top-1 bottom-1 w-[2px] rounded bg-gradient-to-b from-[#1f66b3]/60 via-stone-300 to-stone-200 dark:via-zinc-700 dark:to-zinc-800" />
             {visibleEvents.map((e, i) => (
               <TimelineEvent
                 key={`${e.type}-${e.entityType}-${e.entityId}-${e.at}-${i}`}
@@ -432,7 +442,7 @@ export function UserJourneyPanel({ initialUserId }: { initialUserId?: number | n
               onClick={scrollToOldest}
               aria-label="Jump to the start of the journey"
               title="Jump to the start of the journey"
-              className="fixed bottom-6 right-6 z-30 flex h-11 w-11 items-center justify-center rounded-full bg-[#b04a15] text-white shadow-lg transition-transform hover:scale-105 hover:bg-[#963c0d]"
+              className="fixed bottom-6 right-6 z-30 flex h-11 w-11 items-center justify-center rounded-full bg-[#1f66b3] text-white shadow-lg transition-transform hover:scale-105 hover:bg-[#963c0d]"
             >
               <ArrowDown className="h-5 w-5" />
             </button>

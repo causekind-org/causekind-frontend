@@ -36,8 +36,8 @@ export default function AdminFundraisingReviewPage() {
     fundraisingCampaigns.admin.get(pageId).then((d) => setPage(d.campaign)).catch(() => setPage(null));
   }, [pageId]);
 
-  if (!FEATURES.fundraising) return <div className={a.root}><main className={a.wrap} style={{ paddingTop: 40 }}><p className={a.muted}>Fundraising is switched off.</p></main></div>;
-  if (!data) return <div className={a.root}><main className={a.wrap} style={{ paddingTop: 40 }}>{error ? <p role="alert" className={a.err}>{error}</p> : <div className={a.skel} style={{ width: "40%" }} />}</main></div>;
+  if (!FEATURES.fundraising) return <div className={a.root}><div className={a.wrap} style={{ paddingTop: 40 }}><p className={a.muted}>Fundraising is switched off.</p></div></div>;
+  if (!data) return <div className={a.root}><div className={a.wrap} style={{ paddingTop: 40 }}>{error ? <p role="alert" className={a.err}>{error}</p> : <div className={a.skel} style={{ width: "40%" }} />}</div></div>;
 
   const app = data.application;
   const decidable = DECIDABLE.includes(app.status);
@@ -65,7 +65,7 @@ export default function AdminFundraisingReviewPage() {
       {app.status === "WITHDRAWN" && <div role="status" style={{ padding: "10px 28px", background: "#fdf3e1", color: "#5c3800" }}>The applicant withdrew this application. You can&apos;t record a decision.</div>}
       {error && <div role="alert" style={{ padding: "10px 28px", background: "#fbeaea" }} className={a.err}>{error} <button type="button" className={`${a.btn} ${a.bs}`} onClick={() => { setError(null); load(); }}>Refresh</button></div>}
 
-      <main data-fr-grid="app3" style={{ padding: "20px 28px 48px", display: "grid", gridTemplateColumns: "340px minmax(0,1fr) 320px", gap: 18, alignItems: "start" }}>
+      <div data-fr-grid="app3" style={{ padding: "20px 28px 48px", display: "grid", gridTemplateColumns: "340px minmax(0,1fr) 320px", gap: 18, alignItems: "start" }}>
         <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
           <section className={`${a.card} ${a.pane}`} aria-labelledby="auto">
             <div style={{ display: "flex", justifyContent: "space-between" }}><h2 id="auto" className={a.h}>Automated findings</h2><span className={`${a.small} ${a.muted}`}>not conclusions</span></div>
@@ -172,7 +172,7 @@ export default function AdminFundraisingReviewPage() {
             <p className={`${a.small} ${a.muted}`}>Full timeline: status history and audit log.</p>
           </section>
         </div>
-      </main>
+      </div>
 
       {decision && <DecisionDialog data={data} initial={decision} onClose={() => setDecision(null)} onDone={(d) => { setData(d); setDecision(null); }} onStale={() => { setDecision(null); setError("This application changed since you opened it. Refresh before deciding."); }} />}
     </div>

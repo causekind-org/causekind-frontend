@@ -28,7 +28,7 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
   const post = blogPosts.find((p) => p.slug === slug);
 
   if (!post) {
-    return { title: "Post Not Found - CauseKind" };
+    return { title: "Post Not Found" };
   }
 
   // Relative canonical/openGraph URLs resolve against metadataBase in
@@ -37,24 +37,27 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
   // Relative image paths resolve against metadataBase too, so post.image can
   // be passed through as-is whether it is a local /foo.webp or a remote URL.
   const path = `/blog/${post.slug}`;
+  const title = post.seoTitle ?? post.title;
+  const description = post.seoDescription ?? post.description;
 
   return {
-    title: `${post.title} - CauseKind`,
-    description: post.description,
+    title,
+    description,
     alternates: { canonical: path },
     openGraph: {
       type: "article",
-      title: post.title,
-      description: post.description,
+      title,
+      description,
       url: path,
       images: [post.image],
-      publishedTime: post.publishedDate,
+      publishedTime: post.datePublished,
+      modifiedTime: post.dateModified ?? post.datePublished,
       authors: [post.author],
     },
     twitter: {
       card: "summary_large_image",
-      title: post.title,
-      description: post.description,
+      title,
+      description,
       images: [post.image],
     },
   };
@@ -98,25 +101,28 @@ export default async function BlogPostPage({ params }: PageProps) {
     "@type": "BlogPosting",
     "mainEntityOfPage": {
       "@type": "WebPage",
-      "@id": `https://www.causekind.com/blog/${post.slug}`
+      "@id": `https://www.causekind.com/blog/${post.slug}`,
+      "name": post.title
     },
     "headline": post.title,
     "description": post.description,
     "image": post.image.startsWith("http") ? post.image : `https://www.causekind.com${post.image}`,
     "author": {
-      "@type": "Person",
-      "name": post.author,
-      "image": post.authorImage
+      "@type": "Organization",
+      "name": "CauseKind",
+      "url": "https://www.causekind.com/about"
     },
     "publisher": {
       "@type": "Organization",
       "name": "CauseKind",
+      "url": "https://www.causekind.com",
       "logo": {
         "@type": "ImageObject",
-        "url": "https://www.causekind.com/logo.png"
+        "url": "https://www.causekind.com/logo-filled.webp"
       }
     },
-    "datePublished": post.publishedDate === "June 2026" ? "2026-06-01" : "2026-06-26",
+    "datePublished": post.datePublished,
+    "dateModified": post.dateModified ?? post.datePublished,
     "url": `https://www.causekind.com/blog/${post.slug}`
   };
 

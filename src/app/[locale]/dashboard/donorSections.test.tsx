@@ -460,12 +460,22 @@ describe("History: an NGO drive offer from handover to proof", () => {
     expect(within(entry).getByRole("link", { name: /Certificate/ })).toHaveAttribute("href", "/certificate?offerId=7&type=ngo_drive");
     expect(within(entry).getByTestId("history-proof-pending")).toHaveTextContent("Proof pending: the NGO will share photos after distribution.");
 
-    const kinds = screen.getByRole("group", { name: "Show donee or NGO drive donations" });
-    expect(within(kinds).getByRole("button", { name: /NGO drives/ })).toHaveTextContent("1");
-    expect(within(kinds).getByRole("button", { name: /Donee/ })).toHaveTextContent("0");
-    fireEvent.click(within(kinds).getByRole("button", { name: /Donee/ }));
+    // One chip row only: All · Donee · NGO drives · Completed · Closed / Cancelled.
+    expect(screen.queryByRole("group", { name: "Show donee or NGO drive donations" })).toBeNull();
+    const chips = screen.getByRole("group", { name: "Filter donation history" });
+    expect(within(chips).getAllByRole("button").map((b) => b.textContent?.replace(/\d+$/, "").trim()))
+      .toEqual(["All", "Donee", "NGO drives", "Completed", "Closed / Cancelled"]);
+    expect(within(chips).getByRole("button", { name: /NGO drives/ })).toHaveTextContent("1");
+    expect(within(chips).getByRole("button", { name: /Donee/ })).toHaveTextContent("0");
+    fireEvent.click(within(chips).getByRole("button", { name: /Donee/ }));
     expect(screen.queryByTestId("history-drive-offer-7")).toBeNull();
-    fireEvent.click(within(kinds).getByRole("button", { name: /NGO drives/ }));
+    fireEvent.click(within(chips).getByRole("button", { name: /NGO drives/ }));
+    expect(await screen.findByTestId("history-drive-offer-7")).toBeInTheDocument();
+    fireEvent.click(within(chips).getByRole("button", { name: /Closed \/ Cancelled/ }));
+    expect(screen.queryByTestId("history-drive-offer-7")).toBeNull();
+    fireEvent.click(within(chips).getByRole("button", { name: /Completed/ }));
+    expect(await screen.findByTestId("history-drive-offer-7")).toBeInTheDocument();
+    fireEvent.click(within(chips).getByRole("button", { name: /^All/ }));
     expect(await screen.findByTestId("history-drive-offer-7")).toBeInTheDocument();
   });
 
@@ -504,6 +514,19 @@ describe("History: an NGO drive offer from handover to proof", () => {
       await waitFor(() => expect(scroll).toHaveBeenCalled());
     } finally {
       nav.search = "";
+    }
+  });
+
+  it("the deep link wins over a section hash in the URL (#items): History opens", async () => {
+    nav.search = "tab=history&offer=7";
+    window.history.replaceState(null, "", "/dashboard?tab=history&offer=7#items");
+    mocks.driveOffers.mockResolvedValue([driveOffer(7, "COMPLETED", proof)]);
+    try {
+      render(<DashboardPage />);
+      expect(await screen.findByTestId("history-drive-offer-7")).toBeInTheDocument();
+    } finally {
+      nav.search = "";
+      window.history.replaceState(null, "", "/dashboard");
     }
   });
   });

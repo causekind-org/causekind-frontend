@@ -104,7 +104,7 @@ function Section({
             <Icon className="h-5 w-5" />
           </span>
           <div>
-            <span className="block text-2xs font-black uppercase tracking-widest text-stone-400 dark:text-stone-500">
+            <span className="block text-2xs font-black uppercase tracking-widest text-stone-500 dark:text-stone-400">
               Section {num}
             </span>
             <h2 className="text-xl font-extrabold tracking-tight text-stone-900 dark:text-white sm:text-2xl">
@@ -179,7 +179,6 @@ export default function PrivacyClient() {
           background-clip: text;
           -webkit-background-clip: text;
           color: transparent;
-          animation: pp-shimmer 4.5s linear infinite;
         }
         @media (prefers-reduced-motion: reduce) {
           .pp-float,.pp-blob,.pp-shimmer-text,.pp-ring { animation: none !important; }
@@ -213,7 +212,7 @@ export default function PrivacyClient() {
             </div>
           </div>
 
-          <p className="mb-3 text-xs font-black uppercase tracking-[0.2em] text-[#e07b3a]">
+          <p className="mb-3 text-xs font-black uppercase tracking-[0.2em] text-[#f0b97a]">
             Your trust, protected
           </p>
           <h1 className="pp-shimmer-text text-4xl font-extrabold tracking-tight sm:text-5xl">
@@ -238,7 +237,7 @@ export default function PrivacyClient() {
           {/* TOC (desktop) */}
           <aside className="hidden lg:block">
             <div className="sticky top-24">
-              <p className="mb-4 text-2xs font-black uppercase tracking-widest text-stone-400 dark:text-stone-500">
+              <p className="mb-4 text-2xs font-black uppercase tracking-widest text-stone-500 dark:text-stone-400">
                 On this page
               </p>
               <div className="relative">
@@ -274,7 +273,7 @@ export default function PrivacyClient() {
           </aside>
 
           {/* Content */}
-          <main className="min-w-0">
+          <div className="min-w-0">
             {/* Mobile "jump to" */}
             <details className="mb-8 rounded-2xl border border-stone-200 bg-white p-4 dark:border-zinc-800 dark:bg-zinc-900 lg:hidden">
               <summary className="cursor-pointer text-sm font-bold text-stone-800 dark:text-stone-100">
@@ -298,10 +297,10 @@ export default function PrivacyClient() {
               {/* 01 ── Introduction */}
               <Section id="introduction" num="01" title="Introduction" icon={FileText}>
                 <P>
-                  Privacy is a fundamental right, and at <Lead>CauseKind</Lead> ("CauseKind", "We", "Us", "Our"), it is
+                  Privacy is a fundamental right, and at <Lead>CauseKind</Lead> (&quot;CauseKind&quot;, &quot;We&quot;, &quot;Us&quot;, &quot;Our&quot;), it is
                   treated as such. This Privacy Policy describes how We collect, use, store, and share information about
-                  You ("You", "Your", "User") when You access or use our website{" "}
-                  <Lead>www.causekind.com</Lead> and related services (collectively, the "Platform").
+                  You (&quot;You&quot;, &quot;Your&quot;, &quot;User&quot;) when You access or use our website{" "}
+                  <Lead>www.causekind.com</Lead> and related services (collectively, the &quot;Platform&quot;).
                 </P>
                 <P>
                   This Privacy Policy is published in accordance with the{" "}
@@ -426,7 +425,7 @@ export default function PrivacyClient() {
                     <>
                       <Lead>With NGOs, Trusts, and Partner Organizations:</Lead> We may share information with registered
                       NGOs, Trusts, or charitable organizations listed on the Platform to the extent required for
-                      fulfilling the Campaign's objectives and for compliance with applicable law.
+                      fulfilling the Campaign&apos;s objectives and for compliance with applicable law.
                     </>,
                     <>
                       <Lead>With Service Providers:</Lead> We share data with third-party vendors who assist Us in
@@ -471,14 +470,14 @@ export default function PrivacyClient() {
               {/* 06 ── Cookies */}
               <Section id="cookies" num="06" title="Cookies & Local Storage" icon={Cookie}>
                 <P>
-                  We use a limited number of cookies and Your browser's local storage to operate the Platform and
+                  We use a limited number of cookies and Your browser&apos;s local storage to operate the Platform and
                   provide a smooth experience.
                 </P>
                 <SubHead>What we use them for</SubHead>
                 <Bullets
                   items={[
                     <>
-                      Keeping You signed in across sessions when You select <Lead>"Remember Me"</Lead> at login
+                      Keeping You signed in across sessions when You select <Lead>&quot;Remember Me&quot;</Lead> at login
                     </>,
                     "Remembering Your preferences and settings",
                     "Ensuring the security and proper functioning of the Platform",
@@ -509,7 +508,7 @@ export default function PrivacyClient() {
                   ]}
                 />
                 <P>
-                  You may opt out of non-essential communications at any time by clicking "Unsubscribe" in any email, or
+                  You may opt out of non-essential communications at any time by clicking &quot;Unsubscribe&quot; in any email, or
                   by contacting Us at{" "}
                   <a href={`mailto:${SUPPORT_EMAIL}`} className="font-semibold text-[#b04a15] underline-offset-2 hover:underline dark:text-orange-400">
                     {SUPPORT_EMAIL}
@@ -700,7 +699,7 @@ export default function PrivacyClient() {
                 </p>
               </div>
             </Reveal>
-          </main>
+          </div>
         </div>
       </div>
     </div>

@@ -18,7 +18,7 @@ vi.mock("next/navigation", () => ({
   useRouter: () => ({ push: vi.fn(), replace: vi.fn() }),
   useSearchParams: () => mockSearchParams,
 }));
-vi.mock("@react-oauth/google", () => ({ useGoogleLogin: () => vi.fn() }));
+vi.mock("@/lib/lazyGoogleLogin", () => ({ useGoogleLogin: () => vi.fn() }));
 vi.mock("next-intl", () => ({ useTranslations: () => (key: string) => key }));
 vi.mock("@/hooks/useAuth", () => ({ useAuth: () => ({ user: null, isLoading: false, setUser: vi.fn() }) }));
 vi.mock("@/lib/api", () => ({

@@ -3,7 +3,8 @@
 import React from "react";
 import { CareNestLogo } from "@/components/Navbar";
 import Link from "@/components/AppLink";
-import { usePathname } from "next/navigation";
+// Visitor path without the internal /en segment, so server and client agree (React #418).
+import { useSitePathname as usePathname } from "@/lib/useSitePathname";
 import { useAuth } from "@/hooks/useAuth";
 import { FEATURES } from "@/lib/features";
 import { MapPin, Phone, Mail } from "lucide-react";
@@ -88,6 +89,7 @@ export function getSupportLinks(role?: string | null): SupportLinkItem[] {
       ...(FEATURES?.sahas ? [{ href: "/sahas", label: "Sahas Campaigns" }] : []),
       { href: "/faq", label: "Help & FAQ" },
       { href: "/blog", label: "Read our Blog" },
+      { href: "/ngo", label: "For NGOs" },
     ];
   }
 
@@ -114,6 +116,7 @@ export function getSupportLinks(role?: string | null): SupportLinkItem[] {
     ...(FEATURES?.sahas ? [{ href: "/sahas", label: "Sahas Campaigns" }] : []),
     { href: "/faq", label: "Help & FAQ" },
     { href: "/blog", label: "Read our Blog" },
+    { href: "/ngo", label: "For NGOs" },
   ];
 }
 
@@ -138,12 +141,6 @@ function SocialIcon({ id }: { id: SocialLink["id"] }) {
       return (
         <svg className="w-4.5 h-4.5 fill-current" viewBox="0 0 24 24" aria-hidden="true">
           <path d="M23.498 6.186a3.016 3.016 0 0 0-2.122-2.136C19.505 3.545 12 3.545 12 3.545s-7.505 0-9.377.505A3.017 3.017 0 0 0 .502 6.186C0 8.07 0 12 0 12s0 3.93.502 5.814a3.016 3.016 0 0 0 2.122 2.136c1.871.505 9.376.505 9.376.505s7.505 0 9.377-.505a3.015 3.015 0 0 0 2.122-2.136C24 15.93 24 12 24 12s0-3.93-.502-5.814zM9.545 15.568V8.432L15.818 12l-6.273 3.568z" />
-        </svg>
-      );
-    case "whatsapp":
-      return (
-        <svg className="w-4.5 h-4.5 fill-current" viewBox="0 0 24 24" aria-hidden="true">
-          <path d="M12.04 2c-5.46 0-9.91 4.45-9.91 9.91 0 1.75.46 3.45 1.32 4.95L2.05 22l5.25-1.38c1.45.79 3.08 1.21 4.74 1.21 5.46 0 9.91-4.45 9.91-9.91 0-2.65-1.03-5.14-2.9-7.01A9.816 9.816 0 0 0 12.04 2zm.01 1.67c2.2 0 4.26.86 5.82 2.42a8.225 8.225 0 0 1 2.41 5.83c0 4.54-3.7 8.24-8.24 8.24-1.48 0-2.93-.4-4.2-1.15l-.3-.18-3.12.82.83-3.04-.2-.31a8.196 8.196 0 0 1-1.26-4.38c0-4.54 3.7-8.24 8.24-8.24zm-3.53 4.44c-.2-.01-.43 0-.62.03-.25.04-.54.15-.75.4-.3.35-.97 1.01-.97 2.42s1.02 2.76 1.16 2.95c.14.2 1.95 3.12 4.84 4.25 2.4.94 2.89.75 3.41.7 1.04-.1 1.74-.75 1.98-1.48.24-.73.24-1.36.17-1.49-.07-.13-.26-.2-.55-.35-.29-.15-1.73-.85-2-.95-.27-.1-.47-.15-.67.15-.2.3-.77.95-.94 1.15-.17.2-.34.22-.63.07-.29-.15-1.22-.45-2.33-1.44-.86-.77-1.44-1.72-1.61-2.01-.17-.29-.02-.45.13-.6.13-.13.29-.34.43-.51.15-.17.2-.29.3-.48.1-.2.05-.37-.02-.52-.08-.15-.65-1.61-.92-2.22-.26-.61-.53-.52-.73-.53z" />
         </svg>
       );
     case "facebook":
@@ -265,7 +262,7 @@ export function Footer({ role }: FooterProps) {
                   {link.href && !link.disabled ? (
                     <Link
                       href={link.href}
-                      className="hover:text-[#E58A4B] hover:underline underline-offset-4 transition-colors duration-200"
+                      className="inline-block py-1 -my-1 hover:text-[#E58A4B] hover:underline underline-offset-4 transition-colors duration-200"
                     >
                       {label(link.label)}
                     </Link>
@@ -320,7 +317,7 @@ export function Footer({ role }: FooterProps) {
                 </div>
                 <span className="leading-relaxed max-w-xs mx-auto md:max-w-none md:mx-0">
                   {/* A postal address: shown as written, never translated. */}
-                  3rd Floor, Apoorva Bldg, Flat no. 19, Vartak School Road, Veer Savarkar Nagar, Anand Nagar, Vasai West, Vasai-Virar, Maharashtra 401202
+                  3rd Floor, Apoorva CHS, 19, Vartak School Road, Veer Savarkar Nagar, Anand Nagar, Vasai West, Vasai-Virar, Maharashtra 401202
                 </span>
               </div>
 
@@ -377,7 +374,7 @@ export function Footer({ role }: FooterProps) {
                 )}
                 <Link
                   href={item.href}
-                  className="font-medium text-[#D9CCBB] hover:text-[#E58A4B] hover:underline underline-offset-4 transition-colors"
+                  className="inline-block py-2.5 -my-2.5 font-medium text-[#D9CCBB] hover:text-[#E58A4B] hover:underline underline-offset-4 transition-colors"
                 >
                   {label(item.label)}
                 </Link>

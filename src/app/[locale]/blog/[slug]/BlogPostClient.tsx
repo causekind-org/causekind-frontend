@@ -8,18 +8,58 @@ import React, { useState, useEffect, useMemo, useRef } from "react";
 // rendered document carries clean HTML and there is never an unsanitized
 // frame. Next splits by route, so the cost lands on the blog page alone.
 import DOMPurify from "isomorphic-dompurify";
+import Image from "next/image";
 import Link from "@/components/AppLink";
-import { motion, AnimatePresence } from "framer-motion";
+// Entrance motion is CSS (blogPostMotion.css): framer-motion kept the article
+// at opacity 0 until hydration and added the library to every post.
+import "./blogPostMotion.css";
 import { useLocale, useTranslations } from "next-intl";
 import { fetchBlogTranslation, getBlogTranslation, preloadBlogTranslations, type BlogTranslation } from "@/data/blogTranslations";
-import { searchBlogPosts } from "@/lib/blogSearch";
-import { AnimatedWrapper } from "../../components/AnimatedWrapper";
-import { StaggerContainer, itemVariants } from "../../components/StaggerContainer";
-import { Search, X } from "lucide-react";
 import { LanguageSwitcher } from "@/components/LanguageSwitcher";
+import { searchBlogPosts } from "@/lib/blogSearch";
+import { withHeadingIds } from "@/lib/blogToc";
+import { Search, X } from "lucide-react";
 import { blogPosts } from "../../../../data/blogData";
 
 
+
+/**
+ * The eight Material Symbols (Outlined, weight 400, fill 0, grade 0, optical
+ * size 24) this page uses, as their official outline paths. They replace the
+ * Material Symbols icon font, which cost a third-party stylesheet on every
+ * route and put the ligature names ("expand_more") in the HTML as text.
+ */
+const MATERIAL_ICON_PATHS = {
+  check: "M382-240 154-468l57-57 171 171 367-367 57 57-424 424Z",
+  expand_more: "M480-345 240-585l56-56 184 184 184-184 56 56-240 240Z",
+  format_bold: "M272-200v-560h221q65 0 120 40t55 111q0 51-23 78.5T602-491q25 11 55.5 41t30.5 90q0 89-65 124.5T501-200H272Zm121-112h104q48 0 58.5-24.5T566-372q0-11-10.5-35.5T494-432H393v120Zm0-228h93q33 0 48-17t15-38q0-24-17-39t-44-15h-95v109Z",
+  link: "M440-280H280q-83 0-141.5-58.5T80-480q0-83 58.5-141.5T280-680h160v80H280q-50 0-85 35t-35 85q0 50 35 85t85 35h160v80ZM320-440v-80h320v80H320Zm200 160v-80h160q50 0 85-35t35-85q0-50-35-85t-85-35H520v-80h160q83 0 141.5 58.5T880-480q0 83-58.5 141.5T680-280H520Z",
+  mail: "M160-160q-33 0-56.5-23.5T80-240v-480q0-33 23.5-56.5T160-800h640q33 0 56.5 23.5T880-720v480q0 33-23.5 56.5T800-160H160Zm320-280L160-640v400h640v-400L480-440Zm0-80 320-200H160l320 200ZM160-640v-80 480-400Z",
+  pause: "M520-200v-560h240v560H520Zm-320 0v-560h240v560H200Zm400-80h80v-400h-80v400Zm-320 0h80v-400h-80v400Zm0-400v400-400Zm320 0v400-400Z",
+  play_arrow: "M320-200v-560l440 280-440 280Zm80-280Zm0 134 210-134-210-134v268Z",
+  replay: "M339.5-108.5q-65.5-28.5-114-77t-77-114Q120-365 120-440h80q0 117 81.5 198.5T480-160q117 0 198.5-81.5T760-440q0-117-81.5-198.5T480-720h-6l62 62-56 58-160-160 160-160 56 58-62 62h6q75 0 140.5 28.5t114 77q48.5 48.5 77 114T840-440q0 75-28.5 140.5t-77 114q-48.5 48.5-114 77T480-80q-75 0-140.5-28.5Z",
+} as const;
+
+/**
+ * Always a 24px box. The icon font's own rule set `font-size: var(--text-2xl)`
+ * unlayered, which beat the Tailwind `text-lg` / `text-sm` utilities on every
+ * icon, so 24px is what each of them actually rendered at.
+ */
+function MaterialIcon({ name, className = "" }: { name: keyof typeof MATERIAL_ICON_PATHS; className?: string }) {
+  return (
+    <svg
+      aria-hidden="true"
+      focusable="false"
+      width="24"
+      height="24"
+      viewBox="0 -960 960 960"
+      fill="currentColor"
+      className={`ck-msym inline-block align-middle shrink-0 ${className}`}
+    >
+      <path d={MATERIAL_ICON_PATHS[name]} />
+    </svg>
+  );
+}
 
 // The route's `params` promise is unwrapped by the server component in
 // page.tsx, which needs the slug anyway to build the post's metadata. This
@@ -36,102 +76,9 @@ interface BlogPostClientProps {
   content: string;
 }
 
-const FONT_OPTIONS = [
-  { value: "font-serif-mode", label: "Source Serif", family: "var(--font-source-serif-4), serif" },
-  { value: "font-sans-mode",  label: "Plus Jakarta", family: "var(--font-plus-jakarta-sans), sans-serif" },
-  { value: "font-inter-mode", label: "Inter Sans",   family: "var(--font-inter), sans-serif" },
-  { value: "font-lora-mode",  label: "Lora Serif",   family: "var(--font-lora), serif" },
-  { value: "font-mono-mode",  label: "Roboto Mono",  family: "var(--font-roboto-mono), monospace" },
-];
-
-function FontDropdown({ value, onChange }: { value: string; onChange: (v: string) => void }) {
-  const [open, setOpen] = useState(false);
-  const containerRef = useRef<HTMLDivElement>(null);
-  const selected = FONT_OPTIONS.find((o) => o.value === value) ?? FONT_OPTIONS[0];
-
-  useEffect(() => {
-    if (!open) return;
-    function onClickOutside(e: MouseEvent) {
-      if (containerRef.current && !containerRef.current.contains(e.target as Node)) setOpen(false);
-    }
-    function onEscape(e: globalThis.KeyboardEvent) {
-      if (e.key === "Escape") setOpen(false);
-    }
-    document.addEventListener("mousedown", onClickOutside);
-    document.addEventListener("keydown", onEscape);
-    return () => {
-      document.removeEventListener("mousedown", onClickOutside);
-      document.removeEventListener("keydown", onEscape);
-    };
-  }, [open]);
-
-  return (
-    <div ref={containerRef} className="relative">
-      <button
-        type="button"
-        onClick={() => setOpen((o) => !o)}
-        aria-expanded={open}
-        aria-haspopup="listbox"
-        className="w-full flex items-center justify-between gap-1 pl-2.5 pr-1.5 py-2 bg-white dark:bg-stone-800 border border-[#b04a15]/20 dark:border-[#e07b3a]/20 rounded-xl font-body-md text-xs text-[#1c1917] dark:text-[#e7e5e4] focus:outline-none focus-visible:ring-2 focus-visible:ring-[#b04a15]/40 dark:focus-visible:ring-[#e07b3a]/40 hover:border-[#b04a15]/50 dark:hover:border-[#e07b3a]/50 transition-colors cursor-pointer shadow-sm"
-      >
-        <span className="truncate" style={{ fontFamily: selected.family }}>{selected.label}</span>
-        <motion.span
-          animate={{ rotate: open ? 180 : 0 }}
-          transition={{ duration: 0.25, ease: [0.25, 0.46, 0.45, 0.94] }}
-          className="material-symbols-outlined text-[#b04a15] dark:text-[#e07b3a] text-lg leading-none shrink-0"
-        >
-          expand_more
-        </motion.span>
-      </button>
-
-      <AnimatePresence>
-        {open && (
-          <motion.ul
-            role="listbox"
-            initial={{ opacity: 0, y: -8, scale: 0.96 }}
-            animate={{ opacity: 1, y: 0, scale: 1 }}
-            exit={{ opacity: 0, y: -8, scale: 0.96 }}
-            transition={{ duration: 0.2, ease: [0.25, 0.46, 0.45, 0.94] }}
-            className="absolute z-50 mt-2 w-full origin-top rounded-xl border border-[#b04a15]/20 dark:border-[#e07b3a]/20 bg-white dark:bg-stone-800 shadow-lg overflow-hidden py-1"
-          >
-            {FONT_OPTIONS.map((opt, i) => (
-              <motion.li
-                key={opt.value}
-                role="option"
-                aria-selected={opt.value === value}
-                initial={{ opacity: 0, x: -8 }}
-                animate={{ opacity: 1, x: 0 }}
-                transition={{ duration: 0.18, delay: 0.03 * i }}
-              >
-                <button
-                  type="button"
-                  onClick={() => { onChange(opt.value); setOpen(false); }}
-                  className={`w-full flex items-center justify-between gap-1 px-2.5 py-2 text-xs text-left cursor-pointer transition-colors ${
-                    opt.value === value
-                      ? "bg-orange-50 dark:bg-stone-700/60 text-[#b04a15] dark:text-[#e07b3a] font-semibold"
-                      : "text-stone-700 dark:text-stone-200 hover:bg-orange-50 dark:hover:bg-stone-700/60 hover:text-[#b04a15] dark:hover:text-[#e07b3a]"
-                  }`}
-                  style={{ fontFamily: opt.family }}
-                >
-                  <span className="truncate">{opt.label}</span>
-                  {opt.value === value && (
-                    <span className="material-symbols-outlined text-sm leading-none shrink-0">check</span>
-                  )}
-                </button>
-              </motion.li>
-            ))}
-          </motion.ul>
-        )}
-      </AnimatePresence>
-    </div>
-  );
-}
-
 export default function BlogPostClient({ slug, content }: BlogPostClientProps) {
   const post = blogPosts.find((p) => p.slug === slug);
 
-  const [boldMode, setBoldMode] = useState(false);
-  const [fontMode, setFontMode] = useState("font-serif-mode");
   const [copied, setCopied] = useState(false);
 
   // Google-backed translations reuse the server cache. Only this article's
@@ -176,6 +123,30 @@ export default function BlogPostClient({ slug, content }: BlogPostClientProps) {
     () => (rawContentForLocale ? DOMPurify.sanitize(rawContentForLocale) : ""),
     [rawContentForLocale]
   );
+
+  // Heading ids (from the English source, so links match in every language)
+  // and the desktop "In this article" list. Computed during render, so both
+  // are in the server HTML. Ids only: heading levels and text are unchanged.
+  const { html: articleHtml, toc } = useMemo(
+    () => withHeadingIds(sanitizedContent, content || ""),
+    [sanitizedContent, content]
+  );
+  // The card lists main headings (H2) only; ids stay on every heading.
+  const tocMain = useMemo(() => toc.filter((item) => item.level === 2), [toc]);
+  const showToc = tocMain.length >= 2;
+  // Both desktop side columns are always sticky. The TOC card does not track
+  // scrolling at all: it stays still; if it is taller than the space under
+  // the header the reader can scroll it (hidden scrollbar).
+
+  // Scrolls to the heading only. The page URL never changes (no #hash, no
+  // history update): the items are buttons, not links.
+  const handleTocClick = (event: React.MouseEvent<HTMLButtonElement>, id: string) => {
+    event.preventDefault();
+    const target = document.getElementById(id);
+    if (!target) return;
+    const reduce = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+    target.scrollIntoView({ behavior: reduce ? "auto" : "smooth", block: "start" });
+  };
 
   // Voice narration — English and Hindi stories only, using a Web Speech API
   // voice (a Google Hindi female voice, per design) rather than a
@@ -362,88 +333,14 @@ export default function BlogPostClient({ slug, content }: BlogPostClientProps) {
   const otherPosts = blogPosts.filter((p) => p.slug !== slug);
   const sameCategoryPosts = otherPosts.filter((p) => p.category === post.category);
   const otherCategoryPosts = otherPosts.filter((p) => p.category !== post.category);
-  const recommendedPosts = [...sameCategoryPosts, ...otherCategoryPosts].slice(0, 2);
-
-  // Schema.org BlogPosting markup so Google's Rich Results can pick up this
-  // post — otherwise the page renders fine but carries zero structured data.
-  const postSchemaData = {
-    "@context": "https://schema.org",
-    "@graph": [
-      {
-        "@type": "BlogPosting",
-        "mainEntityOfPage": {
-          "@type": "WebPage",
-          "@id": `https://www.causekind.com/blog/${post.slug}`,
-        },
-        "headline": post.title,
-        "description": post.description,
-        "image": post.image.startsWith("http") ? post.image : `https://www.causekind.com${post.image}`,
-        "author": {
-          "@type": "Person",
-          "name": post.author,
-          "image": post.authorImage,
-          "url": "https://www.causekind.com/about",
-        },
-        "publisher": {
-          "@type": "Organization",
-          "name": "CauseKind",
-          "logo": {
-            "@type": "ImageObject",
-            "url": "https://www.causekind.com/logo-filled.webp",
-          },
-        },
-        // publishedDate is stored as "Month YYYY" (e.g. "June 2026") — Date parses that
-        // to the 1st of the month. Outputting the full ISO string ensures a valid timezone.
-        "datePublished": !isNaN(new Date(post.publishedDate).getTime())
-          ? new Date(post.publishedDate).toISOString()
-          : undefined,
-        "url": `https://www.causekind.com/blog/${post.slug}`,
-      },
-      {
-        "@type": "BreadcrumbList",
-        "itemListElement": [
-          {
-            "@type": "ListItem",
-            "position": 1,
-            "name": "Home",
-            "item": "https://www.causekind.com"
-          },
-          {
-            "@type": "ListItem",
-            "position": 2,
-            "name": "Blog",
-            "item": "https://www.causekind.com/blog"
-          },
-          {
-            "@type": "ListItem",
-            "position": 3,
-            "name": post.title,
-            "item": `https://www.causekind.com/blog/${post.slug}`
-          }
-        ]
-      },
-      {
-        "@type": "Organization",
-        "name": "CauseKind",
-        "url": "https://www.causekind.com",
-        "logo": "https://www.causekind.com/logo-filled.webp",
-        "image": "https://www.causekind.com/logo-filled.webp",
-        "description": "A transparent and verified in-kind giving platform connecting donors directly with community needs."
-      }
-    ]
-  };
-
+  const recommendedPosts = [...sameCategoryPosts, ...otherCategoryPosts].slice(0, 3);
   return (
-    <div id="page-body" className={`${fontMode} ${boldMode ? "bold-mode-active" : ""} min-h-screen bg-[#faf8f5] dark:bg-[#0c0a09] transition-colors duration-300 pt-4 md:pt-16 lg:pt-24`}>
-      <script
-        type="application/ld+json"
-        dangerouslySetInnerHTML={{ __html: JSON.stringify(postSchemaData) }}
-      />
+    <div id="page-body" className="font-serif-mode min-h-screen bg-[#faf8f5] dark:bg-[#0c0a09] transition-colors duration-300 pt-2 md:pt-6 lg:pt-8">
       {/* Main Content Area */}
-      <main className="pb-24">
+      <div className="pb-24">
         <article lang={translation ? `${locale}-x-mtfrom-en` : "en"}>
           {/* Back button */}
-          <div className="max-w-[1280px] mx-auto px-5 sm:px-6 lg:px-8 mb-4 md:mb-6">
+          <div className="max-w-[1280px] lg:max-w-[1680px] mx-auto px-5 sm:px-6 lg:px-10 mb-4 md:mb-6">
             <Link
               href="/blog"
               className="inline-flex items-center gap-1.5 text-sm font-bold text-stone-600 dark:text-stone-400 hover:text-[#b04a15] dark:hover:text-orange-400 transition-colors group"
@@ -452,14 +349,25 @@ export default function BlogPostClient({ slug, content }: BlogPostClientProps) {
             </Link>
           </div>
           {/* Hero Section — contained card */}
-          <div className="max-w-[1280px] mx-auto px-5 sm:px-6 lg:px-8 pt-6 pb-6 md:pt-10 md:pb-10">
+          <div className="max-w-[1280px] lg:max-w-[1680px] mx-auto px-5 sm:px-6 lg:px-10 pt-6 pb-6 md:pt-10 md:pb-10 lg:pb-0">
             {/* Image card */}
-            <AnimatedWrapper delay={0} duration={0.6} direction="up">
+            <div>
               <div className="relative w-full aspect-[16/10] md:aspect-auto md:h-[420px] rounded-2xl overflow-hidden shadow-xl mb-6 md:mb-10">
-                <div
-                  className="absolute inset-0 bg-cover bg-center w-full h-full scale-100 md:scale-105 transform origin-center"
-                  style={{ backgroundImage: `url('${post.image}')` }}
-                />
+                {/* Same box, scale and crop as the former CSS background
+                    (bg-cover bg-center = object-cover object-center), now a
+                    real <img> in the server HTML: preloaded as the LCP image,
+                    resized per device, and described for search and screen readers. */}
+                <div className="absolute inset-0 w-full h-full scale-100 md:scale-105 transform origin-center">
+                  <Image
+                    src={post.image}
+                    alt={post.heroAlt ?? post.title}
+                    fill
+                    priority
+                    fetchPriority="high"
+                    sizes="(min-width: 1680px) 1600px, 100vw"
+                    className="object-cover object-center"
+                  />
+                </div>
                 <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-black/10 to-transparent" />
                 {/* Category badge overlaid bottom-left — links back to the
                     listing page pre-filtered to this category */}
@@ -472,20 +380,52 @@ export default function BlogPostClient({ slug, content }: BlogPostClientProps) {
                   </Link>
                 </div>
               </div>
-            </AnimatedWrapper>
+            </div>
 
-            {/* Article meta below the image */}
-            <div className="max-w-3xl">
-              <AnimatedWrapper delay={0.15} duration={0.6} direction="up">
+            {/* Article meta below the image: same left/right edges as the hero image */}
+            <div>
+              <div>
                 <h1 className="font-display-lg text-[#b04a15] dark:text-[#e07b3a] mb-4 leading-tight text-2xl sm:text-4xl md:text-5xl font-bold break-words">
                   {displayTitle}
                 </h1>
-              </AnimatedWrapper>
-              <AnimatedWrapper delay={0.25} duration={0.55} direction="up">
+              </div>
+              <div>
                 <p className="font-body-lg text-stone-600 dark:text-stone-400 text-lg mb-6 leading-relaxed">
                   {displayDescription}
                 </p>
-              </AnimatedWrapper>
+              </div>
+
+              {/* Voice Narration (English and Hindi only): desktop-only, as before, now under the subtitle */}
+              {canNarrate && narrationSupported && (
+                <div className="hidden md:block space-y-3 mb-6">
+                  <span className="font-label-sm text-sm text-[#1c1917] dark:text-[#e7e5e4] block font-medium">
+                    Listen to Story
+                  </span>
+                  <div className="flex items-center gap-2">
+                    <button
+                      type="button"
+                      onClick={narrationState === "playing" ? handleNarrationPause : handleNarrationPlay}
+                      aria-label={narrationState === "playing" ? "Pause narration" : "Play narration"}
+                      title={narrationState === "playing" ? "Pause" : "Play"}
+                      className="w-10 h-10 rounded-full bg-[#b04a15] dark:bg-[#e07b3a] text-white flex items-center justify-center hover:opacity-90 shadow-sm transition-opacity cursor-pointer"
+                    >
+                      <MaterialIcon name={narrationState === "playing" ? "pause" : "play_arrow"} />
+                    </button>
+                    <button
+                      type="button"
+                      onClick={handleNarrationRestart}
+                      aria-label="Restart narration"
+                      title="Restart"
+                      className="w-10 h-10 rounded-full border border-stone-300 dark:border-stone-600 bg-white dark:bg-stone-800 flex items-center justify-center text-stone-600 dark:text-stone-300 hover:text-[#b04a15] dark:hover:text-[#e07b3a] hover:border-[#b04a15]/60 dark:hover:border-[#e07b3a]/60 transition-colors cursor-pointer"
+                    >
+                      <MaterialIcon name="replay" />
+                    </button>
+                    <span className="font-label-sm text-2xs text-[#78716c] dark:text-[#a8a29e]">
+                      {narrationState === "playing" ? "Playing…" : narrationState === "paused" ? "Paused" : "Read aloud"}
+                    </span>
+                  </div>
+                </div>
+              )}
 
               {/* Reading controls are otherwise `hidden md:block` in the left
                   sidebar, so a phone reader had no way to switch language on a
@@ -497,78 +437,10 @@ export default function BlogPostClient({ slug, content }: BlogPostClientProps) {
           </div>
 
           {/* Content Grid Layout */}
-          <div className="max-w-[1280px] mx-auto px-5 sm:px-6 lg:px-8 grid grid-cols-1 md:grid-cols-12 gap-12 relative">
-            {/* Left Sidebar: Reading Tools & Social */}
-            <motion.aside
-              className="hidden md:block md:col-span-3 lg:col-span-2 relative"
-              initial={{ opacity: 0, x: -24 }}
-              animate={{ opacity: 1, x: 0 }}
-              transition={{ duration: 0.55, delay: 0.3, ease: [0.25, 0.46, 0.45, 0.94] }}
-            >
+          <div className="max-w-[1280px] lg:max-w-[1680px] mx-auto px-5 sm:px-6 lg:px-10 grid grid-cols-1 md:grid-cols-12 gap-12 lg:grid-cols-[11rem_minmax(0,1fr)_13rem] lg:gap-8 xl:grid-cols-[12rem_minmax(0,1fr)_16rem] xl:gap-10 relative">
+            {/* Left Sidebar: Share Story */}
+            <aside className="ck-blog-aside-left hidden md:block lg:hidden md:col-span-3 relative">
               <div className="sticky top-[120px] flex flex-col gap-8">
-                {/* Reading Tools Panel */}
-                <div className="relative z-30 bg-[#faf8f5] dark:bg-[#1c1917] backdrop-blur-md p-3 rounded-2xl border border-[#b04a15]/20 dark:border-[#e07b3a]/20 shadow-sm text-[#1c1917] dark:text-[#e7e5e4]">
-                  <h3 className="font-label-md text-xs uppercase tracking-widest mb-6 border-b border-[#b04a15]/20 dark:border-[#e07b3a]/20 pb-3 text-[#b04a15] dark:text-[#e07b3a] font-bold">
-                    {t("readingTools")}
-                  </h3>
-                  {/* Bold Mode Toggle */}
-                  <div className="flex items-center justify-between mb-8">
-                    <span className="font-label-sm text-xs text-[#1c1917] dark:text-[#e7e5e4] flex items-center gap-1.5 font-medium whitespace-nowrap">
-                      <span className="material-symbols-outlined text-lg leading-none text-[#b04a15] dark:text-[#e07b3a]">format_bold</span>
-                      {t("boldText")}
-                    </span>
-                    <label className="relative inline-flex items-center cursor-pointer">
-                      <input
-                        className="sr-only peer"
-                        id="bold-toggle"
-                        type="checkbox"
-                        checked={boldMode}
-                        onChange={(e) => setBoldMode(e.target.checked)}
-                      />
-                      <div className="relative w-9 h-5 bg-stone-200 dark:bg-stone-700 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-[#b04a15] dark:peer-checked:bg-[#e07b3a] shadow-inner" />
-                    </label>
-                  </div>
-                  {/* Font Selector */}
-                  <div className="space-y-3">
-                    <span className="font-label-sm text-sm text-[#1c1917] dark:text-[#e7e5e4] block font-medium">
-                      {t("fontOptions")}
-                    </span>
-                    <FontDropdown value={fontMode} onChange={setFontMode} />
-                  </div>
-                  {/* Voice Narration — English and Hindi only, for now */}
-                  {canNarrate && narrationSupported && (
-                    <div className="space-y-3 mt-8 pt-6 border-t border-[#b04a15]/20 dark:border-[#e07b3a]/20">
-                      <span className="font-label-sm text-sm text-[#1c1917] dark:text-[#e7e5e4] block font-medium">
-                        Listen to Story
-                      </span>
-                      <div className="flex items-center gap-2">
-                        <button
-                          type="button"
-                          onClick={narrationState === "playing" ? handleNarrationPause : handleNarrationPlay}
-                          aria-label={narrationState === "playing" ? "Pause narration" : "Play narration"}
-                          title={narrationState === "playing" ? "Pause" : "Play"}
-                          className="w-10 h-10 rounded-full bg-[#b04a15] dark:bg-[#e07b3a] text-white flex items-center justify-center hover:opacity-90 shadow-sm transition-opacity cursor-pointer"
-                        >
-                          <span className="material-symbols-outlined text-xl leading-none">
-                            {narrationState === "playing" ? "pause" : "play_arrow"}
-                          </span>
-                        </button>
-                        <button
-                          type="button"
-                          onClick={handleNarrationRestart}
-                          aria-label="Restart narration"
-                          title="Restart"
-                          className="w-10 h-10 rounded-full border border-stone-300 dark:border-stone-600 bg-white dark:bg-stone-800 flex items-center justify-center text-stone-600 dark:text-stone-300 hover:text-[#b04a15] dark:hover:text-[#e07b3a] hover:border-[#b04a15]/60 dark:hover:border-[#e07b3a]/60 transition-colors cursor-pointer"
-                        >
-                          <span className="material-symbols-outlined text-lg leading-none">replay</span>
-                        </button>
-                        <span className="font-label-sm text-2xs text-[#78716c] dark:text-[#a8a29e]">
-                          {narrationState === "playing" ? "Playing…" : narrationState === "paused" ? "Paused" : "Read aloud"}
-                        </span>
-                      </div>
-                    </div>
-                  )}
-                </div>
                 {/* Social Share */}
                 <div className="flex flex-col gap-3 relative">
                   <span className="font-label-sm text-3xs text-[#78716c] dark:text-[#a8a29e] uppercase tracking-wider mb-1 font-bold">
@@ -581,7 +453,7 @@ export default function BlogPostClient({ slug, content }: BlogPostClientProps) {
                       title="Share via Email"
                       className="w-11 h-11 rounded-full border border-stone-300 dark:border-stone-600 bg-white dark:bg-stone-800 flex items-center justify-center text-stone-600 dark:text-stone-300 hover:text-[#b04a15] dark:hover:text-[#e07b3a] hover:border-[#b04a15]/60 dark:hover:border-[#e07b3a]/60 hover:shadow-md transition-all duration-300 cursor-pointer"
                     >
-                      <span className="material-symbols-outlined text-xl leading-none">mail</span>
+                      <MaterialIcon name="mail" />
                     </button>
                     <button
                       onClick={handleCopyLink}
@@ -589,7 +461,7 @@ export default function BlogPostClient({ slug, content }: BlogPostClientProps) {
                       title="Copy Link"
                       className="w-11 h-11 rounded-full border border-stone-300 dark:border-stone-600 bg-white dark:bg-stone-800 flex items-center justify-center text-stone-600 dark:text-stone-300 hover:text-[#b04a15] dark:hover:text-[#e07b3a] hover:border-[#b04a15]/60 dark:hover:border-[#e07b3a]/60 hover:shadow-md transition-all duration-300 cursor-pointer"
                     >
-                      <span className="material-symbols-outlined text-xl leading-none">link</span>
+                      <MaterialIcon name="link" />
                     </button>
                     {copied && (
                       <span className="text-xs text-[#b04a15] dark:text-[#e07b3a] font-semibold animate-pulse absolute left-28 bg-white dark:bg-stone-800 border border-stone-300 dark:border-stone-600 px-2.5 py-1.5 rounded-lg shadow-sm">Copied!</span>
@@ -597,33 +469,117 @@ export default function BlogPostClient({ slug, content }: BlogPostClientProps) {
                   </div>
                 </div>
               </div>
-            </motion.aside>
+            </aside>
+
+            {/* Left column, desktop only (lg+): "In this article". The column
+                stays (empty) when a post has fewer than 2 headings. */}
+            <aside className="hidden lg:block lg:col-span-1 min-w-0">
+              {showToc && (
+                <nav
+                  aria-label="In this article"
+                  className={`sticky top-[120px] max-h-[calc(100vh-144px)] overflow-y-auto ck-no-scrollbar bg-[#faf8f5] dark:bg-[#1c1917] p-2.5 rounded-2xl border border-[#b04a15]/20 dark:border-[#e07b3a]/20 shadow-sm`}
+                >
+                  <p className="font-label-md text-3xs uppercase tracking-widest mb-3 border-b border-[#b04a15]/20 dark:border-[#e07b3a]/20 pb-2 text-[#b04a15] dark:text-[#e07b3a] font-bold">
+                    In this article
+                  </p>
+                  <ul className="space-y-3">
+                    {tocMain.map((item) => {
+                      return (
+                        <li key={item.id}>
+                          <button
+                            type="button"
+                            onClick={(e) => handleTocClick(e, item.id)}
+                            className="block w-full text-left cursor-pointer rounded-md px-1.5 py-0.5 text-[13px] leading-snug break-words transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#b04a15] dark:focus-visible:ring-[#e07b3a] text-stone-600 dark:text-stone-400 hover:text-[#b04a15] dark:hover:text-[#e07b3a]"
+                          >
+                            {item.text}
+                          </button>
+                        </li>
+                      );
+                    })}
+                  </ul>
+                </nav>
+              )}
+            </aside>
 
             {/* Center Article Content */}
-            <motion.div
-              className="col-span-1 md:col-span-6 lg:col-span-7 article-content text-stone-800 dark:text-stone-100"
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.7, delay: 0.45, ease: [0.25, 0.46, 0.45, 0.94] }}
+            <div className="col-span-1 md:col-span-6 lg:col-span-1 min-w-0">
+            <div
+              className="ck-blog-article-in article-content text-stone-800 dark:text-stone-100"
               // Fix #3: sanitize HTML before injection — strips <script>, onerror, etc.
               // No fallback to post.content: that is the raw article HTML, and
               // falling back to it is exactly how unsanitized markup used to reach
               // the DOM while the sanitizer was still loading. sanitizedContent is
               // now computed during render, so it is never empty when there is
               // content to show.
-              dangerouslySetInnerHTML={{ __html: sanitizedContent }}
+              dangerouslySetInnerHTML={{ __html: articleHtml }}
             />
 
+            {/* Share Story, desktop only (lg+): same buttons as the tablet sidebar,
+                which is hidden at lg. Phones show neither, as before. */}
+            <div className="hidden lg:block mt-10">
+              <div className="flex flex-col gap-3 relative">
+                <span className="font-label-sm text-3xs text-[#78716c] dark:text-[#a8a29e] uppercase tracking-wider mb-1 font-bold">
+                  Share Story
+                </span>
+                <div className="flex items-center gap-3">
+                  <button
+                    onClick={handleEmailShare}
+                    aria-label="Share via Email"
+                    title="Share via Email"
+                    className="w-11 h-11 rounded-full border border-stone-300 dark:border-stone-600 bg-white dark:bg-stone-800 flex items-center justify-center text-stone-600 dark:text-stone-300 hover:text-[#b04a15] dark:hover:text-[#e07b3a] hover:border-[#b04a15]/60 dark:hover:border-[#e07b3a]/60 hover:shadow-md transition-all duration-300 cursor-pointer"
+                  >
+                    <MaterialIcon name="mail" />
+                  </button>
+                  <button
+                    onClick={handleCopyLink}
+                    aria-label="Copy Link"
+                    title="Copy Link"
+                    className="w-11 h-11 rounded-full border border-stone-300 dark:border-stone-600 bg-white dark:bg-stone-800 flex items-center justify-center text-stone-600 dark:text-stone-300 hover:text-[#b04a15] dark:hover:text-[#e07b3a] hover:border-[#b04a15]/60 dark:hover:border-[#e07b3a]/60 hover:shadow-md transition-all duration-300 cursor-pointer"
+                  >
+                    <MaterialIcon name="link" />
+                  </button>
+                  {copied && (
+                    <span className="text-xs text-[#b04a15] dark:text-[#e07b3a] font-semibold animate-pulse absolute left-28 bg-white dark:bg-stone-800 border border-stone-300 dark:border-stone-600 px-2.5 py-1.5 rounded-lg shadow-sm">Copied!</span>
+                  )}
+                </div>
+              </div>
+            </div>
+
+            {/* Read Next row below the article: phones and tablets (desktop has the right column) */}
+            {recommendedPosts.length > 0 && (
+              <section className="mt-12 lg:hidden">
+                  <h2 className="font-display-lg text-2xl text-[#b04a15] dark:text-[#e07b3a] mb-6 font-bold">{t("readNext")}</h2>
+                  <div className={`grid grid-cols-1 sm:grid-cols-2 ${recommendedPosts.length >= 3 ? "lg:grid-cols-3" : ""} gap-6`}>
+                    {recommendedPosts.map((rec, i) => {
+                      const tr = translatePost(rec);
+                      return (
+                        <div key={rec.slug} className="ck-blog-card-in" style={{ animationDelay: `${0.6 + i * 0.12}s` }}>
+                          <Link className="group block" href={`/blog/${rec.slug}`}>
+                            <div className="w-full h-32 rounded-xl overflow-hidden mb-3 border border-stone-200 dark:border-stone-700">
+                              <div className="relative w-full h-full group-hover:scale-105 transition-transform duration-500">
+                                <Image src={rec.image} alt="" fill sizes="(min-width: 640px) 50vw, 100vw" className="object-cover object-center" />
+                              </div>
+                            </div>
+                            <span className="text-[#b04a15] dark:text-[#e07b3a] font-label-sm text-xs uppercase tracking-wide font-bold">
+                              {tr.category}
+                            </span>
+                            <p className="font-headline-md text-base text-stone-800 dark:text-stone-200 mt-1 group-hover:text-[#b04a15] dark:group-hover:text-[#e07b3a] transition-colors leading-snug">
+                              {tr.title}
+                            </p>
+                          </Link>
+                        </div>
+                      );
+                    })}
+                  </div>
+              </section>
+            )}
+            </div>
+
             {/* Right Sidebar: Next For You */}
-            <motion.aside
-              className="hidden lg:block lg:col-span-3 pl-8 border-l border-stone-200 dark:border-stone-700"
-              initial={{ opacity: 0, x: 24 }}
-              animate={{ opacity: 1, x: 0 }}
-              transition={{ duration: 0.55, delay: 0.5, ease: [0.25, 0.46, 0.45, 0.94] }}
-            >
-              <div className="sticky top-[120px]">
+            <aside className="ck-blog-aside-right hidden lg:block lg:col-span-1 min-w-0 pl-8 border-l border-stone-200 dark:border-stone-700">
+              <div className="sticky top-[120px] flex max-h-[calc(100vh-144px)] flex-col">
                 {/* Search Stories — live dropdown, same ranking as the blog listing page */}
-                <div ref={searchBoxRef} className="relative mb-8">
+                <div ref={searchBoxRef} className="relative z-20 shrink-0 mb-[clamp(1rem,3vh,2rem)]">
                   <div className="relative flex items-center">
                     <Search className="absolute left-3 w-4 h-4 text-stone-400 dark:text-stone-500" />
                     <input
@@ -648,14 +604,9 @@ export default function BlogPostClient({ slug, content }: BlogPostClientProps) {
                       </button>
                     )}
                   </div>
-                  <AnimatePresence>
                     {isSearchFocused && searchQuery.trim() !== "" && (
-                      <motion.div
-                        initial={{ opacity: 0, y: -6 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        exit={{ opacity: 0, y: -6 }}
-                        transition={{ duration: 0.15 }}
-                        className="absolute top-full left-0 right-0 mt-2 bg-white dark:bg-stone-900 border border-stone-200 dark:border-stone-800 rounded-2xl shadow-xl z-30 overflow-hidden"
+                      <div
+                        className="ck-blog-search-in absolute top-full left-0 right-0 mt-2 bg-white dark:bg-stone-900 border border-stone-200 dark:border-stone-800 rounded-2xl shadow-xl z-30 overflow-hidden"
                       >
                         {liveSearchResults.length > 0 ? (
                           <ul className="max-h-96 overflow-y-auto divide-y divide-stone-100 dark:divide-stone-800">
@@ -691,41 +642,39 @@ export default function BlogPostClient({ slug, content }: BlogPostClientProps) {
                             {t("noSearchResults", { query: searchQuery })}
                           </p>
                         )}
-                      </motion.div>
+                      </div>
                     )}
-                  </AnimatePresence>
                 </div>
 
-                <h3 className="font-display-lg text-2xl text-[#b04a15] dark:text-[#e07b3a] mb-6 font-bold">{t("readNext")}</h3>
-                <StaggerContainer delayStart={0.6} staggerDelay={0.12} className="flex flex-col gap-6">
-                  {recommendedPosts.map((rec) => {
+                <h2 className="relative z-10 shrink-0 font-display-lg text-[clamp(1rem,2.4vh,1.125rem)] leading-snug whitespace-nowrap text-[#b04a15] dark:text-[#e07b3a] mb-[clamp(0.75rem,2vh,1rem)] pb-0.5 font-bold">{t("readNext")}</h2>
+                <div className="min-h-0 flex-1 overflow-y-auto ck-no-scrollbar flex flex-col gap-[clamp(0.75rem,2.2vh,1.25rem)]">
+                  {recommendedPosts.slice(0, 2).map((rec, i) => {
                     const tr = translatePost(rec);
                     return (
-                      <motion.div key={rec.slug} variants={itemVariants}>
+                      <div key={rec.slug} className="ck-blog-card-in" style={{ animationDelay: `${0.6 + i * 0.12}s` }}>
                         <Link className="group block" href={`/blog/${rec.slug}`}>
-                          <div className="w-full h-32 rounded-xl overflow-hidden mb-3 border border-stone-200 dark:border-stone-700">
-                            <div
-                              className="bg-cover bg-center w-full h-full group-hover:scale-105 transition-transform duration-500"
-                              style={{ backgroundImage: `url('${rec.image}')` }}
-                            />
+                          <div className="w-full h-[clamp(3.5rem,11vh,5.5rem)] rounded-xl overflow-hidden mb-2 border border-stone-200 dark:border-stone-700">
+                            <div className="relative w-full h-full group-hover:scale-105 transition-transform duration-500">
+                              <Image src={rec.image} alt="" fill sizes="(min-width: 1280px) 224px, 176px" className="object-cover object-center" />
+                            </div>
                           </div>
                           <span className="text-[#b04a15] dark:text-[#e07b3a] font-label-sm text-xs uppercase tracking-wide font-bold">
                             {tr.category}
                           </span>
-                          <h4 className="font-headline-md text-base text-stone-800 dark:text-stone-200 mt-1 group-hover:text-[#b04a15] dark:group-hover:text-[#e07b3a] transition-colors leading-snug">
+                          <p className="break-words font-headline-md text-sm text-stone-800 dark:text-stone-200 mt-1 group-hover:text-[#b04a15] dark:group-hover:text-[#e07b3a] transition-colors leading-snug">
                             {tr.title}
-                          </h4>
+                          </p>
                         </Link>
-                      </motion.div>
+                      </div>
                     );
                   })}
-                </StaggerContainer>
+                </div>
               </div>
-            </motion.aside>
+            </aside>
           </div>
         </article>
 
-      </main>
+      </div>
 
     </div>
   );

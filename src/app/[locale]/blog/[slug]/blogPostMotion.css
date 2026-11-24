@@ -1,0 +1,28 @@
+/*
+  Blog post entrance motion (replaces framer-motion, Lighthouse 24 Nov 2026).
+
+  Same timings as the framer versions, but these run from the first paint of
+  the server HTML instead of waiting for the page's JavaScript to hydrate. With
+  framer the article body shipped at opacity 0 and stayed invisible until
+  hydration finished. Only transform and opacity animate (compositor only).
+*/
+@keyframes ck-blog-in-x {
+  from { opacity: 0; transform: translateX(var(--ck-blog-dx, 0)); }
+  to   { opacity: 1; transform: none; }
+}
+@keyframes ck-blog-in-y {
+  from { opacity: 0; transform: translateY(var(--ck-blog-dy, 0)) scale(var(--ck-blog-scale, 1)); }
+  to   { opacity: 1; transform: none; }
+}
+
+.ck-blog-aside-left  { --ck-blog-dx: -24px; animation: ck-blog-in-x 0.55s cubic-bezier(0.25, 0.46, 0.45, 0.94) 0.3s both; }
+.ck-blog-aside-right { --ck-blog-dx: 24px;  animation: ck-blog-in-x 0.55s cubic-bezier(0.25, 0.46, 0.45, 0.94) 0.5s both; }
+.ck-blog-article-in  { --ck-blog-dy: 20px;  animation: ck-blog-in-y 0.7s cubic-bezier(0.25, 0.46, 0.45, 0.94) 0.45s both; }
+/* Read Next cards: the framer spring settled in about 0.6s. Delay set inline per card. */
+.ck-blog-card-in     { --ck-blog-dy: 30px; --ck-blog-scale: 0.97; animation: ck-blog-in-y 0.6s cubic-bezier(0.22, 1, 0.36, 1) both; }
+.ck-blog-search-in   { --ck-blog-dy: -6px;  animation: ck-blog-in-y 0.15s ease-out both; }
+
+@media (prefers-reduced-motion: reduce) {
+  .ck-blog-aside-left, .ck-blog-aside-right, .ck-blog-article-in,
+  .ck-blog-card-in, .ck-blog-search-in { animation: none; }
+}

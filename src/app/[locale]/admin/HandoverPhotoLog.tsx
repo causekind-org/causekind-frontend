@@ -29,13 +29,13 @@ export function HandoverPhotoLog() {
   return (
     <div className="space-y-3">
       <div className="flex items-center justify-between">
-        <p className="text-xs text-stone-400">{rows ? `${rows.length} handover${rows.length === 1 ? "" : "s"} with a photo` : "Loading…"}</p>
+        <p className="text-xs text-stone-500">{rows ? `${rows.length} handover${rows.length === 1 ? "" : "s"} with a photo` : "Loading…"}</p>
         <button type="button" onClick={() => void load()}
-          className="inline-flex items-center gap-1.5 rounded-lg border border-white/10 px-3 py-1.5 text-xs font-semibold text-stone-300 hover:bg-white/5">
+          className="inline-flex items-center gap-1.5 rounded-lg border border-stone-200 bg-white px-3 py-1.5 text-xs font-semibold text-stone-600 hover:text-stone-900">
           <RefreshCw className="h-3.5 w-3.5" aria-hidden /> Refresh
         </button>
       </div>
-      {error && <p role="alert" className="text-sm text-red-400">{error}</p>}
+      {error && <p role="alert" className="text-sm text-red-700">{error}</p>}
       {rows === null ? (
         <div className="flex justify-center py-10"><Loader2 className="h-5 w-5 animate-spin text-stone-500" /></div>
       ) : rows.length === 0 ? (
@@ -45,27 +45,30 @@ export function HandoverPhotoLog() {
           {rows.map(r => (
             <li key={`${r.type}-${r.id}`}>
               <button type="button" onClick={() => setOpen({ type: r.type, id: r.id })}
-                className="flex w-full items-center gap-3 rounded-xl border border-white/10 bg-white/[0.03] p-2.5 text-left hover:bg-white/[0.06]">
-                <div className="relative h-14 w-14 shrink-0 overflow-hidden rounded-lg bg-white/5">
+                className="flex w-full items-center gap-3 rounded-xl border border-stone-200 bg-white p-2.5 text-left shadow-sm hover:border-[#1f66b3]/40">
+                <div className="relative h-14 w-14 shrink-0 overflow-hidden rounded-lg bg-stone-100">
                   {r.thumbUrl
                     // eslint-disable-next-line @next/next/no-img-element -- presigned URL
-                    ? <img src={r.thumbUrl} alt="" className="h-full w-full object-cover" />
-                    : <Camera className="absolute inset-0 m-auto h-5 w-5 text-stone-500" />}
+                    ? <img src={r.thumbUrl} alt="" className="relative z-10 h-full w-full object-cover"
+                        // Presigned URLs expire; hide a broken image so the camera fallback shows through.
+                        onError={e => { e.currentTarget.style.display = "none"; }} />
+                    : null}
+                  <Camera className="absolute inset-0 -z-0 m-auto h-5 w-5 text-stone-400" aria-hidden />
                   {r.photoCount > 1 && (
                     <span className="absolute bottom-0 right-0 rounded-tl-md bg-black/70 px-1 text-[10px] font-bold text-white">{r.photoCount}</span>
                   )}
                 </div>
                 <div className="min-w-0 flex-1">
-                  <p className="truncate text-sm font-semibold text-stone-100">
+                  <p className="truncate text-sm font-semibold text-stone-900">
                     {r.itemTitle ?? r.requestTitle ?? "Donation"}
-                    <span className="ml-2 rounded bg-white/10 px-1.5 py-0.5 text-[10px] font-bold text-stone-300">{r.type} #{r.id}</span>
+                    <span className="ml-2 rounded bg-stone-100 px-1.5 py-0.5 text-[10px] font-bold text-stone-600">{r.type} #{r.id}</span>
                   </p>
-                  <p className="truncate text-xs text-stone-400">
+                  <p className="truncate text-xs text-stone-600">
                     {r.donorName ?? "Donor"} → {r.doneeName ?? "Recipient"}{r.city ? ` · ${r.city}` : ""} · {humanize(r.status ?? "")}
                   </p>
                   <p className="text-[11px] text-stone-500">Last photo {fmt(r.lastPhotoAt)}</p>
                 </div>
-                <ChevronRight className="h-4 w-4 shrink-0 text-stone-500" aria-hidden />
+                <ChevronRight className="h-4 w-4 shrink-0 text-stone-400" aria-hidden />
               </button>
             </li>
           ))}

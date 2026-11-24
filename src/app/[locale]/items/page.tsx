@@ -7,7 +7,7 @@ import ItemsClient from "./ItemsClient";
 // resolves against metadataBase in src/app/layout.tsx, pinning it to the www
 // host that the apex domain redirects to.
 export const metadata: Metadata = {
-  title: "Donation Listings — CauseKind",
+  title: "Donation Listings",
   description: "List an item you want to donate, or see the listings you have already shared with your local CauseKind community.",
   alternates: { canonical: "/items" },
 };

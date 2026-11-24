@@ -15,7 +15,8 @@ import { initiateRegistration, verifyRegistrationOtp, resendRegistrationOtp, reg
 import { trackCompleteRegistration } from "@/lib/metaEvents";
 import { Eye, EyeOff, MapPin, Phone } from "lucide-react";
 import { AnimatedEmailOtp } from "@/components/auth/AnimatedEmailOtp";
-import { useGoogleLogin } from "@react-oauth/google";
+import { useGoogleLogin } from "@/lib/lazyGoogleLogin";
+import { preloadGoogleSignIn } from "@/lib/googleSignInPreload";
 import { useLocations } from "@/hooks/useLocations";
 import { resolveLocationFromGPS } from "@/app/[locale]/actions/locations";
 import { SearchableSelect, type SelectOption } from "@/components/profile/SearchableSelect";
@@ -409,67 +410,14 @@ function RegisterContent() {
 
   useEffect(() => { if (user) goAfterAuth(user.role, router.replace); }, [user, router]);
 
+  // Country for the phone code and address comes from the IP on load. GPS is
+  // only asked for when the user taps "Use GPS" (handleGPSLocation): browsers
+  // flag a location prompt on page load, and most people deny it.
   useEffect(() => {
-    if (navigator.geolocation) {
-      navigator.geolocation.getCurrentPosition(
-        async (pos) => {
-          try {
-            const lat = pos.coords.latitude;
-            const lng = pos.coords.longitude;
-            const res = await fetch(`https://nominatim.openstreetmap.org/reverse?lat=${lat}&lon=${lng}&format=json&accept-language=en`);
-            if (!res.ok) throw new Error();
-            const data = await res.json();
-            const address = data.address;
-            if (address) {
-              const countryCode = address.country_code?.toUpperCase();
-              const stateName = address.state;
-              const cityName = address.city || address.town || address.village || address.suburb;
-              if (countryCode) {
-                setDialCountry(countryCode);
-                setCountryIso(countryCode);
-                const { stateIso: resolvedState, cityValue: resolvedCity } = await resolveLocationFromGPS(countryCode, stateName, cityName);
-
-                if (resolvedState) {
-                  setStateIso(resolvedState);
-                  if (resolvedCity) {
-                    setCityValue(resolvedCity);
-                    setCityFreeText("");
-                    setForceFreeTextCity(false);
-                  } else if (cityName) {
-                    setCityValue("");
-                    setCityFreeText(cityName);
-                    setForceFreeTextCity(true);
-                  }
-                } else {
-                  setStateIso("");
-                  setCityValue("");
-                  if (cityName) { setCityFreeText(cityName); setForceFreeTextCity(true); }
-                }
-                return;
-              }
-            }
-          } catch {
-            // fallback to IP
-          }
-          detectCountryFromIP().then((code) => {
-            setDialCountry(code);
-            setCountryIso(code);
-          });
-        },
-        () => {
-          detectCountryFromIP().then((code) => {
-            setDialCountry(code);
-            setCountryIso(code);
-          });
-        },
-        { enableHighAccuracy: false, timeout: 5000 }
-      );
-    } else {
-      detectCountryFromIP().then((code) => {
-        setDialCountry(code);
-        setCountryIso(code);
-      });
-    }
+    detectCountryFromIP().then((code) => {
+      setDialCountry(code);
+      setCountryIso(code);
+    });
   }, []);
 
   useEffect(() => {
@@ -762,13 +710,13 @@ function RegisterContent() {
           <span className="text-2xs font-black uppercase tracking-widest text-[var(--accent)]">
             {form.role === "NGO_PARTNER" ? "Create Account" : "Create account"}
           </span>
-          <h1 className="text-2xl sm:text-4xl font-extrabold tracking-tight text-stone-900 dark:text-stone-50">
+          <h2 className="text-2xl sm:text-4xl font-extrabold tracking-tight text-stone-900 dark:text-stone-50">
             {form.role === "NGO_PARTNER"
               ? "Join CauseKind 🌱"
               : isSocialFlow
                 ? `${t("almostThereTitle")} 🎉`
                 : `${t("joinTitle")} 🌱`}
-          </h1>
+          </h2>
           <p className="text-sm text-stone-500 dark:text-stone-400">
             {form.role === "NGO_PARTNER"
               ? "Create your account and start making a difference today."
@@ -852,7 +800,7 @@ function RegisterContent() {
       {googleNgo404 ? (
         <div className="text-center py-4 space-y-4">
           <p className="text-stone-700 dark:text-stone-300">
-            Google sign-up for NGOs isn't available yet. Please sign up with email and password.
+            Google sign-up for NGOs isn&apos;t available yet. Please sign up with email and password.
           </p>
           <button
             type="button"
@@ -1207,6 +1155,9 @@ function RegisterContent() {
             <button
               type="button"
               disabled={authBusy}
+              onPointerEnter={() => void preloadGoogleSignIn().catch(() => {})}
+              onTouchStart={() => void preloadGoogleSignIn().catch(() => {})}
+              onFocus={() => void preloadGoogleSignIn().catch(() => {})}
               onClick={() => {
                 if (!process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID) {
                   toast.error("Google Sign-In is not configured.");

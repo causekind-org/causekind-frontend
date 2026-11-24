@@ -1,5 +1,6 @@
 "use client";
 
+import { SaLoadError } from "./SaLoadError";
 import { serverDate } from "@/lib/serverTime";
 import { useCallback, useEffect, useState } from "react";
 import {
@@ -45,15 +46,19 @@ export function GovernancePanel({ isDark }: { isDark: boolean }) {
 
   const [log, setLog] = useState<SaRevealLogEntry[]>([]);
   const [logLoading, setLogLoading] = useState(false);
+  // A failed load used to read "Nobody has revealed a private detail yet."
+  const [logFailed, setLogFailed] = useState(false);
   const [exporting, setExporting] = useState(false);
   const [exportNote, setExportNote] = useState<string | null>(null);
 
   const loadLog = useCallback(async () => {
     setLogLoading(true);
+    setLogFailed(false);
     try {
       setLog((await superAdminRevealLog({ size: 25 })).items);
     } catch {
       setLog([]);
+      setLogFailed(true);
     } finally {
       setLogLoading(false);
     }
@@ -108,7 +113,7 @@ export function GovernancePanel({ isDark }: { isDark: boolean }) {
   return (
     <div className="space-y-4">
       <div>
-        <h2 className={`text-lg font-bold ${t.heading}`}>Governance</h2>
+        <h2 className={`ck-page-title ${t.heading}`}>Governance</h2>
         <p className={`text-xs ${t.muted}`}>
           Reading a private detail in full, and the record of everyone who has.
         </p>
@@ -218,6 +223,8 @@ export function GovernancePanel({ isDark }: { isDark: boolean }) {
         </h3>
         {logLoading ? (
           <p className={`text-xs ${t.muted}`}>Loading…</p>
+        ) : logFailed ? (
+          <SaLoadError what="the reveal log" onRetry={() => void loadLog()} />
         ) : log.length === 0 ? (
           <p className={`rounded-xl border p-6 text-center text-xs ${t.card} ${t.muted}`}>
             Nobody has revealed a private detail yet.

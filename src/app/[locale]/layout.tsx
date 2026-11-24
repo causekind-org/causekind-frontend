@@ -14,13 +14,12 @@ import { TranslationAttribution } from "@/components/TranslationAttribution";
 import { AutoPageTranslator } from "@/components/AutoPageTranslator";
 import { getInterfaceCatalogue } from "@/lib/translation/messages";
 import { isTranslationLocale } from "@/lib/translation/server";
+import { clientMessagesFor } from "@/lib/translation/clientMessages";
 import { AuthProvider } from "@/hooks/useAuth";
 import { NotificationsProvider } from "@/hooks/useNotifications";
 import { NeedProfileGateProvider } from "@/hooks/useNeedProfileGate";
-import { GoogleProvider } from "@/components/GoogleProvider";
 import { SiteHeader, SiteFooter } from "@/components/Navbar";
 import { MobileBottomNav, FloatingSupportButton } from "@/components/MobileUI";
-import { ScrollProgress } from "@/components/ScrollProgress";
 import { Toaster } from "sonner";
 import { SuperAdminRedirect } from "@/components/SuperAdminRedirect";
 import { AdminRedirect } from "@/components/AdminRedirect";
@@ -39,7 +38,10 @@ import { AdminRedirect } from "@/components/AdminRedirect";
   bringing any of it back is uncommenting two lines here and one in
   DeferredOverlays.
 */
-import GoogleTagManagerGated from "@/components/GoogleTagManagerGated";
+// GTM removed 2026-11-20 (owner decision): GA4, Meta Pixel and Clarity load
+// directly, and the agency container added ~65 KiB of unused JS plus a tag
+// that hit a CSP-blocked run.app endpoint (4 console errors per page).
+// GoogleTagManagerGated.tsx is kept; re-adding is this import and one mount.
 import MetaPixel from "@/components/MetaPixel";
 import ClarityAnalytics from "@/components/ClarityAnalytics";
 import GoogleAnalyticsGated from "@/components/GoogleAnalyticsGated";
@@ -51,13 +53,11 @@ import { ROLE_THEME_BOOT_SCRIPT } from "@/lib/roleTheme";
 // Client boundary holding the deferred, client-only overlays and prompts.
 // They live behind their own `"use client"` file because `next/dynamic` with
 // `ssr: false` is rejected inside a Server Component, and this layout is one.
-import { DeferredOverlays } from "@/components/DeferredOverlays";
+import {
+  DeferredOverlays, DeferredScrollProgress, DeferredDonateChoice, DeferredDonateItemsChoice,
+  DeferredMatchActionDock, DeferredDriveNotificationDock, DeferredCompletionCelebration,
+} from "@/components/DeferredOverlays";
 import { HiddenOnStaffPage, HiddenOnVolunteerPage } from "@/components/HiddenOnVolunteerPage";
-import { DonateChoice } from "@/components/donate/DonateChoice";
-import { DonateItemsChoiceModal } from "@/components/donate/DonateItemsChoiceModal";
-import { MatchActionDock } from "@/components/matches/MatchActionDock";
-import { DriveNotificationDock } from "@/components/notifications/DriveNotificationDock";
-import { CompletionCelebrationWatcher } from "@/components/handover/CompletionCelebrationWatcher";
 
 const plusJakarta = Plus_Jakarta_Sans({
   variable: "--font-plus-jakarta-sans",
@@ -116,9 +116,21 @@ export const maxDuration = 60;
 
 export const metadata: Metadata = {
   metadataBase: new URL("https://www.causekind.com"),
-  title: "CauseKind — Give With Purpose",
+  // Pages set only their own part; the template appends the brand once.
+  title: { default: "CauseKind — Give With Purpose", template: "%s | CauseKind" },
   description: "Discover and support verified charity campaigns.",
-  icons: { icon: "/logo-filled.webp" },
+  // Site-wide share defaults; pages override title/description/images as needed.
+  openGraph: {
+    type: "website",
+    siteName: "CauseKind",
+    locale: "en_IN",
+    images: [{ url: "/og-default.png", width: 1200, height: 630, alt: "CauseKind" }],
+  },
+  twitter: {
+    card: "summary_large_image",
+    images: ["/og-default.png"],
+  },
+  // Icons come from the file conventions: src/app/favicon.ico, icon.png, apple-icon.png.
 };
 
 // English is built ahead of time; every other language is built on its first
@@ -140,6 +152,9 @@ export default async function RootLayout({
   setRequestLocale(locale);
   const messages = await getMessages();
   const catalogue = await getInterfaceCatalogue(isTranslationLocale(locale) ? locale : "en");
+  // English drops the `ui` lookup table from the browser payload (output is
+  // identical, see clientMessages.ts); every other locale gets everything.
+  const clientMessages = clientMessagesFor(isTranslationLocale(locale) ? locale : "en", messages);
 
   return (
     <html lang={catalogue.translated ? `${locale}-x-mtfrom-en` : "en"} suppressHydrationWarning>
@@ -153,30 +168,13 @@ export default async function RootLayout({
           suppressHydrationWarning
           dangerouslySetInnerHTML={{ __html: ROLE_THEME_BOOT_SCRIPT }}
         />
-        {/* Material Symbols, subset and pinned.
-
-            This was requesting the FULL variable axis range
-            (opsz 20-48, wght 100-700, FILL 0-1, GRAD -50..200) — the entire
-            icon font — as a render-blocking third-party stylesheet on EVERY
-            route, while the font is used on exactly one: /blog/[slug].
-
-            `icon_names` narrows it to the eight glyphs actually referenced
-            there (grep `material-symbols-outlined` in BlogPostClient.tsx —
-            all eight are string literals, so this list is verifiable, not a
-            guess). The axes are pinned to the single instance used rather
-            than a range. `display=swap` stops it blocking text paint, and
-            the preconnect saves a connection setup on the gstatic origin the
-            stylesheet then pulls the font file from.
-
-            If a new Material Symbol is added to the blog, it must be added to
-            icon_names or it renders as its literal ligature text. */}
-        <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
-        <link
-          rel="stylesheet"
-          href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@24,400,0,0&icon_names=check,expand_more,format_bold,link,mail,pause,play_arrow,replay&display=swap"
-        />
+        {/* No icon-font stylesheet here any more. The eight Material Symbols
+            the blog reader used are inline SVGs in BlogPostClient.tsx
+            (MaterialIcon), so no route pays for a third-party font request. */}
       </head>
       <body className={`${plusJakarta.variable} ${nunito.variable} ${sourceSerif4.variable} ${inter.variable} ${lora.variable} ${robotoMono.variable} antialiased`} suppressHydrationWarning>
+        {/* Skip link: first focusable element, hidden until focused. */}
+        <a href="#main" className="sr-only focus:not-sr-only focus:fixed focus:left-3 focus:top-3 focus:z-[2147483647] focus:rounded-full focus:bg-white focus:px-4 focus:py-2 focus:text-sm focus:font-bold focus:text-stone-900 focus:shadow-lg focus:outline-none focus:ring-2 focus:ring-[#b04a15]">Skip to content</a>
         <StoredImageFallback />
         {/* TEMP: MetaPixel + GTM mounted for testing, ahead of the consent
             banner coming back — see the TESTING_BYPASS note in each
@@ -185,13 +183,11 @@ export default async function RootLayout({
           <HiddenOnStaffPage>
             <MetaPixel />
             <ClarityAnalytics />
-            <GoogleTagManagerGated />
             <GoogleAnalyticsGated />
           </HiddenOnStaffPage>
           <SiteTracking />
         </HiddenOnVolunteerPage>
-        <NextIntlClientProvider messages={messages}>
-          <GoogleProvider>
+        <NextIntlClientProvider messages={clientMessages}>
             <AuthProvider>
               <NotificationsProvider>
                 <NeedProfileGateProvider>
@@ -218,12 +214,12 @@ export default async function RootLayout({
                   sparkCount={8}
                   duration={400}
                 >
-                  <ScrollProgress />
+                  <DeferredScrollProgress />
                   <HiddenOnVolunteerPage><SiteHeader /></HiddenOnVolunteerPage>
                   {/* Pages are prerendered now, so a page that reads useSearchParams
                       without its own boundary would fail the build. This
                       catches those; only that page renders in the browser. */}
-                  <main tabIndex={-1} className="min-h-[calc(100svh-3.5rem)] ck-main-bottom-pad"><Suspense fallback={null}>{children}</Suspense></main>
+                  <main id="main" tabIndex={-1} className="min-h-[calc(100svh-3.5rem)] ck-main-bottom-pad"><Suspense fallback={null}>{children}</Suspense></main>
                   <HiddenOnVolunteerPage><SiteFooter /></HiddenOnVolunteerPage>
                   {process.env.GOOGLE_TRANSLATE_API_KEY?.trim() && <><TranslationAttribution /><AutoPageTranslator /></>}
                   <HiddenOnVolunteerPage><MobileBottomNav /></HiddenOnVolunteerPage>
@@ -244,20 +240,19 @@ export default async function RootLayout({
                   />
                   <HiddenOnVolunteerPage><DeferredOverlays /></HiddenOnVolunteerPage>
                   {/* Every Donate button opens this In-Kind / Money choice. */}
-                  <HiddenOnVolunteerPage><DonateChoice /></HiddenOnVolunteerPage>
+                  <HiddenOnVolunteerPage><DeferredDonateChoice /></HiddenOnVolunteerPage>
                   <HiddenOnVolunteerPage><StartDriveChoice /></HiddenOnVolunteerPage>
                   {/* Guests' and donors' next step after "Donate items". */}
-                  <HiddenOnVolunteerPage><DonateItemsChoiceModal /></HiddenOnVolunteerPage>
+                  <HiddenOnVolunteerPage><DeferredDonateItemsChoice /></HiddenOnVolunteerPage>
                   {/* Donor-only: a waiting match, once, until answered or closed. */}
-                  <HiddenOnVolunteerPage><MatchActionDock /></HiddenOnVolunteerPage>
+                  <HiddenOnVolunteerPage><DeferredMatchActionDock /></HiddenOnVolunteerPage>
                   {/* NGO and donor drive notices: unread ones, one at a time. */}
-                  <HiddenOnVolunteerPage><DriveNotificationDock /></HiddenOnVolunteerPage>
-                  <HiddenOnVolunteerPage><CompletionCelebrationWatcher /></HiddenOnVolunteerPage>
+                  <HiddenOnVolunteerPage><DeferredDriveNotificationDock /></HiddenOnVolunteerPage>
+                  <HiddenOnVolunteerPage><DeferredCompletionCelebration /></HiddenOnVolunteerPage>
                 </RoleClickSpark>
                 </NeedProfileGateProvider>
               </NotificationsProvider>
             </AuthProvider>
-          </GoogleProvider>
         </NextIntlClientProvider>
       </body>
     </html>

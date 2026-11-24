@@ -23,7 +23,7 @@ export function AdminSahasPanel() {
 const box = "rounded-xl border border-stone-200 bg-white p-5 dark:border-zinc-800 dark:bg-zinc-900";
 const field = "min-h-[42px] w-full rounded-lg border border-stone-300 bg-white px-3 text-sm dark:border-zinc-700 dark:bg-zinc-950";
 const btn = "inline-flex min-h-[40px] items-center justify-center rounded-lg px-4 text-sm font-semibold disabled:opacity-50";
-const primary = `${btn} bg-[#b04a15] text-white hover:bg-[#9a3f10]`;
+const primary = `${btn} bg-[#1f66b3] text-white hover:bg-[#9a3f10]`;
 const secondary = `${btn} border border-stone-300 bg-white text-stone-800 dark:border-zinc-700 dark:bg-zinc-900 dark:text-stone-100`;
 
 function messageOf(e: unknown): string {
@@ -63,12 +63,21 @@ function CampaignList({ onOpen }: { onOpen: (id: number) => void }) {
   };
 
   const shown = (rows ?? []).filter((r) => (filter === "ALL" || r.status === filter)
-    && (!q || `${r.title ?? ""} ${r.slug ?? ""}`.toLowerCase().includes(q.toLowerCase())));
+    && (!q || `${r.title ?? ""} ${r.slug ?? ""}`.toLowerCase().includes(q.toLowerCase())))
+    // Work first: drafts, then live by soonest end date, then paused/closed, cancelled last.
+    // Unsorted, the 7 cancelled campaigns sat in between the live ones under "All".
+    .sort((x, y) => {
+      const rank: Record<string, number> = { DRAFT: 0, APPROVED: 1, PAUSED: 2, COLLECTIONS_CLOSED: 3, CANCELLED: 4 };
+      const d = (rank[x.status] ?? 3) - (rank[y.status] ?? 3);
+      if (d !== 0) return d;
+      return (x.endDate ?? "9999").localeCompare(y.endDate ?? "9999");
+    });
 
   return (
     <div className="flex flex-col gap-4">
       <div className="flex flex-wrap items-center gap-3">
-        <div><h2 className="m-0 text-xl font-bold">Sahas campaigns</h2><p className="m-0 text-sm text-stone-500">Campaigns organised by Sahas Charitable Trust</p></div>
+        {/* The dashboard header already says "Sahas campaigns" — a second title here repeated it. */}
+        <p className="m-0 text-sm text-stone-500">{rows ? `${rows.length} campaign${rows.length !== 1 ? "s" : ""}` : ""}</p>
         <button type="button" className={`${primary} ms-auto`} onClick={create} disabled={creating}>New campaign</button>
       </div>
       <div className="flex flex-wrap items-center gap-2">
@@ -77,6 +86,7 @@ function CampaignList({ onOpen }: { onOpen: (id: number) => void }) {
           <button key={s} type="button" aria-pressed={filter === s} onClick={() => setFilter(s)}
             className={`min-h-[36px] rounded-full border px-3 text-xs font-semibold ${filter === s ? "border-stone-900 bg-stone-900 text-white" : "border-stone-200 bg-white text-stone-600"}`}>
             {s === "ALL" ? "All" : STATUS_LABEL[s]}
+            {rows && <span className="ms-1.5 tabular-nums opacity-70">{s === "ALL" ? rows.length : rows.filter((r) => r.status === s).length}</span>}
           </button>
         ))}
       </div>
@@ -93,12 +103,18 @@ function CampaignList({ onOpen }: { onOpen: (id: number) => void }) {
               {shown.map((r) => (
                 <tr key={r.id} className="border-t border-stone-100 dark:border-zinc-800">
                   <td className="p-3">
-                    <button type="button" onClick={() => onOpen(r.id)} className="cursor-pointer text-left font-semibold text-[#b04a15] underline underline-offset-2">{r.title || "Untitled"}</button>
+                    <button type="button" onClick={() => onOpen(r.id)} className="cursor-pointer text-left font-semibold text-[#1f66b3] underline underline-offset-2">{r.title || "Untitled"}</button>
                     <div className="text-xs text-stone-500">{r.slug ? `/sahas/${r.slug}` : "No page address yet"}</div>
                   </td>
                   <td className="p-3"><StatusChip status={r.status} publishAt={r.publishAt} /></td>
                   <td className="p-3">{[r.collectsItems && "Items", r.collectsMoney && "Money"].filter(Boolean).join(" · ") || "—"}</td>
-                  <td className="p-3">{r.endDate ?? "—"}</td>
+                  <td className="p-3 whitespace-nowrap">
+                    {r.endDate ? new Date(`${r.endDate}T00:00:00`).toLocaleDateString("en-IN", { day: "numeric", month: "short", year: "numeric" }) : "—"}
+                    {/* A live campaign past its end date still reads "Live"; flag it so it gets closed. */}
+                    {r.endDate && r.status === "APPROVED" && new Date(`${r.endDate}T23:59:59`) < new Date() && (
+                      <div className="text-xs font-semibold text-amber-700">Past end date</div>
+                    )}
+                  </td>
                   <td className="p-3">{r.featured ? "Featured" : "—"}</td>
                   <td className="p-3 text-right"><button type="button" onClick={() => onOpen(r.id)} className={secondary}>{r.status === "CANCELLED" || r.status === "COLLECTIONS_CLOSED" ? "View" : "Edit"}</button></td>
                 </tr>
@@ -131,12 +147,12 @@ function CampaignEditor({ id, onBack }: { id: number; onBack: () => void }) {
         <button type="button" onClick={onBack} className={secondary}>← All campaigns</button>
         <h2 className="m-0 text-xl font-bold">{d.title || "Untitled"}</h2>
         <StatusChip status={d.status} publishAt={d.publishAt} />
-        {d.slug && d.status !== "DRAFT" && <a href={`/sahas/${d.slug}`} target="_blank" rel="noreferrer" className="ms-auto text-sm font-semibold text-[#b04a15]">View public page ↗</a>}
+        {d.slug && d.status !== "DRAFT" && <a href={`/sahas/${d.slug}`} target="_blank" rel="noreferrer" className="ms-auto text-sm font-semibold text-[#1f66b3]">View public page ↗</a>}
       </div>
       <div role="tablist" aria-label="Campaign sections" className="flex flex-wrap gap-2">
         {(["details", "page", "items", "offers", "payments", "outcome"] as Tab[]).map((t) => (
           <button key={t} type="button" role="tab" aria-selected={tab === t} onClick={() => setTab(t)}
-            className={`min-h-[42px] cursor-pointer rounded-full border px-4 text-sm font-semibold transition-colors ${tab === t ? "border-[#b04a15] bg-[#b04a15] text-white" : "border-stone-300 bg-white text-stone-700 hover:border-[#b04a15] hover:text-[#b04a15] dark:border-zinc-700 dark:bg-zinc-900 dark:text-stone-300"}`}>
+            className={`min-h-[42px] cursor-pointer rounded-full border px-4 text-sm font-semibold transition-colors ${tab === t ? "border-[#1f66b3] bg-[#1f66b3] text-white" : "border-stone-300 bg-white text-stone-700 hover:border-[#1f66b3] hover:text-[#1f66b3] dark:border-zinc-700 dark:bg-zinc-900 dark:text-stone-300"}`}>
             {t === "details" ? "Details and publishing" : t === "page" ? "Page content" : t === "items" ? "Items" : t === "offers" ? "Offers and handovers" : t === "payments" ? "Payments" : "Updates and outcome"}
           </button>
         ))}
@@ -225,7 +241,7 @@ function Details({ d, onSaved, onError }: { d: SahasAdminDetail; onSaved: (d: Sa
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
           <div className="flex flex-col gap-1.5 text-sm font-semibold">
             <span>Cover photo</span>
-            <label className={`${secondary} w-fit cursor-pointer focus-within:outline-2 focus-within:outline-offset-2 focus-within:outline-[#b04a15] ${busy ? "pointer-events-none opacity-50" : ""}`}>
+            <label className={`${secondary} w-fit cursor-pointer focus-within:outline-2 focus-within:outline-offset-2 focus-within:outline-[#1f66b3] ${busy ? "pointer-events-none opacity-50" : ""}`}>
               {busy ? "Uploading…" : d.imageUrl ? "Change photo" : "Upload photo"}
               <input type="file" accept="image/jpeg,image/png,image/webp" disabled={busy} className="sr-only"
                 onChange={(e) => { const file = e.target.files?.[0]; e.target.value = ""; if (file) void uploadCover(file); }} />
@@ -561,7 +577,7 @@ function Payments({ campaignId, target, onError }: { campaignId: number; target:
   return (
     <div className="flex flex-col gap-3">
       <p className="m-0 text-sm text-stone-600">{rows ? `Confirmed ₹${total.toLocaleString("en-IN")} from ${done.length} donation${done.length === 1 ? "" : "s"} · platform fee ₹${fees.toLocaleString("en-IN")}` : "Loading…"}</p>
-      {surplus > 0 && <p className="m-0 text-sm font-semibold text-[#7a3410] dark:text-[#e07b3a]">{`Surplus ₹${surplus.toLocaleString("en-IN")} above the ₹${target!.toLocaleString("en-IN")} target`}</p>}
+      {surplus > 0 && <p className="m-0 text-sm font-semibold text-[#7a3410] dark:text-[#2d7fd6]">{`Surplus ₹${surplus.toLocaleString("en-IN")} above the ₹${target!.toLocaleString("en-IN")} target`}</p>}
       <div className="overflow-x-auto rounded-xl border border-stone-200 bg-white dark:border-zinc-800 dark:bg-zinc-900">
         <table className="w-full min-w-[640px] border-collapse text-sm">
           <thead><tr className="text-left text-xs text-stone-500"><th className="p-3">Ref</th><th className="p-3">Donor</th><th className="p-3">Amount</th><th className="p-3">Fee</th><th className="p-3">Payment</th><th className="p-3">Documents</th><th className="p-3">Date</th></tr></thead>

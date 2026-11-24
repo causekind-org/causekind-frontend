@@ -3,22 +3,22 @@
 import Image from 'next/image';
 import Link from "@/components/AppLink";
 import { motion, useReducedMotion, useScroll, useTransform } from 'framer-motion';
-import { ArrowLeft, ArrowRight, HeartHandshake } from 'lucide-react';
+import { ArrowLeft, ArrowRight, HeartHandshake, Mail, PackageOpen, ReceiptIndianRupee, ShieldCheck } from 'lucide-react';
 import { useRef } from 'react';
 import type { Initiative } from '@/lib/initiatives';
 
 export function InitiativeStory({ initiative }: { initiative: Initiative }) {
-  const ref = useRef<HTMLElement>(null);
+  const ref = useRef<HTMLDivElement>(null);
   const reduce = useReducedMotion();
   const { scrollYProgress } = useScroll({ target: ref, offset: ['start start', 'end end'] });
   const imageY = useTransform(scrollYProgress, [0, 1], reduce ? ['0%', '0%'] : ['-6%', '6%']);
   const scale = useTransform(scrollYProgress, [0, 0.35], reduce ? [1, 1] : [1.06, 1]);
 
   return (
-    <main ref={ref} className="bg-background text-foreground">
+    <div ref={ref} className="bg-background text-foreground">
       <section className="relative min-h-[calc(100svh-3.5rem)] overflow-hidden bg-stone-950 text-white">
         <motion.div style={{ y: imageY, scale }} className="absolute inset-0 origin-center">
-          <Image src={initiative.image} alt={initiative.imageAlt} fill priority sizes="100vw" className="object-cover opacity-75" />
+          <Image src={initiative.image} alt={initiative.imageAlt} fill priority fetchPriority="high" sizes="100vw" className="object-cover opacity-75" />
         </motion.div>
         <div className="absolute inset-0 bg-gradient-to-r from-stone-950/90 via-stone-950/55 to-stone-950/10" />
         <div className="relative mx-auto flex min-h-[calc(100svh-3.5rem)] max-w-7xl items-center px-4 py-16 sm:px-6 lg:px-8 lg:py-20">
@@ -61,8 +61,42 @@ export function InitiativeStory({ initiative }: { initiative: Initiative }) {
       <section className="border-t border-stone-200 bg-[#fff7ed] px-4 py-20 text-center dark:border-white/10 dark:bg-zinc-900 sm:px-6 lg:py-28">
         <h2 className="text-balance font-serif text-4xl sm:text-5xl">Small acts can keep a bigger story moving.</h2>
         <p className="mx-auto mt-5 max-w-xl text-pretty leading-relaxed text-stone-600 dark:text-stone-300">Choose how you would like to help CauseKind connect people with practical, accountable support.</p>
+        {initiative.closing && <SupportCard closing={initiative.closing} />}
         <Link href="/donate/money#donate-form" className="mt-8 inline-flex min-h-11 items-center gap-2 rounded-full bg-brand-500 px-6 py-3 font-bold text-white shadow-[0_10px_24px_rgba(176,74,21,0.22)] transition-[transform,background-color] hover:-translate-y-0.5 hover:bg-brand-600 active:scale-[0.96]">Donate through CauseKind <ArrowRight className="h-4 w-4" /></Link>
       </section>
-    </main>
+    </div>
+  );
+}
+
+/**
+ * "Where your support goes" card above the final Donate button (owner-approved
+ * text, 23 Nov 2026). Same white card as the /sahas intro. Four points with an
+ * icon each: two columns from sm, one stacked column on phones.
+ */
+function SupportCard({ closing }: { closing: { intro: string; items: string } }) {
+  const points = [
+    { Icon: ShieldCheck, title: 'Secure payment', text: 'Donate money through Razorpay by UPI, cards, net banking or wallet.' },
+    { Icon: Mail, title: 'Certificate by email', text: 'Every donor receives a donation certificate by email.' },
+    { Icon: ReceiptIndianRupee, title: '80G receipt', text: 'Sahas is 12A and 80G certified: tick the 80G box on the donation form and add your PAN and address.' },
+    { Icon: PackageOpen, title: 'Give items directly', text: closing.items },
+  ];
+  return (
+    <div className="mx-auto mt-8 max-w-3xl rounded-2xl border border-[#D9C9B8] bg-white p-4 text-left shadow-sm sm:p-8 dark:border-zinc-700 dark:bg-zinc-900">
+      <p className="text-xs font-bold uppercase tracking-[0.14em] text-[#6f2c0a] dark:text-[#e07b3a]">Where your support goes</p>
+      <p className="mt-2 text-[15px] leading-[1.55] text-[#4A3B30] md:text-base dark:text-stone-300">{closing.intro}</p>
+      <ul className="mt-5 grid gap-3 sm:grid-cols-2 sm:gap-4">
+        {points.map(({ Icon, title, text }) => (
+          <li key={title} className="flex gap-3 rounded-xl bg-[#FBF5EE] p-3 sm:p-4 dark:bg-zinc-800">
+            <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-[#F3E2D2] text-[#6f2c0a] dark:bg-zinc-700 dark:text-[#e07b3a]">
+              <Icon className="h-[18px] w-[18px]" aria-hidden="true" />
+            </span>
+            <span className="min-w-0">
+              <span className="block text-sm font-bold text-[#1F140D] dark:text-stone-100">{title}</span>
+              <span className="mt-0.5 block text-sm leading-relaxed text-[#4A3B30] dark:text-stone-300">{text}</span>
+            </span>
+          </li>
+        ))}
+      </ul>
+    </div>
   );
 }

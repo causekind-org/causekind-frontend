@@ -31,17 +31,19 @@ export default function AdminFundraisingReviewPage() {
   }, []);
   useEffect(() => { if (FEATURES.fundraising) load(); }, [load]);
 
-  if (!FEATURES.fundraising) return <div className={a.root}><main className={a.wrap} style={{ paddingTop: 40 }}><p className={a.muted}>Fundraising is switched off.</p></main></div>;
+  if (!FEATURES.fundraising) return <div className={a.root}><div className={a.wrap} style={{ paddingTop: 40 }}><p className={a.muted}>Fundraising is switched off.</p></div></div>;
 
   return (
     <div className={a.root}>
-      <main style={{ padding: "20px 28px 48px", display: "flex", flexDirection: "column", gap: 18 }}>
+      <div style={{ padding: "20px 28px 48px", display: "flex", flexDirection: "column", gap: 18 }}>
         <nav className={a.switch} aria-label="Fundraising review">
           <Link href="/admin/fundraising" className={a.switchBtn}>Applications</Link>
           <Link href="/admin/fundraising/campaigns" className={a.switchBtn}>Publication review</Link>
           <span className={`${a.switchBtn} ${a.switchOn}`} aria-current="page">Updates &amp; changes</span>
           <Link href="/admin/fundraising/reports" className={a.switchBtn}>Reports</Link>
         </nav>
+        {/* Same title block as the other three fundraising pages; this one had none. */}
+        <div><h1 className={a.serif} style={{ fontSize: 28 }}>Updates &amp; changes</h1><p className={a.muted}>Approve organiser updates, page edits, closure requests and outcome reports on live fundraisers.</p></div>
         {failed ? (
           <div className={a.card} role="alert" style={{ padding: 20, display: "flex", flexDirection: "column", gap: 8, alignItems: "flex-start", borderColor: "#e9b8b3" }}>
             <strong className={a.err}>Couldn&apos;t load the review queue</strong><button type="button" className={`${a.btn} ${a.bs}`} onClick={load}>Retry</button>
@@ -63,10 +65,12 @@ export default function AdminFundraisingReviewPage() {
                   );
                 })}
             </section>
-            {sel ? <Review key={`${sel.kind}${sel.id}`} row={sel} onDecided={load} /> : <section className={a.card} style={{ padding: 22 }}><p className={a.muted}>Pick an item to review.</p></section>}
+            {sel ? <Review key={`${sel.kind}${sel.id}`} row={sel} onDecided={load} />
+              // With an empty queue there is nothing to pick, so the prompt was noise.
+              : rows && rows.length > 0 ? <section className={a.card} style={{ padding: 22 }}><p className={a.muted}>Pick an item to review.</p></section> : null}
           </div>
         )}
-      </main>
+      </div>
     </div>
   );
 }

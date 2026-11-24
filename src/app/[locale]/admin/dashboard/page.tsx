@@ -37,21 +37,26 @@ import { AiReviewPanel } from "@/components/admin/AiReviewPanel";
 import { UserJourneyPanel } from "@/components/admin/UserJourneyPanel";
 import { PhotoStrip } from "@/components/admin/PhotoStrip";
 import { AnalyticsPanel } from "@/components/admin/AnalyticsPanel";
-import { WhatsAppPanel } from "@/components/admin/WhatsAppPanel";
+import { CampaignHistoryList } from "@/components/admin/CampaignHistoryList";
+import { ListingHistoryList } from "@/components/admin/ListingHistoryList";
+import { MatchHistoryList } from "@/components/admin/MatchHistoryList";
+import { AdminStatusTabs } from "@/components/admin/AdminStatusTabs";
 import { AdminFundraisingNav } from "@/features/fundraising/AdminFundraisingNav";
 import { AdminFundraisingPanel } from "@/features/fundraising/AdminFundraisingPanel";
 import { AdminSahasPanel } from "@/features/sahas/AdminSahasPanel";
 import { FEATURES } from "@/lib/features";
+import { StaffShell, StaffNavGroup, StaffNavItem, StaffTopbarTitle } from "@/components/staff/StaffShell";
+import { PageHeader } from "@/components/staff/primitives";
 import {
   AlertTriangle, Bot, Building2, Check, ChevronDown, ChevronUp, ClipboardList, Clock, Gift, Handshake,
-  Image as ImageIcon, Loader2, LogOut, MapPin, Megaphone, MessageCircle, MessageSquare,
+  Image as ImageIcon, Loader2, LogOut, MapPin, Megaphone, MessageSquare,
   Package, Phone, RefreshCw, Search, ShieldCheck, Tag, TrendingUp, Truck, UserRound, X,
   type LucideIcon,
   Camera,
 } from "lucide-react";
 import { DashboardSkeleton } from "@/components/skeletons";
 
-type TabKey = "campaigns" | "requests" | "ngo-applications" | "ngo-drives" | "drive-offers" | "drive-proofs" | "ngo-activities" | "ngo-profile-changes" | "listings" | "matches" | "offers" | "issues" | "match-history" | "handover-photos" | "ai-logs" | "user-journey" | "analytics" | "whatsapp" | "fundraising" | "sahas";
+type TabKey = "campaigns" | "requests" | "ngo-applications" | "ngo-drives" | "drive-offers" | "drive-proofs" | "ngo-activities" | "ngo-profile-changes" | "listings" | "matches" | "offers" | "issues" | "match-history" | "handover-photos" | "ai-logs" | "user-journey" | "analytics" | "fundraising" | "sahas";
 
 /** Which AdminCapability (see backend AdminCapability enum) gates each tab —
  * used to hide tabs an admin has had revoked rather than just 403ing on click. */
@@ -78,7 +83,6 @@ const TAB_CAPABILITY: Record<TabKey, string> = {
   "ai-logs": "LISTING_REVIEW",
   "user-journey": "USER_READ",
   analytics: "PAYMENT_REVIEW",
-  whatsapp: "WHATSAPP",
   // Fundraising pages render in the panel (2026-10-19); same capability as /admin/fundraising.
   fundraising: "CAMPAIGNS",
   // Sahas campaigns (2026-11-03): same capability as the backend's sahas-campaigns segment.
@@ -121,10 +125,13 @@ const STATUS_COLORS: Record<string, string> = {
 };
 
 const ALL_MATCH_STATUSES = [
-  "ALL", "PENDING_APPROVAL", "AWAITING_DONEE_CONFIRMATION", "DONEE_ACCEPTED",
-  "BOTH_PARTIES_ACCEPTED", "LOGISTICS_CONFIRMED", "IN_TRANSIT", "COMPLETED",
-  "REJECTED", "CANCELLED",
+  "ALL", "DONOR_REVIEW", "PENDING_APPROVAL", "AWAITING_DONEE_CONFIRMATION", "DONEE_ACCEPTED",
+  "BOTH_PARTIES_ACCEPTED", "LOGISTICS_CONFIRMED", "HANDOVER_SCHEDULED", "IN_TRANSIT", "HANDOVER_AT_RISK",
+  "COMPLETED", "CERTIFICATE_ISSUED", "FAILED", "REJECTED", "CANCELLED",
 ];
+// Filter pills used to print raw enum names ("AWAITING DONEE CONFIRMATION").
+const matchStatusLabel = (s: string) => s === "ALL" ? "All"
+  : s.charAt(0) + s.slice(1).toLowerCase().replace(/_/g, " ");
 
 const AI_REC_FILTERS = ["ALL", "APPROVE", "REJECT", "MANUAL_REVIEW", "REQUEST_INFORMATION"];
 const REC_BADGE: Record<string, string> = {
@@ -145,9 +152,17 @@ function formatINR(n: number) {
   }).format(n);
 }
 
+/** Enum → readable label: "HANDOVER_SCHEDULED" → "Handover scheduled". Mixed-case input is only de-underscored. */
 function formatEnum(value?: string | null) {
   if (!value) return null;
-  return value.replace(/[_|]/g, " ").replace(/\s+/g, " ").trim();
+  const spaced = value.replace(/[_|]/g, " ").replace(/\s+/g, " ").trim();
+  if (spaced !== spaced.toUpperCase()) return spaced;
+  const ACRONYMS = new Set(["OTP", "UPI", "NGO", "AI", "PAN", "ID", "QR", "SMS", "KYC"]);
+  return spaced.split(" ").map((w, i) => {
+    if (ACRONYMS.has(w)) return w;
+    const lw = w.toLowerCase();
+    return i === 0 ? lw.charAt(0).toUpperCase() + lw.slice(1) : lw;
+  }).join(" ");
 }
 
 function formatDateTime(value?: string | null) {
@@ -196,10 +211,6 @@ export default function AdminDashboardPage() {
   const { user, isLoading, logout } = useAuth();
   const router = useRouter();
 
-  useEntityUpdates(["CAMPAIGN", "REQUEST", "LISTING", "MATCH", "OFFER"], () => {
-    loadData();
-  });
-
   // ── Approval queue state ──
   const [campaigns, setCampaigns] = useState<Campaign[]>([]);
   const [requests, setRequests] = useState<ItemRequest[]>([]);
@@ -209,8 +220,56 @@ export default function AdminDashboardPage() {
   const [ngoAwaiting, setNgoAwaiting] = useState(0);
   const [offersInFlight, setOffersInFlight] = useState(0);
   const [loading, setLoading] = useState(true);
+  const [rejectedListings, setRejectedListings] = useState<ItemListing[]>([]);
+  const [rejectedRequests, setRejectedRequests] = useState<ItemRequest[]>([]);
+
+  // ── Data loading ── (declared before the live-update subscription that calls it)
+  const loadData = useCallback(() => {
+    setLoading(true);
+    // Queue tabs show no NGO work; it is reviewed only in the NGO tabs.
+    const queue = { excludeNgo: true };
+    Promise.all([
+      adminGetCampaigns("PENDING_APPROVAL", queue),
+      adminGetItemRequests("PENDING_VERIFICATION", queue),
+      Promise.all([
+        adminGetItemListings("SUBMITTED", queue),
+        adminGetItemListings("MANUAL_REVIEW", queue),
+      ]).then(([submitted, manual]) => [...submitted, ...manual]),
+      adminGetMatches("PENDING_APPROVAL", queue),
+      // Offers tab manages its own list/loading inside OffersQueuePanel — here we only
+      // need counts: needs-action for the tab badge, plus open offers so the header
+      // doesn't claim "all clear" while an offer is mid-pipeline with the parties.
+      adminGetAllOffers(undefined, queue).then(all => ({
+        needsAction: all.filter(o => ["DONOR_RECONFIRMED", "PENDING_ADMIN_APPROVAL"].includes(o.status)).length,
+        open: all.filter(o => !["COMPLETED", "ADMIN_REJECTED", "WITHDRAWN", "DONEE_DECLINED", "CANCELLED", "DRAFT"].includes(o.status)).length,
+      })),
+      // Rejected items were previously fetched by nothing at all, so an AI
+      // auto-reject was final AND invisible — no queue contained it and no admin
+      // could act on it. These two make it reviewable.
+      adminGetItemListings("REJECTED", queue),
+      adminGetItemRequests("REJECTED", queue),
+    ]).then(([c, r, l, m, offerCounts, rejL, rejR]) => {
+      setCampaigns(c); setRequests(r); setListings(l as ItemListing[]); setMatches(m);
+      setOffersNeedingAction(offerCounts.needsAction);
+      setOffersInFlight(offerCounts.open);
+      setRejectedListings(rejL as ItemListing[]);
+      setRejectedRequests(rejR as ItemRequest[]);
+    }).catch(() => toast.error("Failed to load approval queue"))
+      .finally(() => setLoading(false));
+  }, []);
+
+  useEntityUpdates(["CAMPAIGN", "REQUEST", "LISTING", "MATCH", "OFFER"], () => {
+    loadData();
+  });
+
 
   const [tab, setTab] = useState<TabKey>("campaigns");
+  // Campaigns tab: 0 = pending queue, 1 = approved, 2 = rejected (read-only history).
+  const [campaignView, setCampaignView] = useState(0);
+  // Listings tab: 0 = pending queue (+ rejected review), 1 = waiting on donor, 2 = approved.
+  const [listingView, setListingView] = useState(0);
+  // Matches tab: 0 = approval queue, 1 = in progress, 2 = completed, 3 = stopped.
+  const [matchView, setMatchView] = useState(0);
   // Which fundraising page the panel shows when tab === "fundraising".
   const [frPath, setFrPath] = useState("/admin/fundraising");
   const openFundraising = useCallback((href: string) => { setFrPath(href); setTab("fundraising"); }, []);
@@ -345,6 +404,9 @@ export default function AdminDashboardPage() {
   const [allMatches, setAllMatches] = useState<ItemMatch[]>([]);
   const [allMatchesLoaded, setAllMatchesLoaded] = useState(false);
   const [allMatchesLoading, setAllMatchesLoading] = useState(false);
+  // A failed load used to fall through to "No matches found for this filter" — a false empty.
+  const [allMatchesError, setAllMatchesError] = useState(false);
+  const [assessmentsError, setAssessmentsError] = useState(false);
   const [matchHistoryStatus, setMatchHistoryStatus] = useState("ALL");
   const [matchExpandedId, setMatchExpandedId] = useState<number | null>(null);
   const [matchStatusHistory, setMatchStatusHistory] = useState<Record<number, StatusHistoryEntry[]>>({});
@@ -362,65 +424,32 @@ export default function AdminDashboardPage() {
   // Rejected queues + the pending reinstate confirmation. Reinstating republishes
   // something that was blocked for a stated safety reason, so it is never a
   // single click.
-  const [rejectedListings, setRejectedListings] = useState<ItemListing[]>([]);
-  const [rejectedRequests, setRejectedRequests] = useState<ItemRequest[]>([]);
   const [reinstateTarget, setReinstateTarget] = useState<
     { kind: "listing" | "request"; id: number; title: string } | null
   >(null);
   const [reinstating, setReinstating] = useState(false);
 
   // ── Data loading ──
-  const loadData = useCallback(() => {
-    setLoading(true);
-    // Queue tabs show no NGO work; it is reviewed only in the NGO tabs.
-    const queue = { excludeNgo: true };
-    Promise.all([
-      adminGetCampaigns("PENDING_APPROVAL", queue),
-      adminGetItemRequests("PENDING_VERIFICATION", queue),
-      Promise.all([
-        adminGetItemListings("SUBMITTED", queue),
-        adminGetItemListings("MANUAL_REVIEW", queue),
-      ]).then(([submitted, manual]) => [...submitted, ...manual]),
-      adminGetMatches("PENDING_APPROVAL", queue),
-      // Offers tab manages its own list/loading inside OffersQueuePanel — here we only
-      // need counts: needs-action for the tab badge, plus open offers so the header
-      // doesn't claim "all clear" while an offer is mid-pipeline with the parties.
-      adminGetAllOffers(undefined, queue).then(all => ({
-        needsAction: all.filter(o => ["DONOR_RECONFIRMED", "PENDING_ADMIN_APPROVAL"].includes(o.status)).length,
-        open: all.filter(o => !["COMPLETED", "ADMIN_REJECTED", "WITHDRAWN", "DONEE_DECLINED", "CANCELLED", "DRAFT"].includes(o.status)).length,
-      })),
-      // Rejected items were previously fetched by nothing at all, so an AI
-      // auto-reject was final AND invisible — no queue contained it and no admin
-      // could act on it. These two make it reviewable.
-      adminGetItemListings("REJECTED", queue),
-      adminGetItemRequests("REJECTED", queue),
-    ]).then(([c, r, l, m, offerCounts, rejL, rejR]) => {
-      setCampaigns(c); setRequests(r); setListings(l as ItemListing[]); setMatches(m);
-      setOffersNeedingAction(offerCounts.needsAction);
-      setOffersInFlight(offerCounts.open);
-      setRejectedListings(rejL as ItemListing[]);
-      setRejectedRequests(rejR as ItemRequest[]);
-    }).catch(() => toast.error("Failed to load approval queue"))
-      .finally(() => setLoading(false));
-  }, []);
 
   async function loadAllMatches(status?: string) {
     setAllMatchesLoading(true);
+    setAllMatchesError(false);
     try {
       const data = await adminGetMatches(status === "ALL" || !status ? undefined : status);
       setAllMatches(data);
       setAllMatchesLoaded(true);
-    } catch { toast.error("Failed to load match history"); }
+    } catch { setAllMatchesError(true); toast.error("Failed to load match history"); }
     finally { setAllMatchesLoading(false); }
   }
 
   async function loadAiLogs() {
     setAssessmentsLoading(true);
+    setAssessmentsError(false);
     try {
       const data = await adminGetAllAiAssessments();
       setAssessments(data);
       setAssessmentsLoaded(true);
-    } catch { toast.error("Failed to load AI assessment logs"); }
+    } catch { setAssessmentsError(true); toast.error("Failed to load AI assessment logs"); }
     finally { setAssessmentsLoading(false); }
   }
 
@@ -611,11 +640,11 @@ export default function AdminDashboardPage() {
   // wrong side of the mobile nav split below.
   const isDriveTab = tab === "ngo-drives" || tab === "drive-offers" || tab === "drive-proofs";
   const isReportTab = tab === "match-history" || tab === "handover-photos" || tab === "ai-logs"
-    || tab === "user-journey" || tab === "analytics" || tab === "whatsapp" || tab === "fundraising" || tab === "sahas" || tab === "issues";
+    || tab === "user-journey" || tab === "analytics" || tab === "fundraising" || tab === "sahas" || tab === "issues";
   const showIssues = canSeeTab("issues");
 
   const TABS = [
-    { key: "campaigns" as TabKey, label: "Campaigns",    count: campaigns.length,   icon: Megaphone,     color: "#e07b3a" },
+    { key: "campaigns" as TabKey, label: "Campaigns",    count: campaigns.length,   icon: Megaphone,     color: "#2d7fd6" },
     { key: "requests"  as TabKey, label: "Requests",     count: requests.length,    icon: ClipboardList,  color: "#60a5fa" },
     { key: "listings"  as TabKey, label: "Listings",     count: listings.length,    icon: Package,        color: "#a78bfa" },
     { key: "matches"   as TabKey, label: "Matches",      count: matches.length,     icon: Handshake,      color: "#34d399" },
@@ -643,7 +672,6 @@ export default function AdminDashboardPage() {
     { key: "ai-logs"       as TabKey, label: "AI Screening Logs", icon: Bot,           color: "text-violet-400" },
     { key: "user-journey"  as TabKey, label: "User Journey",      icon: UserRound,     color: "text-sky-400"    },
     { key: "analytics"     as TabKey, label: "Analytics",         icon: TrendingUp,    color: "text-amber-400"  },
-    { key: "whatsapp"      as TabKey, label: "WhatsApp",          icon: MessageCircle, color: "text-green-400"  },
   ].filter(t => canSeeTab(t.key));
 
   const headerTitle = tab === "issues" ? "Issues"
@@ -658,25 +686,29 @@ export default function AdminDashboardPage() {
     : tab === "ai-logs" ? "AI Screening Logs"
     : tab === "user-journey" ? "User Journey"
     : tab === "analytics" ? "Analytics"
-    : tab === "whatsapp" ? "WhatsApp"
     : tab === "fundraising" ? "Fundraising"
     : tab === "sahas" ? "Sahas campaigns"
+    : tab === "campaigns" ? "Campaigns"
+    : tab === "requests" ? "Requests"
+    : tab === "listings" ? "Listings"
+    : tab === "matches" ? "Matches"
+    : tab === "offers" ? "Offers"
     : "Approval Queue";
 
   const headerSubtitle = tab === "issues"
     ? `${openIssues} open · every problem report and support case, with its full story`
     : tab === "ngo-applications"
-    ? `${ngoAwaiting} application${ngoAwaiting !== 1 ? "s" : ""} awaiting review · approval unlocks requests and drives`
+    ? "Registration review, document checks and verification for NGOs joining CauseKind"
     : tab === "ngo-drives"
-    ? `${drivesPending} drive${drivesPending !== 1 ? "s" : ""} awaiting review · approval makes a drive live for donors`
+    ? "Review, approval and progress of drives that NGOs post for donors"
     : tab === "drive-offers"
-    ? `${driveOffersPending} donor offer${driveOffersPending !== 1 ? "s" : ""} to drives in handover · monitor only, the NGO accepts offers`
+    ? "Donor offers to NGO drives and their handovers, from offer to completion"
     : tab === "ngo-profile-changes"
-    ? `${profileChangesPending} profile change${profileChangesPending !== 1 ? "s" : ""} awaiting review · approving updates the public page`
+    ? "Changes NGOs request to their verified profile details, for review"
     : tab === "ngo-activities"
-    ? `${activitiesPending} past-activit${activitiesPending !== 1 ? "ies" : "y"} awaiting review · approval shows it on the NGO's public page`
+    ? "Past work NGOs share for their public page, with photos and consent checks"
     : tab === "drive-proofs"
-    ? `${driveProofsPending} distribution proof${driveProofsPending !== 1 ? "s" : ""} awaiting review · approval completes the drive`
+    ? "Distribution photos and reports NGOs submit to complete their drives"
     : tab === "handover-photos"
     ? "Every on-the-spot handover photo, with the full record of each donation"
     : tab === "match-history"
@@ -685,353 +717,100 @@ export default function AdminDashboardPage() {
     ? "One user's complete story — every step on record, from registration to today"
     : tab === "analytics"
     ? "Donation and campaign performance"
-    : tab === "whatsapp"
-    ? "Templates, flows, sends, and the message log"
     : tab === "fundraising"
     ? "Applications, publication, updates and reports for donee fundraisers"
     : tab === "sahas"
     ? "Campaigns organised by Sahas Charitable Trust: items, publishing, offers and handovers"
     : tab === "ai-logs"
     ? `${assessments.length} assessment${assessments.length !== 1 ? "s" : ""} across all listings`
+    : tab === "campaigns" && !loading
+    ? (campaigns.length > 0 ? `${campaigns.length} campaign${campaigns.length !== 1 ? "s" : ""} waiting for approval` : "No campaigns waiting — switch to Approved or Rejected to see past decisions")
+    : tab === "listings" && !loading
+    ? (listings.length > 0 ? `${listings.length} donor listing${listings.length !== 1 ? "s" : ""} need review` : "No listings need review — switch view to see ones waiting on the donor or already approved")
+    : tab === "matches" && !loading
+    ? (matches.length > 0 ? `${matches.length} donor–donee match${matches.length !== 1 ? "es" : ""} waiting for approval` : "No matches waiting — switch view to follow ones in progress, completed or stopped")
+    : tab === "offers" && !loading
+    ? (offersNeedingAction > 0 ? `${offersNeedingAction} offer${offersNeedingAction !== 1 ? "s" : ""} waiting for your approval` : "Donor offers on requests — approve, follow and step in when a handover goes wrong")
+    : tab === "requests" && !loading
+    ? (requests.length > 0 ? `${requests.length} request${requests.length !== 1 ? "s" : ""} need verification` : "No requests need verification — use the filters to see held, verified or rejected ones")
     : loading ? "Loading..." : total > 0
       ? `${total} item${total !== 1 ? "s" : ""} awaiting your review`
       : offersInFlight > 0
       ? `Nothing needs action — ${offersInFlight} offer${offersInFlight !== 1 ? "s" : ""} in flight`
       : "All clear — nothing pending";
 
-  return (
-    <div className="min-h-screen flex bg-[#12101a]">
-      {/* ── DARK LEFT SIDEBAR ────────────────────────────────────────────────── */}
-      <aside className="hidden lg:flex w-[296px] shrink-0 flex-col min-h-screen fixed left-0 top-0 bottom-0 z-10 border-r border-white/[0.07] overflow-y-auto"
-        style={{ background: "linear-gradient(180deg, #17141f 0%, #12101a 100%)" }}>
-
-        {/* Brand strip */}
-        <div className="px-4 sm:px-7 pt-8 pb-6 border-b border-white/[0.07]">
-          <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-xl flex items-center justify-center shrink-0"
-              style={{ background: "linear-gradient(135deg, #b04a15 0%, #e07b3a 100%)" }}>
-              <ShieldCheck className="w-5 h-5 text-white" />
-            </div>
-            <div>
-              <p className="text-base font-black text-white leading-none tracking-tight">CauseKind</p>
-              <p className="text-2xs text-[#b04a15] font-bold uppercase tracking-widest mt-0.5">Admin Panel</p>
-            </div>
-          </div>
-        </div>
-
-        {/* Admin identity card */}
-        <div className="px-3.5 sm:px-5 pt-5 pb-2">
-          <div className="rounded-xl px-4 py-3.5 border border-white/[0.07]"
-            style={{ background: "rgba(176,74,21,0.08)" }}>
-            <p className="text-3xs font-bold uppercase tracking-widest text-[#b04a15]/70 mb-1">Signed in as</p>
-            <p className="text-sm font-semibold text-stone-200 truncate">{user.email}</p>
-            <div className="inline-flex items-center gap-1.5 mt-2 bg-[#b04a15]/20 rounded-full px-2 py-0.5">
-              <span className="w-1.5 h-1.5 rounded-full bg-[#b04a15] animate-pulse" />
-              <span className="text-3xs font-black text-[#b04a15] uppercase tracking-wide">Admin</span>
-            </div>
-          </div>
-        </div>
-
-        {/* Queue count pills */}
-        <div className="px-3.5 sm:px-5 pt-5 space-y-2 flex-1">
-          <p className="text-3xs font-black uppercase tracking-widest text-stone-600 px-1 pb-1">Pending Review</p>
-          {TABS.map(({ key, label, count, icon: Icon, color }) => (
-            <button
-              key={key}
-              onClick={() => selectTab(key)}
-              className={`w-full flex items-center justify-between px-4 py-3.5 rounded-xl text-left transition-all border ${
-                tab === key
-                  ? "border-[#b04a15]/40"
-                  : "border-white/[0.05] hover:border-white/10"
-              }`}
-              style={{ background: tab === key ? "rgba(176,74,21,0.12)" : "rgba(255,255,255,0.025)" }}
-            >
-              <div className="flex items-center gap-3">
-                <Icon className="w-4 h-4 shrink-0" style={{ color: tab === key ? "#b04a15" : color }} />
-                <span className={`text-sm font-semibold ${tab === key ? "text-white" : "text-stone-400"}`}>{label}</span>
-              </div>
-              <div className="flex items-center gap-2">
-                {count > 0 && <span className="w-1.5 h-1.5 rounded-full bg-[#b04a15] animate-pulse shrink-0" />}
-                <span className="text-base sm:text-lg font-black tabular-nums leading-none" style={{ color: count > 0 ? color : "#3d3d52" }}>{count}</span>
-              </div>
-            </button>
+  // Sidebar content for StaffShell (desktop sidebar and the mobile drawer share it).
+  // Groups: review queues, NGO operations, fundraising & Sahas, support, reports.
+  const adminNav = (
+    <div className="space-y-1">
+      {TABS.length > 0 && (
+        <StaffNavGroup title="Review queues">
+          {TABS.map(({ key, label, count, icon }) => (
+            <StaffNavItem key={key} label={label} icon={icon} count={count} active={tab === key} onClick={() => selectTab(key)} />
           ))}
+        </StaffNavGroup>
+      )}
 
-          {showIssues && (
-            <div className="pt-2">
-              <button
-                onClick={() => { selectTab("issues"); setIssueDeepLink(null); }}
-                aria-current={tab === "issues" ? "page" : undefined}
-                className={`w-full flex items-center justify-between px-4 py-3.5 rounded-xl text-left transition-all border ${
-                  tab === "issues" ? "border-[#b04a15]/40" : "border-white/[0.05] hover:border-white/10"
-                }`}
-                style={{ background: tab === "issues" ? "rgba(176,74,21,0.12)" : "rgba(255,255,255,0.025)" }}
-              >
-                <div className="flex items-center gap-3">
-                  <AlertTriangle className="w-4 h-4 shrink-0" style={{ color: tab === "issues" ? "#b04a15" : "#f59e0b" }} aria-hidden />
-                  <span className={`text-sm font-semibold ${tab === "issues" ? "text-white" : "text-stone-400"}`}>Issues</span>
-                </div>
-                <div className="flex items-center gap-2">
-                  {openIssues > 0 && <span className="w-1.5 h-1.5 rounded-full bg-[#b04a15] animate-pulse shrink-0" />}
-                  <span className="text-base sm:text-lg font-black tabular-nums leading-none" style={{ color: openIssues > 0 ? "#f59e0b" : "#3d3d52" }}>{openIssues}</span>
-                </div>
-              </button>
-            </div>
-          )}
+      {showIssues && (
+        <StaffNavGroup title="Support">
+          <StaffNavItem label="Issues" icon={AlertTriangle} count={openIssues} countTone="danger" active={tab === "issues"}
+            onClick={() => { selectTab("issues"); setIssueDeepLink(null); }} />
+        </StaffNavGroup>
+      )}
 
-          {NGO_TABS.length > 0 && (
-            <div className="pt-2 space-y-2">
-              <button
-                onClick={() => setNgoExpanded(open => !open)}
-                aria-expanded={ngoGroupOpen}
-                aria-controls="admin-ngo-group"
-                className="w-full flex items-center justify-between px-1 py-1 text-left"
-              >
-                <span className="flex items-center gap-2 text-3xs font-black uppercase tracking-widest text-stone-500">
-                  <Building2 className="w-3.5 h-3.5" aria-hidden /> NGO
-                </span>
-                <span className="flex items-center gap-2">
-                  <span className="text-sm font-black tabular-nums" style={{ color: ngoTotal > 0 ? "#34a578" : "#3d3d52" }}>{ngoTotal}</span>
-                  {ngoGroupOpen ? <ChevronUp className="w-4 h-4 text-stone-500" aria-hidden /> : <ChevronDown className="w-4 h-4 text-stone-500" aria-hidden />}
-                </span>
-              </button>
-              {ngoGroupOpen && (
-                <div id="admin-ngo-group" className="space-y-2 pl-2 border-l border-white/[0.07]">
-                  {NGO_TABS.map(({ key, label, count, icon: Icon, color }) => (
-                    <button
-                      key={key}
-                      onClick={() => selectTab(key)}
-                      aria-current={tab === key ? "page" : undefined}
-                      className={`w-full flex items-center justify-between px-4 py-3 rounded-xl text-left transition-all border ${
-                        tab === key ? "border-[#b04a15]/40" : "border-white/[0.05] hover:border-white/10"
-                      }`}
-                      style={{ background: tab === key ? "rgba(176,74,21,0.12)" : "rgba(255,255,255,0.025)" }}
-                    >
-                      <div className="flex items-center gap-3">
-                        <Icon className="w-4 h-4 shrink-0" style={{ color: tab === key ? "#b04a15" : color }} />
-                        <span className={`text-sm font-semibold ${tab === key ? "text-white" : "text-stone-400"}`}>{label}</span>
-                      </div>
-                      <div className="flex items-center gap-2">
-                        {count > 0 && <span className="w-1.5 h-1.5 rounded-full bg-[#b04a15] animate-pulse shrink-0" />}
-                        <span className="text-base font-black tabular-nums leading-none" style={{ color: count > 0 ? color : "#3d3d52" }}>{count}</span>
-                      </div>
-                    </button>
-                  ))}
-                </div>
-              )}
-            </div>
-          )}
+      {/* Always open (owner, 2026-11-20): no collapse toggle on the NGO group. */}
+      {NGO_TABS.length > 0 && (
+        <StaffNavGroup title="NGO operations">
+          {NGO_TABS.map(({ key, label, count, icon }) => (
+            <StaffNavItem key={key} label={label} icon={icon} count={count} active={tab === key} onClick={() => selectTab(key)} />
+          ))}
+        </StaffNavGroup>
+      )}
 
+      {(canSeeTab("fundraising") || (FEATURES.sahas && canSeeTab("sahas"))) && (
+        <StaffNavGroup title="Fundraising &amp; Sahas">
           <AdminFundraisingNav variant="sidebar" allowed={canSeeTab("fundraising")} active={tab === "fundraising" ? frPath : null} onSelect={openFundraising} />
           {FEATURES.sahas && canSeeTab("sahas") && (
-            <button type="button" onClick={() => setTab("sahas")} aria-current={tab === "sahas" ? "page" : undefined}
-              className={`mt-2 w-full flex items-center justify-between px-4 py-3 rounded-xl text-left transition-all border ${tab === "sahas" ? "border-[#b04a15]/40" : "border-white/[0.05] hover:border-white/10"}`}
-              style={{ background: tab === "sahas" ? "rgba(176,74,21,0.12)" : "rgba(255,255,255,0.025)" }}>
-              <span className={`text-sm font-semibold ${tab === "sahas" ? "text-white" : "text-stone-400"}`}>Sahas campaigns</span>
+            <StaffNavItem label="Sahas campaigns" icon={Megaphone} active={tab === "sahas"} onClick={() => setTab("sahas")} />
+          )}
+        </StaffNavGroup>
+      )}
+
+
+      {REPORTS.length > 0 && (
+        <StaffNavGroup title="Reports">
+          {REPORTS.map(({ key, label, icon }) => (
+            <StaffNavItem key={key} label={label} icon={icon} active={tab === key} onClick={() => selectTab(key)} />
+          ))}
+        </StaffNavGroup>
+      )}
+    </div>
+  );
+
+
+  return (
+    <StaffShell
+      consoleLabel="Admin"
+      email={user.email ?? ""}
+      onSignOut={() => { logout(); router.push("/login"); }}
+      nav={adminNav}
+      topbarStart={<StaffTopbarTitle label={headerTitle} hint={total > 0 ? `${total} waiting across your queues` : undefined} />}
+      topbarEnd={
+        <>
+          {tab === "ai-logs" && (
+            <button type="button" onClick={loadAiLogs} disabled={assessmentsLoading} className="ck-staff-icon-btn disabled:opacity-50" aria-label="Refresh AI screening logs">
+              <RefreshCw className={`size-4 ${assessmentsLoading ? "animate-spin" : ""}`} aria-hidden />
             </button>
           )}
-        </div>
-
-        {/* Reports */}
-        <div className="px-3.5 sm:px-5 pb-3 pt-2 space-y-1">
-          <p className="text-3xs font-black uppercase tracking-widest text-stone-600 px-1 pb-1">Reports</p>
-          {REPORTS.map(({ key, label, icon: Icon, color }) => (
-            <button
-              key={key}
-              onClick={() => selectTab(key)}
-              aria-current={tab === key ? "page" : undefined}
-              className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-semibold transition-all border ${
-                tab === key
-                  ? "border-[#b04a15]/40 text-white"
-                  : "border-white/[0.05] text-stone-400 hover:text-white hover:bg-white/5"
-              }`}
-              style={{ background: tab === key ? "rgba(176,74,21,0.12)" : undefined }}
-            >
-              <Icon className={`w-4 h-4 shrink-0 ${tab === key ? "text-[#b04a15]" : color}`} aria-hidden />
-              {label}
-            </button>
-          ))}
-        </div>
-
-        {/* Sign out */}
-        <div className="px-3.5 sm:px-5 pb-7 pt-5 border-t border-white/[0.07] mt-auto">
-          <button
-            onClick={() => { logout(); router.push("/login"); }}
-            className="w-full flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-semibold text-stone-500 hover:text-red-400 hover:bg-red-500/10 transition-all"
-          >
-            <LogOut className="w-4 h-4 shrink-0" />
-            Sign Out
-          </button>
-        </div>
-      </aside>
-
-      {/* ── CREAM RIGHT PANEL ────────────────────────────────────────────────── */}
-      <main className="flex-1 lg:pl-[296px] min-w-0 flex flex-col bg-[#faf7f2]">
-
-        {/* Mobile top bar */}
-        <div className={`lg:hidden sticky top-0 z-20 flex items-center justify-between px-3.5 py-2.5 border-b border-white/[0.07] transition-shadow duration-300 ${
-            scrolled ? "shadow-[0_10px_28px_-10px_rgba(0,0,0,0.55)]" : "shadow-none"
-          }`}
-          style={{ background: "#17141f" }}>
-          <div className="flex items-center gap-2.5">
-            <div className="w-8 h-8 rounded-lg flex items-center justify-center shrink-0"
-              style={{ background: "linear-gradient(135deg, #b04a15, #e07b3a)" }}>
-              <ShieldCheck className="w-4.5 h-4.5 text-white" />
-            </div>
-            <div>
-              <p className="text-sm font-black text-white leading-none">Admin Panel</p>
-              <p className="text-4xs text-[#b04a15] font-bold uppercase tracking-widest mt-0.5">CauseKind</p>
-            </div>
-          </div>
-          <div className="flex items-center gap-1.5">
-            {/* The site navbar (and its bell) is hidden on this page, so admins get the bell here. */}
-            <NotificationBell />
-            <button
-              onClick={() => { logout(); router.push("/login"); }}
-              className="flex items-center gap-1.5 text-xs font-bold text-stone-500 hover:text-red-400 transition-colors px-2.5 py-1.5 rounded-lg hover:bg-red-500/10"
-            >
-              <LogOut className="w-3.5 h-3.5" /> Sign Out
-            </button>
-          </div>
-        </div>
-
-        {/* Sticky content header — gains an elevated shadow once content scrolls under it */}
-        <div className={`sticky top-0 lg:top-0 z-10 border-b border-stone-200 bg-[#faf7f2]/96 backdrop-blur-sm transition-shadow duration-300 ease-out ${
-            scrolled ? "shadow-[0_12px_32px_-14px_rgba(28,25,23,0.28)]" : "shadow-none"
-          }`}>
-          <div className="px-4 sm:px-7 lg:px-10 py-3.5 sm:py-5 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 sm:gap-4">
-            <div>
-              <h1 className="text-xl font-black text-stone-900 tracking-tight leading-none">{headerTitle}</h1>
-              <p className="text-sm text-stone-500 mt-1.5">{headerSubtitle}</p>
-            </div>
-            <div className="hidden lg:block sm:order-last">
-              <NotificationBell />
-            </div>
-
-            {/* AI logs refresh button */}
-            {tab === "ai-logs" && (
-              <button
-                onClick={loadAiLogs}
-                disabled={assessmentsLoading}
-                className="hidden sm:flex items-center gap-1.5 px-3 py-2 text-sm font-semibold border border-stone-200 rounded-xl bg-white text-stone-600 hover:text-stone-900 transition-all disabled:opacity-50"
-              >
-                <RefreshCw className={`w-3.5 h-3.5 ${assessmentsLoading ? "animate-spin" : ""}`} />
-                Refresh
-              </button>
-            )}
-          </div>
-
-          {/* ── Below-lg navigation ──────────────────────────────────────────
-              One strip carrying *every* destination, always rendered. It used to
-              be two strips switched on `isReportTab`, which meant the reports
-              were unreachable from any queue tab and the queue was unreachable
-              from any report — on a phone the only way across was to edit the
-              URL. Both halves live here now, separated by a rule.
-
-              `lg:hidden`, not `sm:hidden`: the sidebar only appears at `lg`, so
-              anything narrower than that needs this. The old `sm:hidden` left
-              tablets (640–1023px) with no report navigation at all. */}
-          <nav
-            aria-label="Admin sections"
-            ref={navStripRef}
-            className="lg:hidden flex items-center gap-1.5 px-3 pb-2.5 overflow-x-auto scrollbar-hide"
-          >
-            {TABS.map(({ key, label, count }) => (
-              <button
-                key={key}
-                data-active={tab === key || undefined}
-                onClick={() => selectTab(key)}
-                aria-current={tab === key ? "page" : undefined}
-                className={`flex-shrink-0 flex items-center gap-1 px-3 py-1.5 rounded-lg text-xs font-bold transition-all ${
-                  tab === key
-                    ? "bg-[#b04a15] text-white"
-                    : "bg-white text-stone-500 border border-stone-200"
-                }`}
-              >
-                {label}
-                {count > 0 && <span className="opacity-80">{count}</span>}
-              </button>
-            ))}
-
-            {showIssues && (
-              <button
-                data-active={tab === "issues" || undefined}
-                onClick={() => { selectTab("issues"); setIssueDeepLink(null); }}
-                aria-current={tab === "issues" ? "page" : undefined}
-                className={`flex-shrink-0 flex items-center gap-1 px-3 py-1.5 rounded-lg text-xs font-bold transition-all ${
-                  tab === "issues" ? "bg-[#b04a15] text-white" : "bg-white text-stone-500 border border-stone-200"
-                }`}
-              >
-                <AlertTriangle className="w-3.5 h-3.5 shrink-0" aria-hidden />
-                Issues
-                {openIssues > 0 && <span className="opacity-80">{openIssues}</span>}
-              </button>
-            )}
-
-            {NGO_TABS.length > 0 && (
-              <>
-                <span className="mx-0.5 h-5 w-px flex-shrink-0 bg-stone-300" aria-hidden />
-                <button
-                  onClick={() => setNgoExpanded(open => !open)}
-                  aria-expanded={ngoGroupOpen}
-                  className={`flex-shrink-0 flex items-center gap-1 px-3 py-1.5 rounded-lg text-xs font-black uppercase tracking-wide transition-all ${
-                    NGO_TAB_KEYS.includes(tab) ? "bg-[#34a578] text-white" : "bg-white text-stone-600 border border-stone-200"
-                  }`}
-                >
-                  NGO
-                  {ngoTotal > 0 && <span className="opacity-80">{ngoTotal}</span>}
-                  {ngoGroupOpen ? <ChevronUp className="w-3 h-3" aria-hidden /> : <ChevronDown className="w-3 h-3" aria-hidden />}
-                </button>
-                {ngoGroupOpen && NGO_TABS.map(({ key, label, count }) => (
-                  <button
-                    key={key}
-                    data-active={tab === key || undefined}
-                    onClick={() => selectTab(key)}
-                    aria-current={tab === key ? "page" : undefined}
-                    className={`flex-shrink-0 flex items-center gap-1 px-3 py-1.5 rounded-lg text-xs font-bold transition-all ${
-                      tab === key ? "bg-[#b04a15] text-white" : "bg-white text-stone-500 border border-stone-200"
-                    }`}
-                  >
-                    {label}
-                    {count > 0 && <span className="opacity-80">{count}</span>}
-                  </button>
-                ))}
-              </>
-            )}
-
-            <AdminFundraisingNav variant="strip" allowed={canSeeTab("fundraising")} active={tab === "fundraising" ? frPath : null} onSelect={openFundraising} />
-            {FEATURES.sahas && canSeeTab("sahas") && (
-              <button type="button" onClick={() => setTab("sahas")} aria-current={tab === "sahas" ? "page" : undefined}
-                className={`flex-shrink-0 px-3 py-1.5 rounded-lg text-xs font-bold transition-all ${tab === "sahas" ? "bg-[#b04a15] text-white" : "bg-white text-stone-500 border border-stone-200"}`}>
-                Sahas
-              </button>
-            )}
-
-            {REPORTS.length > 0 && (
-              <span className="mx-0.5 h-5 w-px flex-shrink-0 bg-stone-300" aria-hidden />
-            )}
-
-            {REPORTS.map(({ key, label, icon: Icon }) => (
-              <button
-                key={key}
-                data-active={tab === key || undefined}
-                onClick={() => selectTab(key)}
-                aria-current={tab === key ? "page" : undefined}
-                className={`flex-shrink-0 flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold transition-all ${
-                  tab === key
-                    ? "bg-[#b04a15] text-white"
-                    : "bg-white text-stone-500 border border-stone-200"
-                }`}
-              >
-                <Icon className="w-3.5 h-3.5 shrink-0" aria-hidden />
-                {label}
-              </button>
-            ))}
-          </nav>
-        </div>
+          {/* The site navbar (and its bell) is hidden on this page, so admins get the bell here. */}
+          <span className="ck-staff-icon-btn !bg-white !text-[color:var(--st-text)]"><NotificationBell /></span>
+        </>
+      }
+    >
+        <PageHeader title={headerTitle} description={headerSubtitle} />
 
         {/* ── Cards feed ── */}
-        <div className={`flex-1 px-4 sm:px-7 lg:px-10 py-5 sm:py-8 ${tab === "ngo-applications" || tab === "ngo-drives" || tab === "issues" ? "max-w-6xl" : "max-w-4xl"} space-y-3 sm:space-y-4`}>
+        <div className={`${tab === "ngo-applications" || tab === "ngo-drives" || tab === "issues" ? "max-w-6xl" : "max-w-5xl"} space-y-3 sm:space-y-4`}>
 
           {showIssues && (
             <Suspense fallback={null}><IssueLinkWatcher onOpen={openIssueLink} /></Suspense>
@@ -1070,6 +849,19 @@ export default function AdminDashboardPage() {
             ) : (
               <>
                 {tab === "campaigns" && (
+                  <div className="mb-5 space-y-3">
+                    <AdminStatusTabs label="Campaign status" selected={campaignView} onSelect={setCampaignView}
+                      options={[{ label: `Pending (${campaigns.length})` }, { label: "Approved" }, { label: "Rejected" }]} />
+                    <p className="text-xs text-stone-500">
+                      Legacy money campaigns from donees. New fundraisers are reviewed under{" "}
+                      <button type="button" className="font-semibold text-[#1f66b3] underline underline-offset-2"
+                        onClick={() => openFundraising("/admin/fundraising")}>Fundraising → Applications</button>.
+                    </p>
+                  </div>
+                )}
+                {tab === "campaigns" && campaignView === 1 && <CampaignHistoryList status="APPROVED" />}
+                {tab === "campaigns" && campaignView === 2 && <CampaignHistoryList status="REJECTED" />}
+                {tab === "campaigns" && campaignView === 0 && (
                   campaigns.length === 0
                     ? <AllClearState label="No pending campaigns" />
                     : campaigns.map(c => (
@@ -1090,6 +882,14 @@ export default function AdminDashboardPage() {
                 )}
 
                 {tab === "listings" && (
+                  <div className="mb-5">
+                    <AdminStatusTabs label="Listing status" selected={listingView} onSelect={setListingView}
+                      options={[{ label: `Needs review (${listings.length})` }, { label: "Waiting on donor" }, { label: "Approved" }]} />
+                  </div>
+                )}
+                {tab === "listings" && listingView === 1 && <ListingHistoryList status="NEEDS_INFORMATION" />}
+                {tab === "listings" && listingView === 2 && <ListingHistoryList status="ELIGIBLE_FOR_MATCHING" />}
+                {tab === "listings" && listingView === 0 && (
                   <RejectedReviewSection
                     listings={rejectedListings}
                     requests={rejectedRequests}
@@ -1097,7 +897,7 @@ export default function AdminDashboardPage() {
                   />
                 )}
 
-                {tab === "listings" && (
+                {tab === "listings" && listingView === 0 && (
                   listings.length === 0
                     ? <AllClearState label="No pending item listings" />
                     : listings.map(l => (
@@ -1140,8 +940,17 @@ export default function AdminDashboardPage() {
                 )}
 
                 {tab === "matches" && (
+                  <div className="mb-5">
+                    <AdminStatusTabs label="Match status" selected={matchView} onSelect={setMatchView}
+                      options={[{ label: `Needs approval (${matches.length})` }, { label: "In progress" }, { label: "Completed" }, { label: "Rejected / cancelled" }]} />
+                  </div>
+                )}
+                {tab === "matches" && matchView === 1 && <MatchHistoryList view="ACTIVE" />}
+                {tab === "matches" && matchView === 2 && <MatchHistoryList view="DONE" />}
+                {tab === "matches" && matchView === 3 && <MatchHistoryList view="STOPPED" />}
+                {tab === "matches" && matchView === 0 && (
                   matches.length === 0
-                    ? <AllClearState label="No pending contact share requests" />
+                    ? <AllClearState label="No matches waiting for approval" />
                     : matches.map(m => (
                       <ApprovalCard
                         key={m.id} id={m.id}
@@ -1180,16 +989,21 @@ export default function AdminDashboardPage() {
                   <button key={s} onClick={() => handleMatchHistoryFilter(s)}
                     className={`px-3 py-1.5 rounded-full text-xs font-semibold border transition-all ${
                       matchHistoryStatus === s
-                        ? "bg-[#b04a15] text-white border-[#b04a15]"
-                        : "bg-white border-stone-200 text-stone-600 hover:border-[#b04a15]/50"
+                        ? "bg-[#1f66b3] text-white border-[#1f66b3]"
+                        : "bg-white border-stone-200 text-stone-600 hover:border-[#1f66b3]/50"
                     }`}>
-                    {s.replace(/_/g, " ")}
+                    {matchStatusLabel(s)}
                   </button>
                 ))}
               </div>
 
               {allMatchesLoading ? (
                 <div className="flex justify-center py-20"><Loader2 className="size-8 animate-spin text-stone-400" /></div>
+              ) : allMatchesError ? (
+                <div role="alert" className="rounded-2xl border border-red-200 bg-red-50 p-6 text-center">
+                  <p className="text-sm font-semibold text-red-700">Couldn&apos;t load match history.</p>
+                  <button onClick={() => loadAllMatches(matchHistoryStatus)} className="mt-3 rounded-xl bg-red-600 px-4 py-2 text-xs font-bold text-white">Retry</button>
+                </div>
               ) : allMatches.length === 0 ? (
                 <p className="text-center py-20 text-stone-400">No matches found for this filter.</p>
               ) : (
@@ -1213,12 +1027,15 @@ export default function AdminDashboardPage() {
               {/* Stats */}
               <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
                 {[
-                  { label: "Approve", value: assessments.filter(a => a.recommendation === "APPROVE").length, color: "emerald" },
-                  { label: "Reject", value: assessments.filter(a => a.recommendation === "REJECT").length, color: "red" },
-                  { label: "Manual Review", value: assessments.filter(a => a.recommendation === "MANUAL_REVIEW").length, color: "orange" },
-                  { label: "High Fraud Risk", value: assessments.filter(a => a.fraudRisk === "HIGH").length, color: "rose" },
-                ].map(({ label, value, color }) => (
-                  <AiStatCard key={label} label={label} value={value} color={color} />
+                  { label: "Approve", value: assessments.filter(a => a.recommendation === "APPROVE").length, color: "emerald", apply: () => { setAiRecFilter("APPROVE"); setAiFraudFilter("ALL"); } },
+                  { label: "Reject", value: assessments.filter(a => a.recommendation === "REJECT").length, color: "red", apply: () => { setAiRecFilter("REJECT"); setAiFraudFilter("ALL"); } },
+                  { label: "Manual Review", value: assessments.filter(a => a.recommendation === "MANUAL_REVIEW").length, color: "orange", apply: () => { setAiRecFilter("MANUAL_REVIEW"); setAiFraudFilter("ALL"); } },
+                  { label: "High Fraud Risk", value: assessments.filter(a => a.fraudRisk === "HIGH").length, color: "rose", apply: () => { setAiRecFilter("ALL"); setAiFraudFilter("HIGH"); } },
+                ].map(({ label, value, color, apply }) => (
+                  // The cards were dead numbers; clicking one now applies the matching filter.
+                  <button key={label} type="button" onClick={apply} className="text-left rounded-2xl focus:outline-none focus-visible:ring-2 focus-visible:ring-[#1f66b3]/40">
+                    <AiStatCard label={label} value={value} color={color} />
+                  </button>
                 ))}
               </div>
 
@@ -1230,16 +1047,16 @@ export default function AdminDashboardPage() {
                     placeholder="Search listing, notes, labels…"
                     value={aiSearch}
                     onChange={e => setAiSearch(e.target.value)}
-                    className="pl-8 pr-3 h-8 w-56 text-sm border border-stone-200 rounded-lg bg-white focus:outline-none focus:ring-2 focus:ring-[#b04a15]/30 focus:border-[#b04a15]/50"
+                    className="pl-8 pr-3 h-8 w-56 text-sm border border-stone-200 rounded-lg bg-white focus:outline-none focus:ring-2 focus:ring-[#1f66b3]/30 focus:border-[#1f66b3]/50"
                   />
                 </div>
                 <div className="flex flex-wrap gap-1">
                   {AI_REC_FILTERS.map(f => (
                     <button key={f} onClick={() => setAiRecFilter(f)}
                       className={`rounded-full border px-2.5 py-0.5 text-xs font-medium transition ${
-                        aiRecFilter === f ? "bg-[#b04a15] text-white border-[#b04a15]" : "border-stone-300 text-stone-600 hover:border-[#b04a15]/50"
+                        aiRecFilter === f ? "bg-[#1f66b3] text-white border-[#1f66b3]" : "border-stone-300 text-stone-600 hover:border-[#1f66b3]/50"
                       }`}>
-                      {f === "ALL" ? "All" : f.replace(/_/g, " ")}
+                      {f === "ALL" ? "All" : f.charAt(0) + f.slice(1).toLowerCase().replace(/_/g, " ")}
                     </button>
                   ))}
                 </div>
@@ -1249,7 +1066,7 @@ export default function AdminDashboardPage() {
                       className={`rounded-full border px-2.5 py-0.5 text-xs font-medium transition ${
                         aiFraudFilter === f ? "bg-stone-800 text-white border-stone-800" : "border-stone-300 text-stone-600 hover:border-stone-500"
                       }`}>
-                      {f === "ALL" ? "Any Fraud" : `Fraud: ${f}`}
+                      {f === "ALL" ? "Any fraud risk" : `Fraud: ${f.charAt(0) + f.slice(1).toLowerCase()}`}
                     </button>
                   ))}
                 </div>
@@ -1264,6 +1081,11 @@ export default function AdminDashboardPage() {
 
               {assessmentsLoading ? (
                 <div className="flex justify-center py-20"><Loader2 className="size-8 animate-spin text-stone-400" /></div>
+              ) : assessmentsError ? (
+                <div role="alert" className="rounded-2xl border border-red-200 bg-red-50 p-6 text-center">
+                  <p className="text-sm font-semibold text-red-700">Couldn&apos;t load AI screening logs.</p>
+                  <button onClick={loadAiLogs} className="mt-3 rounded-xl bg-red-600 px-4 py-2 text-xs font-bold text-white">Retry</button>
+                </div>
               ) : filteredAssessments.length === 0 ? (
                 <p className="py-20 text-center text-stone-400">No AI assessments found.</p>
               ) : (
@@ -1287,8 +1109,6 @@ export default function AdminDashboardPage() {
           {/* ── ANALYTICS TAB — previously the standalone /admin/analytics page ── */}
           {tab === "analytics" && <AnalyticsPanel />}
 
-          {/* ── WHATSAPP TAB — previously the standalone /admin/whatsapp page ── */}
-          {tab === "whatsapp" && <WhatsAppPanel />}
 
           {/* ── FUNDRAISING — the /admin/fundraising pages, rendered in the panel ── */}
           {tab === "fundraising" && <AdminFundraisingPanel path={frPath} go={setFrPath} />}
@@ -1335,8 +1155,7 @@ export default function AdminDashboardPage() {
             </div>
           </div>
         )}
-      </main>
-    </div>
+    </StaffShell>
   );
 }
 
@@ -1355,7 +1174,7 @@ function MatchHistoryCard({ match: m, expanded, onToggle, history, historyLoadin
         <div className="flex-1 min-w-0 space-y-1">
           <div className="flex flex-wrap items-center gap-2">
             <span className={`text-xs font-bold px-2 py-0.5 rounded-full ${STATUS_COLORS[m.status] ?? "bg-stone-100 text-stone-700"}`}>
-              {m.status.replace(/_/g, " ")}
+              {formatEnum(m.status)}
             </span>
             {m.matchScore != null && <span className="text-xs text-stone-500">AI Score: <strong>{m.matchScore}%</strong></span>}
             <span className="text-xs text-stone-400">#{m.id}</span>
@@ -1365,7 +1184,11 @@ function MatchHistoryCard({ match: m, expanded, onToggle, history, historyLoadin
           <div className="flex flex-wrap gap-x-4 gap-y-0.5 text-xs text-stone-500">
             <span>Donor: <strong className="text-stone-700">{m.donorName}</strong>{m.donorCity && ` · ${m.donorCity}`}</span>
             <span>Donee: <strong className="text-stone-700">{m.doneeName}</strong>{m.doneeCity && ` · ${m.doneeCity}`}</span>
-            <span>Created: {serverDate(m.createdAt).toLocaleDateString("en-IN")}</span>
+            {/* en-IN numeric read "9/10/2026" — ambiguous between 9 Oct and 10 Sep. */}
+            <span>Created: {serverDate(m.createdAt).toLocaleDateString("en-IN", { day: "numeric", month: "short", year: "numeric" })}</span>
+            {m.donorId != null && m.donorId === m.doneeId && (
+              <span className="rounded-full bg-rose-50 px-2 py-0.5 font-bold text-rose-700 ring-1 ring-rose-200">⚑ Same account is donor and donee</span>
+            )}
           </div>
         </div>
         {expanded ? <ChevronUp className="w-4 h-4 text-stone-400 shrink-0 mt-1" /> : <ChevronDown className="w-4 h-4 text-stone-400 shrink-0 mt-1" />}
@@ -1382,7 +1205,7 @@ function MatchHistoryCard({ match: m, expanded, onToggle, history, historyLoadin
               <div key={label} className="bg-white rounded-xl p-3 text-xs space-y-1 border border-stone-100">
                 <p className="font-bold text-stone-700 flex items-center gap-1"><Phone className="w-3 h-3" /> {label}</p>
                 <p>{name}</p>
-                <p className="font-semibold text-[#b04a15]">{contact ?? "—"}</p>
+                <p className="font-semibold text-[#1f66b3]">{contact ?? "—"}</p>
                 <p className="text-stone-400">{city}</p>
               </div>
             ))}
@@ -1402,7 +1225,7 @@ function MatchHistoryCard({ match: m, expanded, onToggle, history, historyLoadin
             <div className="bg-white rounded-xl p-3 text-xs border border-stone-100">
               <p className="font-bold mb-2 flex items-center gap-1"><MapPin className="w-3 h-3" /> Logistics</p>
               <div className="grid grid-cols-2 gap-x-4 gap-y-1.5 text-stone-600">
-                <div><span className="text-stone-400">Method: </span><strong>{m.handoverMethod.replace(/_/g, " ")}</strong></div>
+                <div><span className="text-stone-400">Method: </span><strong>{formatEnum(m.handoverMethod)}</strong></div>
                 {m.pickupDateTime && <div><span className="text-stone-400">Pickup: </span><strong>{serverDate(m.pickupDateTime).toLocaleString("en-IN", { dateStyle: "medium", timeStyle: "short" })}</strong></div>}
                 {m.handoverAddress && <div className="col-span-2"><span className="text-stone-400">Pickup address: </span><strong>{m.handoverAddress}</strong></div>}
                 {m.deliveryAddress && <div className="col-span-2"><span className="text-stone-400">Delivery address: </span><strong>{m.deliveryAddress}</strong></div>}
@@ -1422,11 +1245,11 @@ function MatchHistoryCard({ match: m, expanded, onToggle, history, historyLoadin
               <ol className="relative border-l border-stone-200 ml-2 space-y-3">
                 {history.map((h, i) => (
                   <li key={i} className="ml-4">
-                    <div className="absolute -left-1.5 mt-1 w-3 h-3 rounded-full bg-[#b04a15]" />
+                    <div className="absolute -left-1.5 mt-1 w-3 h-3 rounded-full bg-[#1f66b3]" />
                     <p className="text-xs text-stone-400">{serverDate(h.changedAt).toLocaleString("en-IN", { dateStyle: "medium", timeStyle: "short" })}</p>
                     <p className="text-xs font-semibold">
-                      <span className="text-stone-400">{h.fromStatus?.replace(/_/g, " ")} → </span>
-                      <span className={`${STATUS_COLORS[h.toStatus] ?? ""} px-1.5 py-0.5 rounded`}>{h.toStatus.replace(/_/g, " ")}</span>
+                      <span className="text-stone-400">{formatEnum(h.fromStatus)} → </span>
+                      <span className={`${STATUS_COLORS[h.toStatus] ?? ""} px-1.5 py-0.5 rounded`}>{formatEnum(h.toStatus)}</span>
                     </p>
                     <p className="text-xs text-stone-400">{h.changedByEmail}{h.note ? ` · ${h.note}` : ""}</p>
                   </li>
@@ -1462,7 +1285,7 @@ function AiLogCard({ assessment: a, expanded, onToggle }: {
           </div>
           <div className="flex flex-wrap items-center gap-1.5">
             <span className={`inline-flex items-center rounded-full border px-2 py-0.5 text-xs font-semibold ${recBadge}`}>
-              {a.recommendation.replace(/_/g, " ")}
+              {formatEnum(a.recommendation)}
             </span>
             {a.fraudRisk && (
               <span className={`inline-flex items-center rounded-full border px-2 py-0.5 text-xs font-medium ${fraudBadge}`}>
@@ -1470,7 +1293,8 @@ function AiLogCard({ assessment: a, expanded, onToggle }: {
               </span>
             )}
             <span className="text-2xs text-stone-400">{Math.round(a.confidence)}% conf</span>
-            <span className="text-2xs text-stone-400">{serverDate(a.createdAt).toLocaleDateString()}</span>
+            {/* Bare toLocaleDateString() printed "10/9/2026" — browser-locale and ambiguous. */}
+            <span className="text-2xs text-stone-400">{serverDate(a.createdAt).toLocaleDateString("en-IN", { day: "numeric", month: "short", year: "numeric" })}</span>
           </div>
         </div>
         {a.evidenceNotes && (
@@ -1490,7 +1314,7 @@ function AiLogCard({ assessment: a, expanded, onToggle }: {
             {a.eligibilityResult && <InfoCell label="Eligibility" value={a.eligibilityResult} />}
             {a.conditionGrade && <InfoCell label="Condition Grade" value={a.conditionGrade} />}
             {a.modelVersion && <InfoCell label="Model" value={a.modelVersion} />}
-            {a.listingStatus && <InfoCell label="Listing Status" value={a.listingStatus.replace(/_/g, " ")} />}
+            {a.listingStatus && <InfoCell label="Listing Status" value={formatEnum(a.listingStatus) ?? ""} />}
           </div>
 
           {/* Donor + origin */}
@@ -1498,7 +1322,7 @@ function AiLogCard({ assessment: a, expanded, onToggle }: {
             <p className="text-3xs font-semibold uppercase tracking-wide text-stone-400 mb-1.5">Submitted by</p>
             <div className="flex flex-wrap items-center justify-between gap-2">
               <div className="flex items-center gap-2.5 min-w-0">
-                <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-[#b04a15]/10 text-sm font-black text-[#b04a15]">
+                <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-[#1f66b3]/10 text-sm font-black text-[#1f66b3]">
                   {a.donorName?.charAt(0)?.toUpperCase() ?? "?"}
                 </span>
                 <span className="min-w-0">
@@ -1514,7 +1338,7 @@ function AiLogCard({ assessment: a, expanded, onToggle }: {
             {a.donorId && (
               <a
                 href={`/admin/dashboard?journeyUser=${a.donorId}`}
-                className="mt-2 inline-block text-2xs font-semibold text-[#b04a15] hover:underline"
+                className="mt-2 inline-block text-2xs font-semibold text-[#1f66b3] hover:underline"
               >
                 View donor&apos;s full journey →
               </a>
@@ -1644,7 +1468,7 @@ function ApprovalCard({
   return (
     <div
       className={`group bg-white rounded-xl sm:rounded-2xl border border-stone-200 shadow-sm hover:shadow-md hover:-translate-y-px transition-all overflow-hidden ${
-        clickable ? "cursor-pointer focus:outline-none focus-visible:ring-2 focus-visible:ring-[#b04a15]/40 focus-visible:ring-offset-2" : ""
+        clickable ? "cursor-pointer focus:outline-none focus-visible:ring-2 focus-visible:ring-[#1f66b3]/40 focus-visible:ring-offset-2" : ""
       }`}
       role={clickable ? "button" : undefined}
       tabIndex={clickable ? 0 : undefined}
@@ -1657,7 +1481,6 @@ function ApprovalCard({
       } : undefined}
     >
       <div className="flex">
-        <div className="w-1 shrink-0" style={{ background: "linear-gradient(180deg, #b04a15 0%, #e07b3a 60%, #f0b97a 100%)" }} />
         <div className="flex-1 min-w-0 p-3.5 sm:p-5 space-y-3">
           <div className="flex items-start justify-between gap-3">
             <div className="min-w-0">
@@ -1752,7 +1575,7 @@ function ListingApprovalCard({
   return (
     <div
       className={`group bg-white rounded-xl sm:rounded-2xl border border-stone-200 shadow-sm hover:shadow-md hover:-translate-y-px transition-all overflow-hidden ${
-        clickable ? "cursor-pointer focus:outline-none focus-visible:ring-2 focus-visible:ring-[#b04a15]/40 focus-visible:ring-offset-2" : ""
+        clickable ? "cursor-pointer focus:outline-none focus-visible:ring-2 focus-visible:ring-[#1f66b3]/40 focus-visible:ring-offset-2" : ""
       }`}
       role={clickable ? "button" : undefined}
       tabIndex={clickable ? 0 : undefined}
@@ -1765,7 +1588,6 @@ function ListingApprovalCard({
       } : undefined}
     >
       <div className="flex">
-        <div className="w-1 shrink-0" style={{ background: "linear-gradient(180deg, #b04a15 0%, #e07b3a 60%, #f0b97a 100%)" }} />
         <div className="flex-1 min-w-0 p-3.5 sm:p-5 space-y-3">
 
           <div className="flex items-start justify-between gap-3">
@@ -1795,7 +1617,7 @@ function ListingApprovalCard({
             <p className="text-3xs font-semibold uppercase tracking-wide text-stone-400 mb-1.5">Submitted by</p>
             <div className="flex flex-wrap items-center justify-between gap-2">
               <div className="flex items-center gap-2.5 min-w-0">
-                <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-[#b04a15]/10 text-sm font-black text-[#b04a15]">
+                <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-[#1f66b3]/10 text-sm font-black text-[#1f66b3]">
                   {l.donorName?.charAt(0)?.toUpperCase() ?? "?"}
                 </span>
                 <span className="min-w-0">
@@ -1812,7 +1634,7 @@ function ListingApprovalCard({
               <a
                 href={`/admin/dashboard?journeyUser=${l.donorId}`}
                 onClick={event => event.stopPropagation()}
-                className="mt-2 inline-block text-2xs font-semibold text-[#b04a15] hover:underline"
+                className="mt-2 inline-block text-2xs font-semibold text-[#1f66b3] hover:underline"
               >
                 View donor&apos;s full journey →
               </a>
@@ -1822,7 +1644,7 @@ function ListingApprovalCard({
           {(l.approximateAge || l.workingStatus || l.dimensions || l.approximateWeight || l.locality || l.pincode) && (
             <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 text-xs bg-stone-50 rounded-xl p-3">
               {l.approximateAge    && <div><span className="text-stone-400">Item age: </span><span className="font-semibold text-stone-700">{l.approximateAge}</span></div>}
-              {l.workingStatus     && <div><span className="text-stone-400">Working: </span><span className="font-semibold text-stone-700">{l.workingStatus.replace(/_/g, " ")}</span></div>}
+              {l.workingStatus     && <div><span className="text-stone-400">Working: </span><span className="font-semibold text-stone-700">{formatEnum(l.workingStatus)}</span></div>}
               {l.dimensions        && <div><span className="text-stone-400">Size: </span><span className="font-semibold text-stone-700">{l.dimensions}</span></div>}
               {l.approximateWeight && <div><span className="text-stone-400">Weight: </span><span className="font-semibold text-stone-700">{l.approximateWeight}</span></div>}
               {l.locality          && <div><span className="text-stone-400">Locality: </span><span className="font-semibold text-stone-700">{l.locality}</span></div>}
@@ -1960,7 +1782,7 @@ function ApprovalDetailDrawer({
       >
         <div className="flex items-start justify-between gap-3 sm:gap-4 border-b border-stone-100 px-3.5 sm:px-5 py-3 sm:py-4">
           <div className="min-w-0">
-            <p className="text-3xs font-black uppercase tracking-widest text-[#b04a15]">{kindLabel}</p>
+            <p className="text-3xs font-black uppercase tracking-widest text-[#1f66b3]">{kindLabel}</p>
             <h2 id="approval-detail-title" className="mt-1 truncate text-base sm:text-lg font-black leading-tight text-stone-900">
               {title}
             </h2>
@@ -2136,33 +1958,6 @@ function MatchDetailContent({ match: m }: { match: ItemMatch }) {
 
   return (
     <>
-      <DetailSection icon={ShieldCheck} title="Match Review">
-        <DetailGrid
-          items={[
-            { label: "Match ID", value: m.id },
-            { label: "Type", value: formatEnum(m.matchType) },
-            { label: "Status", value: formatEnum(m.status) },
-            { label: "AI score", value: m.matchScore != null ? `${m.matchScore.toFixed(0)}%` : null },
-            { label: "Created", value: formatDateTime(m.createdAt) },
-            { label: "Rejection reason", value: m.rejectionReason },
-          ]}
-        />
-      </DetailSection>
-
-      {m.scoreCategory != null && (
-        <DetailSection icon={ShieldCheck} title="Match Confidence Breakdown">
-          <DetailGrid
-            items={[
-              { label: "Category match", value: `${m.scoreCategory}%` },
-              { label: "Spec match", value: m.scoreSpec != null ? `${m.scoreSpec.toFixed(0)}%` : null },
-              { label: "Distance", value: m.scoreDistanceKm != null ? `${m.scoreDistanceKm.toFixed(1)} km (stage ${m.scoreDistanceStage ?? "—"})` : null },
-              { label: "Quantity penalty", value: m.scoreQuantity != null ? `-${m.scoreQuantity}` : null },
-              { label: "Urgency boost", value: m.scoreUrgency != null ? `+${m.scoreUrgency}` : null },
-            ]}
-          />
-        </DetailSection>
-      )}
-
       <DetailSection icon={Phone} title="People">
         <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
           <PersonInfoCard
@@ -2275,11 +2070,39 @@ function MatchDetailContent({ match: m }: { match: ItemMatch }) {
         <DetailTextBlock label="Delivery address" value={m.deliveryAddress} />
         <DetailTextBlock label="Fulfilment notes" value={m.fulfilmentNotes} />
         {m.deliveryProofUrl && (
-          <a href={m.deliveryProofUrl} target="_blank" rel="noopener noreferrer" className="mt-3 inline-flex text-sm font-bold text-[#b04a15] hover:underline">
+          <a href={m.deliveryProofUrl} target="_blank" rel="noopener noreferrer" className="mt-3 inline-flex text-sm font-bold text-[#1f66b3] hover:underline">
             Open delivery proof
           </a>
         )}
       </DetailSection>
+
+      {/* Status and the AI score come last (round 2): staff read who and what first, then the record's state. */}
+      <DetailSection icon={ShieldCheck} title="Status and decision">
+        <DetailGrid
+          items={[
+            { label: "Match ID", value: m.id },
+            { label: "Type", value: formatEnum(m.matchType) },
+            { label: "Status", value: formatEnum(m.status) },
+            { label: "AI score", value: m.matchScore != null ? `${m.matchScore.toFixed(0)}%` : null },
+            { label: "Created", value: formatDateTime(m.createdAt) },
+            { label: "Rejection reason", value: m.rejectionReason },
+          ]}
+        />
+      </DetailSection>
+
+      {m.scoreCategory != null && (
+        <DetailSection icon={ShieldCheck} title="AI match score (advisory, not a staff decision)">
+          <DetailGrid
+            items={[
+              { label: "Category match", value: `${m.scoreCategory}%` },
+              { label: "Spec match", value: m.scoreSpec != null ? `${m.scoreSpec.toFixed(0)}%` : null },
+              { label: "Distance", value: m.scoreDistanceKm != null ? `${m.scoreDistanceKm.toFixed(1)} km (stage ${m.scoreDistanceStage ?? "—"})` : null },
+              { label: "Quantity penalty", value: m.scoreQuantity != null ? `-${m.scoreQuantity}` : null },
+              { label: "Urgency boost", value: m.scoreUrgency != null ? `+${m.scoreUrgency}` : null },
+            ]}
+          />
+        </DetailSection>
+      )}
     </>
   );
 }
@@ -2303,7 +2126,7 @@ function PersonInfoCard({
 }) {
   return (
     <div className="rounded-xl sm:rounded-2xl border border-stone-100 bg-stone-50 p-3">
-      <p className="text-3xs font-black uppercase tracking-widest text-[#b04a15]">{label}</p>
+      <p className="text-3xs font-black uppercase tracking-widest text-[#1f66b3]">{label}</p>
       <p className="mt-1 text-sm font-black text-stone-900">{name ?? "Unknown"}</p>
       <div className="mt-2 space-y-1 text-xs text-stone-500">
         {hasDetailValue(id) && <p><span className="font-bold text-stone-400">ID:</span> {id}</p>}
@@ -2325,7 +2148,7 @@ function SectionPhotoStrip({ photos, title = "Photos" }: { photos: string[]; tit
   return (
     <div className="border-b border-stone-100 px-3.5 sm:px-5 py-3 sm:py-4">
       <div className="mb-3 flex items-center gap-2">
-        <ImageIcon className="h-4 w-4 text-[#b04a15]" />
+        <ImageIcon className="h-4 w-4 text-[#1f66b3]" />
         <p className="text-3xs font-black uppercase tracking-widest text-stone-400">{title}</p>
       </div>
       <PhotoStrip images={photos} />
@@ -2345,7 +2168,7 @@ function DetailSection({
   return (
     <section className="border-b border-stone-100 px-3.5 sm:px-5 py-3 sm:py-4">
       <div className="mb-3 flex items-center gap-2">
-        <Icon className="h-4 w-4 text-[#b04a15]" />
+        <Icon className="h-4 w-4 text-[#1f66b3]" />
         <h3 className="text-3xs font-black uppercase tracking-widest text-stone-400">{title}</h3>
       </div>
       {children}
@@ -2423,6 +2246,46 @@ function StatusPill({ value }: { value?: string | null }) {
   );
 }
 
+/** One rejected listing or request in {@link RejectedReviewSection}. */
+function RejectedRow({ id, title, subtitle, reason, kind, onReinstate }: {
+  id: number; title: string; subtitle: string; reason: string | null; kind: "listing" | "request";
+  onReinstate: (kind: "listing" | "request", id: number, title: string) => void;
+}) {
+  return (
+    <div className="flex items-start justify-between gap-3 rounded-xl border border-stone-200 bg-white p-3 dark:border-zinc-800 dark:bg-zinc-900">
+      <div className="min-w-0 flex-1">
+        <p className="truncate text-sm font-bold text-stone-900 dark:text-stone-100">{title}</p>
+        <p className="mt-0.5 truncate text-2xs text-stone-400">{subtitle}</p>
+        {reason && (
+          <p className="mt-1.5 rounded-lg bg-red-50 p-2 text-2xs font-semibold leading-relaxed text-red-700 dark:bg-red-950/20 dark:text-red-400">
+            {displayReason(reason)}
+          </p>
+        )}
+      </div>
+      <button
+        type="button"
+        onClick={() => onReinstate(kind, id, title)}
+        className="shrink-0 rounded-full bg-green-600 px-3 py-1.5 text-2xs font-black text-white transition-colors hover:bg-green-700 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-green-600"
+      >
+        Make live again
+      </button>
+    </div>
+  );
+}
+
+/** A titled group of rows in {@link RejectedReviewSection}. */
+function RejectedGroup({ title, note, children }: { title: string; note: string; children: ReactNode }) {
+  return (
+    <div className="space-y-2">
+      <div>
+        <p className="text-2xs font-black uppercase tracking-wider text-stone-500 dark:text-stone-400">{title}</p>
+        <p className="text-2xs text-stone-400">{note}</p>
+      </div>
+      {children}
+    </div>
+  );
+}
+
 /**
  * Rejected items an admin can put back live.
  *
@@ -2443,39 +2306,6 @@ function RejectedReviewSection({
   const byAdmin = listings.filter(l => !l.rejectedByAi);
   if (listings.length === 0 && requests.length === 0) return null;
 
-  const Row = ({ id, title, subtitle, reason, kind }: {
-    id: number; title: string; subtitle: string; reason: string | null; kind: "listing" | "request";
-  }) => (
-    <div className="flex items-start justify-between gap-3 rounded-xl border border-stone-200 bg-white p-3 dark:border-zinc-800 dark:bg-zinc-900">
-      <div className="min-w-0 flex-1">
-        <p className="truncate text-sm font-bold text-stone-900 dark:text-stone-100">{title}</p>
-        <p className="mt-0.5 truncate text-2xs text-stone-400">{subtitle}</p>
-        {reason && (
-          <p className="mt-1.5 rounded-lg bg-red-50 p-2 text-2xs font-semibold leading-relaxed text-red-700 dark:bg-red-950/20 dark:text-red-400">
-            {displayReason(reason)}
-          </p>
-        )}
-      </div>
-      <button
-        type="button"
-        onClick={() => onReinstate(kind, id, title)}
-        className="shrink-0 rounded-full bg-green-600 px-3 py-1.5 text-2xs font-black text-white transition-colors hover:bg-green-700 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-green-600"
-      >
-        Make live again
-      </button>
-    </div>
-  );
-
-  const Group = ({ title, note, children }: { title: string; note: string; children: ReactNode }) => (
-    <div className="space-y-2">
-      <div>
-        <p className="text-2xs font-black uppercase tracking-wider text-stone-500 dark:text-stone-400">{title}</p>
-        <p className="text-2xs text-stone-400">{note}</p>
-      </div>
-      {children}
-    </div>
-  );
-
   return (
     <section className="mb-5 space-y-4 rounded-2xl border border-amber-300 bg-amber-50/50 p-3 dark:border-amber-900 dark:bg-amber-950/10">
       <div>
@@ -2486,32 +2316,32 @@ function RejectedReviewSection({
       </div>
 
       {byAi.length > 0 && (
-        <Group title={`Rejected by AI (${byAi.length})`} note="Automated decision — check before trusting it.">
+        <RejectedGroup title={`Rejected by AI (${byAi.length})`} note="Automated decision — check before trusting it.">
           {byAi.map(l => (
-            <Row key={l.id} kind="listing" id={l.id} title={l.title}
+            <RejectedRow onReinstate={onReinstate} key={l.id} kind="listing" id={l.id} title={l.title}
               subtitle={`${l.category}${l.subcategory ? ` · ${l.subcategory}` : ""} · ${l.donorName}`}
               reason={l.rejectionReason} />
           ))}
-        </Group>
+        </RejectedGroup>
       )}
 
       {byAdmin.length > 0 && (
-        <Group title={`Rejected by an admin (${byAdmin.length})`} note="A human decided this — override only with reason.">
+        <RejectedGroup title={`Rejected by an admin (${byAdmin.length})`} note="A human decided this — override only with reason.">
           {byAdmin.map(l => (
-            <Row key={l.id} kind="listing" id={l.id} title={l.title}
+            <RejectedRow onReinstate={onReinstate} key={l.id} kind="listing" id={l.id} title={l.title}
               subtitle={`${l.category}${l.subcategory ? ` · ${l.subcategory}` : ""} · ${l.donorName}`}
               reason={l.rejectionReason} />
           ))}
-        </Group>
+        </RejectedGroup>
       )}
 
       {requests.length > 0 && (
-        <Group title={`Rejected requests (${requests.length})`} note="Approval still requires verification to be satisfied.">
+        <RejectedGroup title={`Rejected requests (${requests.length})`} note="Approval still requires verification to be satisfied.">
           {requests.map(r => (
-            <Row key={r.id} kind="request" id={r.id} title={r.title}
+            <RejectedRow onReinstate={onReinstate} key={r.id} kind="request" id={r.id} title={r.title}
               subtitle={`${r.category} · ${r.city}`} reason={r.rejectionReason} />
           ))}
-        </Group>
+        </RejectedGroup>
       )}
     </section>
   );

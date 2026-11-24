@@ -538,6 +538,8 @@ export type RecentActivity = {
   category: string;
   amount: number | null;
   createdAt: string;
+  /** Donor's name on DONATION rows; null when they chose not to show it. */
+  donorName?: string | null;
 };
 
 export function getRecentActivity() {
@@ -1395,6 +1397,17 @@ export type PublicItemRequest = {
   requesterType?: "PERSON" | "NGO";
   /** Registered organisation name; NGO requests only, and not a verification claim. */
   organizationName?: string | null;
+  /*
+   * "About this need" facts. Sent on the single-request detail
+   * (getPublicItemRequest) only; null/absent on the board. Never a photo.
+   */
+  verificationTier?: string | null;
+  householdSize?: number | null;
+  dependents?: number | null;
+  peopleAffected?: number | null;
+  housingType?: string | null;
+  numberOfEarners?: number | null;
+  reasonCannotBuy?: string | null;
 };
 
 /** One open public request; rejects (404) once it is no longer publicly open. */
@@ -4031,10 +4044,44 @@ export type SuperAdminEntity =
 
 export type SuperAdminRow = Record<string, unknown>;
 
+/** One day in an Overview trend series (zero-filled by the backend). */
+export type SaTrendPoint = { date: string; value: number };
+
+/**
+ * Overview insights (2026-11-20). Every figure is a whole-table total; a figure
+ * the backend could not compute arrives as null and must show as "unavailable",
+ * never as 0.
+ */
+export type SuperAdminInsights = {
+  generatedAt: string;
+  attention: { openCases: number | null; overdueCases: number | null; openDisputes: number | null; requestsOnHold: number | null };
+  adminQueues: {
+    requests: number | null; listings: number | null; offers: number | null; matches: number | null;
+    ngoApplications: number | null; fundraisingApplications: number | null;
+  };
+  activity: Record<"last7Days" | "last30Days", {
+    signups: number | null; signupsByRole: Record<string, number> | null; requests: number | null; listings: number | null;
+    certificatesIssued: number | null; moneyDonations: number | null; moneyReceived: number | null;
+  }>;
+  trends: {
+    days: number;
+    signups: SaTrendPoint[] | null; requests: SaTrendPoint[] | null; listings: SaTrendPoint[] | null;
+    certificates: SaTrendPoint[] | null; moneyReceived: SaTrendPoint[] | null;
+  };
+  stuck: { matchesAtRisk: number | null; offersAtRisk: number | null; offersStuckInScreening: number | null; requestsPastVerificationDeadline: number | null };
+  trust: {
+    fraudFlags30d: number | null; usersSuspended: number | null; activeRestrictions: number | null;
+    aiDecisionsReviewed30d: number | null; aiDecisionsOverruled30d: number | null;
+  };
+  mail: { sent7d: number | null; delivered7d: number | null; bounced7d: number | null; suppressedTotal: number | null };
+};
+
 export type SuperAdminOverview = {
   counts: Record<string, number>;
   roleBreakdown: Record<string, number>;
   totalRaised: number;
+  /** Absent on a backend older than 2026-11-20. */
+  insights?: SuperAdminInsights;
 };
 
 export type SqlResult = {
@@ -4116,112 +4163,6 @@ export function superAdminResolveDispute(id: number, resolution: string) {
     method: "POST",
     body: JSON.stringify({ resolution }),
   });
-}
-
-// ── WhatsApp (Meta Cloud API) ────────────────────────────────────────────────
-
-export type WhatsAppMessageLog = {
-  id: number;
-  direction: "OUTBOUND" | "INBOUND";
-  waMessageId: string | null;
-  phoneNumber: string;
-  messageType: "TEMPLATE" | "TEXT" | "FLOW" | "OTHER";
-  templateName: string | null;
-  status: "SENT" | "DELIVERED" | "READ" | "FAILED" | "RECEIVED";
-  errorMessage: string | null;
-  createdAt: string;
-  updatedAt: string;
-};
-
-export type WhatsAppMessagePage = {
-  content: WhatsAppMessageLog[];
-  totalElements: number;
-  totalPages: number;
-  number: number;
-};
-
-export type WhatsAppTemplateComponent = Record<string, unknown>;
-
-export type WhatsAppTemplate = {
-  id: string;
-  name: string;
-  category: string;
-  language: string;
-  status: string;
-  components?: WhatsAppTemplateComponent[];
-};
-
-export type WhatsAppFlow = {
-  id: string;
-  name: string;
-  status: string;
-  categories?: string[];
-};
-
-export function getWhatsAppTemplates() {
-  return request<{ data: WhatsAppTemplate[] }>("/api/v1/admin/whatsapp/templates");
-}
-
-export function createWhatsAppTemplate(body: {
-  name: string;
-  category: string;
-  language: string;
-  components: WhatsAppTemplateComponent[];
-}) {
-  return request<Record<string, unknown>>("/api/v1/admin/whatsapp/templates", {
-    method: "POST",
-    body: JSON.stringify(body),
-  });
-}
-
-export function deleteWhatsAppTemplate(name: string) {
-  return request<void>(`/api/v1/admin/whatsapp/templates/${encodeURIComponent(name)}`, {
-    method: "DELETE",
-  });
-}
-
-export function getWhatsAppFlows() {
-  return request<{ data: WhatsAppFlow[] }>("/api/v1/admin/whatsapp/flows");
-}
-
-export function createWhatsAppFlow(body: { name: string; categories: string[] }) {
-  return request<Record<string, unknown>>("/api/v1/admin/whatsapp/flows", {
-    method: "POST",
-    body: JSON.stringify(body),
-  });
-}
-
-export function updateWhatsAppFlowJson(flowId: string, flowJson: string) {
-  return request<Record<string, unknown>>(`/api/v1/admin/whatsapp/flows/${flowId}/json`, {
-    method: "PUT",
-    body: JSON.stringify({ flowJson }),
-  });
-}
-
-export function publishWhatsAppFlow(flowId: string) {
-  return request<Record<string, unknown>>(`/api/v1/admin/whatsapp/flows/${flowId}/publish`, {
-    method: "POST",
-  });
-}
-
-export function deleteWhatsAppFlow(flowId: string) {
-  return request<void>(`/api/v1/admin/whatsapp/flows/${flowId}`, { method: "DELETE" });
-}
-
-export function sendWhatsAppTemplateMessage(body: {
-  to: string;
-  templateName: string;
-  languageCode: string;
-  bodyParameters?: string[];
-}) {
-  return request<WhatsAppMessageLog>("/api/v1/admin/whatsapp/messages/send-template", {
-    method: "POST",
-    body: JSON.stringify(body),
-  });
-}
-
-export function getWhatsAppMessages(page = 0, size = 25) {
-  return request<WhatsAppMessagePage>(`/api/v1/admin/whatsapp/messages?page=${page}&size=${size}`);
 }
 
 // ── Admin permissions (super-admin grants/revokes per ADMIN) ────────────────
@@ -5239,7 +5180,7 @@ export function superAdminMatchState(id: number) {
 
 // ── Phase 6: communications ──────────────────────────────────────────────────
 
-export type SaCommunicationChannel = "EMAIL" | "WHATSAPP";
+export type SaCommunicationChannel = "EMAIL";
 export type SaCommunicationStatus = "QUEUED" | "SENT" | "FAILED";
 
 export type SaCommunicationTemplate = {
@@ -6242,10 +6183,8 @@ export function getNgoFileLink(kind: "document" | "photo", id: number) {
  * region, CORS or the site's CSP for the bucket host. The caller may revoke it.
  */
 export async function getNgoFilePreviewUrl(kind: "document" | "photo", id: number): Promise<string> {
-  const token = typeof window !== "undefined" ? localStorage.getItem("ck_token") : null;
   const response = await fetch(`${BASE_URL}/api/v1/ngo-registration/files/${kind}/${id}/content`, {
     credentials: "include",
-    headers: token ? { Authorization: `Bearer ${token}` } : undefined,
   });
   if (!response.ok) throw new ApiError(response.status, "This file can't be shown right now.", null);
   return URL.createObjectURL(await response.blob());
@@ -6282,9 +6221,8 @@ export function updateNgoProfileCosmetic(body: { aboutUs?: string; organizationP
 }
 export async function uploadNgoProfilePhoto(type: "cover" | "logo" | "office_photo", file: File): Promise<NgoProfileManage> {
   const body = new FormData(); body.append("file", file);
-  const token = typeof window !== "undefined" ? localStorage.getItem("ck_token") : null;
   const res = await fetch(`${BASE_URL}/api/v1/ngo/profile/photos?type=${type}`, {
-    method: "POST", body, credentials: "include", headers: token ? { Authorization: `Bearer ${token}` } : undefined,
+    method: "POST", body, credentials: "include",
   });
   if (!res.ok) {
     const r = await res.json().catch(() => null);
@@ -6586,10 +6524,8 @@ export async function updateNgoDrive(id: number, payload: CreateNgoDrivePayload)
 /** Uploads a drive wizard photo: url is stored with the drive, previewUrl is for showing it now. */
 export async function uploadNgoDriveReferencePhoto(file: File): Promise<{ url: string; previewUrl: string }> {
   const body = new FormData(); body.append("file", file);
-  const token = typeof window !== "undefined" ? localStorage.getItem("ck_token") : null;
   const response = await fetch(`${BASE_URL}/api/v1/ngo-drives/uploads/reference-photo`, {
     method: "POST", body, credentials: "include",
-    headers: token ? { Authorization: `Bearer ${token}` } : undefined,
   });
   if (!response.ok) {
     const result = await response.json().catch(() => null);
@@ -7891,3 +7827,537 @@ export function superAdminResetCrmStaffPassword(id: number, password: string) {
 export function superAdminSetCrmStaffActive(id: number, active: boolean) {
   return request<void>(`/api/v1/super-admin/crm-staff/${id}/${active ? "enable" : "disable"}`, { method: "POST" });
 }
+
+// ---------------------------------------------------------------------------
+// Super Admin Mail Center (/api/v1/super-admin/mail-center)
+// ---------------------------------------------------------------------------
+
+export type McStatus = "DRAFT" | "SCHEDULED" | "SENDING" | "PAUSED" | "SENT" | "FAILED" | "CANCELLED";
+
+export interface McCampaign {
+  id: number;
+  name: string;
+  subject: string;
+  preheader: string | null;
+  html: string;
+  text: string | null;
+  segments: string;
+  dailyLimit: number | null;
+  status: McStatus;
+  scheduledAt: string | null;
+  pauseReason: string | null;
+  createdBy: string | null;
+  createdAt: string;
+  startedAt: string | null;
+  finishedAt: string | null;
+  identityId?: number | null;
+  tracking?: boolean | null;
+  copiedFromId?: number | null;
+}
+
+export interface McTemplate {
+  id: number;
+  name: string;
+  subject: string;
+  preheader: string | null;
+  html: string;
+  text: string | null;
+  updatedAt: string;
+}
+
+export interface McCampaignInput {
+  name: string;
+  subject: string;
+  preheader?: string;
+  html: string;
+  text?: string;
+  segments: string[];
+  dailyLimit?: number | null;
+  /** Mail ID to send from; null = default marketing sender (Phase 3a). */
+  identityId?: number | null;
+  /** false = personal mode: no open/click tracking. */
+  tracking?: boolean;
+}
+
+export interface McAudience {
+  id: number;
+  name: string;
+  consentBasis: string;
+  columns: string | null;
+  memberCount: number;
+  createdBy: string | null;
+  createdAt: string;
+  /** Phase 2 directory fields (absent on the create response). */
+  description?: string | null;
+  tags?: string[] | string | null;
+  origin?: string | null;
+  sourceNote?: string | null;
+  updatedAt?: string | null;
+  campaignCount?: number;
+  lastUsedAt?: string | null;
+}
+
+export interface McMemberRow {
+  email: string;
+  name?: string;
+  extra?: Record<string, string>;
+}
+
+export interface McReport {
+  campaign: McCampaign;
+  total: number;
+  pending: number;
+  sending: number;
+  sent: number;
+  failed: number;
+  sentLast24h: number;
+  dailyCap: number;
+  delivered: number;
+  bounced: number;
+  complained: number;
+  opened: number;
+  clicked: number;
+  /** Phase 3c: interrupted sends that may or may not have gone out. */
+  uncertain?: number;
+}
+
+export interface McOverview {
+  sent30d: number;
+  delivered30d: number;
+  opened30d: number;
+  clicked30d: number;
+  sent7d: number;
+  bouncePct7d: number;
+  complaintPct7d: number;
+  bouncePausePct: number;
+  complaintPausePct: number;
+  sentLast24h: number;
+  dailyCap: number;
+  scheduled: number;
+  sending: number;
+  paused: number;
+}
+
+export interface McSuppression {
+  email: string;
+  suppressed: boolean;
+  reason?: string;
+  source?: string;
+  since?: string;
+  optedOut: boolean;
+}
+
+export interface McVariableCheck {
+  unknown: string[];
+  available: string[];
+  sample: Record<string, string>;
+  subject: string;
+  /** People on the list after every exclusion. */
+  recipients: number;
+  /** List columns used in the message that some people have no value for. */
+  missing: { variable: string; count: number; examples: string[] }[];
+}
+
+const MC = "/api/v1/super-admin/mail-center";
+const mcPost = <T,>(path: string, body?: unknown) =>
+  request<T>(`${MC}${path}`, { method: "POST", body: body === undefined ? undefined : JSON.stringify(body) });
+
+export const mcSegments = () => request<{ segments: string[]; variables: string[] }>(`${MC}/segments`);
+export const mcEstimate = (segments: string[]) => mcPost<{ recipients: number }>("/audiences/estimate", { segments });
+
+export const mcCampaigns = () => request<McCampaign[]>(`${MC}/campaigns`);
+export const mcCreateCampaign = (b: McCampaignInput) => mcPost<McCampaign>("/campaigns", b);
+export const mcUpdateCampaign = (id: number, b: McCampaignInput) =>
+  request<McCampaign>(`${MC}/campaigns/${id}`, { method: "PUT", body: JSON.stringify(b) });
+export const mcDeleteCampaign = (id: number) => request<void>(`${MC}/campaigns/${id}`, { method: "DELETE" });
+export const mcVariableCheck = (id: number) => mcPost<McVariableCheck>(`/campaigns/${id}/variable-check`);
+export const mcPreview = (id: number) => mcPost<{ subject: string; html: string; to: string }>(`/campaigns/${id}/preview`);
+export const mcSendTest = (id: number, email: string) => mcPost<void>(`/campaigns/${id}/test`, { email });
+export const mcSendNow = (id: number, acceptMissing = false) =>
+  mcPost<McCampaign>(`/campaigns/${id}/send${acceptMissing ? "?acceptMissing=true" : ""}`);
+export const mcSchedule = (id: number, at: string, acceptMissing = false) =>
+  mcPost<McCampaign>(`/campaigns/${id}/schedule`, { at, acceptMissing });
+export const mcPause = (id: number) => mcPost<McCampaign>(`/campaigns/${id}/pause`);
+export const mcResume = (id: number) => mcPost<McCampaign>(`/campaigns/${id}/resume`);
+export const mcCancel = (id: number) => mcPost<McCampaign>(`/campaigns/${id}/cancel`);
+export const mcReport = (id: number) => request<McReport>(`${MC}/campaigns/${id}/report`);
+
+export const mcOverview = () => request<McOverview>(`${MC}/overview`);
+export const mcSuppressionLookup = (email: string) =>
+  request<McSuppression>(`${MC}/suppression?email=${encodeURIComponent(email)}`);
+export const mcSuppress = (email: string, note: string) => mcPost<McSuppression>("/suppression", { email, note });
+export const mcUnsuppress = (email: string) =>
+  request<McSuppression>(`${MC}/suppression?email=${encodeURIComponent(email)}`, { method: "DELETE" });
+
+export const mcAudiences = () => request<McAudience[]>(`${MC}/audiences`);
+export const mcCreateAudience = (name: string, consentBasis: string, columns: string[],
+  extra: { description?: string; tags?: string[]; origin?: "UPLOAD" | "PASTE" | "MANUAL" } = {}) =>
+  mcPost<McAudience>("/audiences", { name, consentBasis, columns, ...extra });
+export interface McUpsertResult {
+  added: number; updated: number; unchanged: number; invalid: number; repeatedInFile: number; total: number; columns: string;
+}
+export const mcAddMembers = (id: number, rows: McMemberRow[]) => mcPost<McUpsertResult>(`/audiences/${id}/members`, { rows });
+export const mcDeleteAudience = (id: number) => request<void>(`${MC}/audiences/${id}`, { method: "DELETE" });
+
+export const mcTemplates = () => request<McTemplate[]>(`${MC}/templates`);
+export const mcSaveTemplate = (id: number | null, b: Omit<McCampaignInput, "segments"> & { name: string }) =>
+  id == null
+    ? mcPost<McTemplate>("/templates", b)
+    : request<McTemplate>(`${MC}/templates/${id}`, { method: "PUT", body: JSON.stringify(b) });
+export const mcDeleteTemplate = (id: number) => request<void>(`${MC}/templates/${id}`, { method: "DELETE" });
+
+// ---- Mail Center image library (Phase 1c)
+export interface McAsset {
+  id: number;
+  url: string;
+  fileName: string;
+  contentType: string;
+  sizeBytes: number;
+  width: number | null;
+  height: number | null;
+  createdBy: string | null;
+  createdAt: string;
+}
+export const mcAssets = () => request<McAsset[]>(`${MC}/assets`);
+/** One file per request: the backend's multipart request cap is 12 MB. */
+export async function mcUploadAsset(file: File): Promise<McAsset> {
+  const fd = new FormData();
+  fd.append("files", file);
+  const res = await fetch(`${BASE_URL}${MC}/assets`, { method: "POST", credentials: "include", body: fd });
+  if (!res.ok) throw new Error(await errorMessage(res, `Couldn't upload ${file.name}.`));
+  invalidateRequestCache();
+  const saved = (await res.json()) as McAsset[];
+  return saved[0];
+}
+export const mcAssetUsage = (id: number) => request<{ usedIn: string[] }>(`${MC}/assets/${id}/usage`);
+export const mcDeleteAsset = (id: number) => request<void>(`${MC}/assets/${id}`, { method: "DELETE" });
+
+// ---- Mail Center per-person report (Phase 1d)
+export interface McRecipient {
+  id: number;
+  email: string;
+  name: string | null;
+  status: "PENDING" | "SENDING" | "SENT" | "FAILED" | "UNCERTAIN";
+  error: string | null;
+  sentAt: string | null;
+  deliveredAt: string | null;
+  bouncedAt: string | null;
+  bounceType: string | null;
+  complainedAt: string | null;
+  openedAt: string | null;
+  clickedAt: string | null;
+}
+export const mcRecipients = (id: number, status: string | null, page: number, size = 50) =>
+  request<McRecipient[]>(`${MC}/campaigns/${id}/recipients?page=${page}&size=${size}${status ? `&status=${status}` : ""}`);
+
+// ---- Mail Center campaign attachments (Phase 1e)
+export interface McAttachment {
+  id: number;
+  campaignId: number;
+  fileName: string;
+  contentType: string;
+  sizeBytes: number;
+  createdAt: string;
+}
+export const mcAttachments = (campaignId: number) => request<McAttachment[]>(`${MC}/campaigns/${campaignId}/attachments`);
+export async function mcAddAttachment(campaignId: number, file: File): Promise<McAttachment> {
+  const fd = new FormData();
+  fd.append("file", file);
+  const res = await fetch(`${BASE_URL}${MC}/campaigns/${campaignId}/attachments`, { method: "POST", credentials: "include", body: fd });
+  if (!res.ok) throw new Error(await errorMessage(res, `Couldn't attach ${file.name}.`));
+  invalidateRequestCache();
+  return (await res.json()) as McAttachment;
+}
+export const mcRemoveAttachment = (campaignId: number, id: number) =>
+  request<void>(`${MC}/campaigns/${campaignId}/attachments/${id}`, { method: "DELETE" });
+
+// ---- Mail Center saved lists, Phase 2
+export interface McAudienceDetail extends McAudience {
+  campaigns: { id: number; name: string; status: McStatus; startedAt: string | null; finishedAt: string | null }[];
+}
+export interface McMember {
+  id: number;
+  email: string;
+  name: string | null;
+  values: Record<string, string>;
+  createdAt: string | null;
+  /** Why this person is never mailed (donee / unsubscribed / blocked), or null. */
+  blocked: string | null;
+}
+export const tagsOfAudience = (a: McAudience): string[] =>
+  Array.isArray(a.tags) ? a.tags : a.tags ? a.tags.split(",").filter(Boolean) : [];
+export const mcAudience = (id: number) => request<McAudienceDetail>(`${MC}/audiences/${id}`);
+export const mcUpdateAudience = (id: number, b: { name?: string; description?: string; tags?: string[] }) =>
+  request<McAudience>(`${MC}/audiences/${id}`, { method: "PATCH", body: JSON.stringify(b) });
+export const mcMembers = (id: number, q: string, page: number, size = 50) =>
+  request<{ rows: McMember[]; total: number; page: number; size: number }>(
+    `${MC}/audiences/${id}/members?q=${encodeURIComponent(q)}&page=${page}&size=${size}`);
+export const mcSavePerson = (audienceId: number, memberId: number | null, b: { email: string; name?: string; values?: Record<string, string> }) =>
+  memberId == null
+    ? mcPost<McMember>(`/audiences/${audienceId}/people`, b)
+    : request<McMember>(`${MC}/audiences/${audienceId}/people/${memberId}`, { method: "PUT", body: JSON.stringify(b) });
+export const mcRemovePerson = (audienceId: number, memberId: number) =>
+  request<void>(`${MC}/audiences/${audienceId}/people/${memberId}`, { method: "DELETE" });
+export const mcColumnImpact = (audienceId: number, column: string) =>
+  request<{ column: string; usedIn: string[] }>(`${MC}/audiences/${audienceId}/columns/${encodeURIComponent(column)}/impact`);
+export const mcRenameColumn = (audienceId: number, column: string, to: string) =>
+  mcPost<McAudience>(`/audiences/${audienceId}/columns/${encodeURIComponent(column)}/rename`, { to });
+export const mcDeleteColumn = (audienceId: number, column: string) =>
+  request<McAudience>(`${MC}/audiences/${audienceId}/columns/${encodeURIComponent(column)}`, { method: "DELETE" });
+/** Downloads the CSV through the authenticated session (a plain link would lose the cookie on some setups). */
+export async function mcExportAudience(audienceId: number, fileName: string) {
+  const res = await fetch(`${BASE_URL}${MC}/audiences/${audienceId}/export`, { credentials: "include" });
+  if (!res.ok) throw new Error(await errorMessage(res, "Couldn't export the list."));
+  const url = URL.createObjectURL(await res.blob());
+  const a = document.createElement("a");
+  a.href = url; a.download = fileName; a.click();
+  URL.revokeObjectURL(url);
+}
+export const mcSnapshot = (b: { segments: string[]; name: string; consentBasis: string; tags?: string[] }) =>
+  mcPost<{ audience: McAudience; result: McUpsertResult }>("/audiences/snapshot", b);
+export type McCohort = "EVERYONE" | "DELIVERED" | "OPENED" | "NOT_OPENED" | "CLICKED" | "BOUNCED" | "FAILED";
+export const mcSaveCohort = (campaignId: number, b: { cohort: McCohort; audienceId?: number; name?: string; consentBasis?: string }) =>
+  mcPost<{ audience: McAudience; result: McUpsertResult }>(`/campaigns/${campaignId}/cohort`, b);
+export const mcAudiencesFiltered = (q: string, tag: string) =>
+  request<McAudience[]>(`${MC}/audiences?q=${encodeURIComponent(q.trim())}&tag=${encodeURIComponent(tag)}`);
+
+// ---- Mail Center Mail IDs + campaign sender (Phase 3a)
+export interface McMailId {
+  id: number;
+  address: string;
+  displayName: string;
+  department: string | null;
+  status: "ACTIVE" | "SUSPENDED";
+  dailySendLimit: number;
+  dailyRecipientLimit: number;
+  receiveReady: boolean;
+  createdBy: string | null;
+  createdAt: string;
+  sentLast24h?: number;
+  broadcastTotal?: number;
+  campaignCount?: number;
+  lastSentAt?: string | null;
+}
+export interface McMailIdSetup {
+  identityDomain: string | null;
+  identityDomainConfigured: boolean;
+  untrackedModeConfigured: boolean;
+  receivingConfigured: boolean;
+}
+export const mcMailIds = () => request<{ setup: McMailIdSetup; identities: McMailId[] }>(`${MC}/mail-ids`);
+export const mcCreateMailId = (b: { localPart: string; displayName: string; department?: string; dailySendLimit?: number; dailyRecipientLimit?: number }) =>
+  mcPost<McMailId>("/mail-ids", b);
+export const mcUpdateMailId = (id: number, b: { displayName?: string; department?: string; dailySendLimit?: number; dailyRecipientLimit?: number }) =>
+  request<McMailId>(`${MC}/mail-ids/${id}`, { method: "PATCH", body: JSON.stringify(b) });
+export const mcSetMailIdActive = (id: number, active: boolean) => mcPost<McMailId>(`/mail-ids/${id}/${active ? "reactivate" : "suspend"}`);
+export const mcDeleteMailId = (id: number) => request<void>(`${MC}/mail-ids/${id}`, { method: "DELETE" });
+export const mcCopyCampaign = (id: number) => mcPost<McCampaign>(`/campaigns/${id}/copy`);
+
+// ---- Mail Center batch plans (Phase 3b)
+export type McPlanUnit = "DAYS" | "WEEKS" | "MONTHS";
+export interface McPlanInput {
+  mode: "ROUNDS" | "DATES";
+  sizes?: number[]; growth?: number | null; maxSize?: number | null; stopAfter?: number | null;
+  firstAt?: string; every?: number; unit?: McPlanUnit;
+  phases?: { from: string; to: string | null; perSend: number; every: number; unit: McPlanUnit }[];
+  sendTime?: string;
+}
+export interface McPlanPreview {
+  audience: number; planned: number; excludedByCap: number; notReached: number; finishesAt: string | null;
+  rounds: { round: number; at: string; size: number; cumulative: number }[];
+  warnings: string[];
+}
+export interface McPlanView {
+  mode: "ROUNDS" | "DATES"; settings: McPlanInput; campaignStatus: McStatus;
+  planned: number; excludedByCap: number; notReached: number; sent: number; remaining: number;
+  rounds: { round: number; scheduledAt: string; target: number; sent: number; failed: number; waiting: number;
+    state: "WAITING" | "SENDING" | "DONE" | "PAUSED" | "CANCELLED" }[];
+  createdAt: string; createdBy: string | null;
+}
+export const mcPreviewPlan = (id: number, b: McPlanInput) => mcPost<McPlanPreview>(`/campaigns/${id}/plan/preview`, b);
+export const mcSchedulePlan = (id: number, b: McPlanInput, acceptMissing = false) =>
+  mcPost<McPlanView>(`/campaigns/${id}/plan${acceptMissing ? "?acceptMissing=true" : ""}`, b);
+/** Resolves null when the campaign has no plan (404). */
+export async function mcPlan(id: number): Promise<McPlanView | null> {
+  const res = await fetch(`${BASE_URL}${MC}/campaigns/${id}/plan`, { credentials: "include" });
+  if (res.status === 404) return null;
+  if (!res.ok) throw new Error(await errorMessage(res, "Couldn't load the plan."));
+  return (await res.json()) as McPlanView;
+}
+
+// ---- Mail Center uncertain sends (Phase 3c)
+export const mcResolveUncertain = (campaignId: number, action: "MARK_SENT" | "MARK_FAILED" | "RETRY") =>
+  mcPost<{ resolved: number; action: string }>(`/campaigns/${campaignId}/uncertain/resolve`, { action });
+
+// ---- Mail Center inbox (Phase 4b)
+export type McFolder = "INBOX" | "STARRED" | "SENT" | "ALL" | "TRASH";
+export type McInboxAction = "STAR" | "UNSTAR" | "ARCHIVE" | "UNARCHIVE" | "TRASH" | "RESTORE" | "READ" | "UNREAD";
+export interface McMailbox { id: number; address: string; displayName: string; status: string; receiveReady: boolean; unread: number }
+export interface McThreadRow {
+  id: number; identityId: number; mailbox: string | null; subject: string;
+  fromName: string | null; fromAddress: string | null; snippet: string | null;
+  lastMessageAt: string; messageCount: number; unread: number;
+  starred: boolean; archived: boolean; trashed: boolean; automated: boolean;
+  campaignId: number | null; campaignName: string | null;
+}
+export interface McThreadMessage {
+  id: number; direction: "IN" | "OUT"; fromName: string | null; fromAddress: string | null;
+  to: string[]; cc: string[]; subject: string | null; sentAt: string | null; receivedAt: string;
+  html: string | null; text: string | null; automated: boolean; read: boolean; skippedParts: number | null;
+  attachments: { id: number; fileName: string; contentType: string; sizeBytes: number }[];
+}
+export interface McThread {
+  id: number; identityId: number; mailbox: string | null; subject: string;
+  starred: boolean; archived: boolean; trashed: boolean; automated: boolean;
+  campaignId: number | null; campaignName: string | null; messages: McThreadMessage[];
+}
+export const mcMailboxes = () => request<{ mailboxes: McMailbox[]; unreadTotal: number }>(`${MC}/inbox/mailboxes`);
+export const mcThreads = (p: { mailbox?: number | null; folder: McFolder; q: string; before?: string; beforeId?: number; size?: number }) => {
+  const qs = new URLSearchParams({ folder: p.folder, q: p.q, size: String(p.size ?? 30) });
+  if (p.mailbox != null) qs.set("mailbox", String(p.mailbox));
+  if (p.before) qs.set("before", p.before);
+  if (p.beforeId != null) qs.set("beforeId", String(p.beforeId));
+  return request<{ rows: McThreadRow[]; hasMore: boolean }>(`${MC}/inbox/threads?${qs}`);
+};
+export const mcThread = (id: number) => request<McThread>(`${MC}/inbox/threads/${id}`);
+export const mcInboxAction = (ids: number[], action: McInboxAction) =>
+  mcPost<{ updated: number }>("/inbox/threads/actions", { ids, action });
+export async function mcDownloadInboxAttachment(id: number, fileName: string) {
+  const res = await fetch(`${BASE_URL}${MC}/inbox/attachments/${id}`, { credentials: "include" });
+  if (!res.ok) throw new Error(await errorMessage(res, "Couldn't download the file."));
+  const url = URL.createObjectURL(await res.blob());
+  const a = document.createElement("a");
+  a.href = url; a.download = fileName; a.click();
+  URL.revokeObjectURL(url);
+}
+
+// ---- Mail Center 1:1 compose (Phase 4c)
+export type McComposeMode = "NEW" | "REPLY" | "REPLY_ALL" | "FORWARD";
+export interface McDraft {
+  id: number; version: number; identityId: number; mailbox: string | null; mode: McComposeMode;
+  threadId: number | null; sourceMessageId: number | null;
+  to: string; cc: string; bcc: string; subject: string; body: string; quoted: string | null;
+  files: { id: number; fileName: string; sizeBytes: number }[];
+  updatedAt: string; updatedBy: string | null;
+}
+export const mcDrafts = (mailbox: number | null) =>
+  request<McDraft[]>(`${MC}/inbox/drafts${mailbox != null ? `?mailbox=${mailbox}` : ""}`);
+export const mcCreateDraft = (b: { identityId?: number | null; mode: McComposeMode; sourceMessageId?: number }) =>
+  mcPost<McDraft>("/inbox/drafts", b);
+export const mcSaveDraft = (id: number, b: { version: number; identityId?: number; to: string; cc: string; bcc: string; subject: string; body: string }) =>
+  request<McDraft>(`${MC}/inbox/drafts/${id}`, { method: "PUT", body: JSON.stringify(b) });
+export const mcDeleteDraft = (id: number) => request<void>(`${MC}/inbox/drafts/${id}`, { method: "DELETE" });
+export async function mcAddDraftFile(id: number, file: File) {
+  const fd = new FormData();
+  fd.append("file", file);
+  const res = await fetch(`${BASE_URL}${MC}/inbox/drafts/${id}/files`, { method: "POST", credentials: "include", body: fd });
+  if (!res.ok) throw new Error(await errorMessage(res, `Couldn't attach ${file.name}.`));
+  invalidateRequestCache();
+  return (await res.json()) as { id: number; fileName: string; sizeBytes: number };
+}
+export const mcRemoveDraftFile = (id: number, fileId: number) =>
+  request<void>(`${MC}/inbox/drafts/${id}/files/${fileId}`, { method: "DELETE" });
+export const mcSendDraft = (id: number, version: number) =>
+  mcPost<{ threadId: number; messageId: number }>(`/inbox/drafts/${id}/send`, { version });
+
+// ---- Mail Center marketing follow-up + AI (Phase 5)
+export type McIntent = "POSITIVE" | "NEGATIVE" | "AUTOMATED" | "UNCLEAR";
+export type McFollowCohort = "ALL" | "REPLIED" | "POSITIVE" | "NEGATIVE" | "AUTOMATED" | "OPENED" | "CLICKED" | "NOT_OPENED";
+export interface McAiStatus { configured: boolean; model: string; dailyCap: number; usedToday: number }
+export interface McFollowCards {
+  sent: number; opened: number; clicked: number; replied: number; positive: number; negative: number; automated: number;
+  ai: McAiStatus;
+}
+export interface McFollowPerson {
+  recipientId: number; email: string; name: string | null; campaignId: number; campaignName: string | null; round: number | null;
+  status: string; sentAt: string | null; openedAt: string | null; clickedAt: string | null;
+  threadId: number | null; lastReplyAt: string | null; intent: McIntent | null; intentSource: "AI" | "HUMAN" | null;
+  summary: string | null; optOutSuggested: boolean; draftReady: boolean; unsubscribed: boolean;
+}
+export interface McCtaTarget { kind: string; title: string; url: string }
+const mcQs = (o: Record<string, string | number | null | undefined>) =>
+  Object.entries(o).filter(([, v]) => v != null && v !== "").map(([k, v]) => `${k}=${encodeURIComponent(String(v))}`).join("&");
+export const mcFollowCards = (campaign: number | null) => request<McFollowCards>(`${MC}/follow-up/cards?${mcQs({ campaign })}`);
+export const mcFollowPeople = (p: { campaign: number | null; cohort: McFollowCohort; q: string; page: number; size?: number }) =>
+  request<{ rows: McFollowPerson[]; total: number; page: number }>(`${MC}/follow-up/people?${mcQs({ ...p, size: p.size ?? 50 })}`);
+export const mcFollowCampaigns = () => request<{ id: number; name: string; status: string }[]>(`${MC}/follow-up/campaigns`);
+export const mcSetIntent = (threadId: number, intent: McIntent) =>
+  mcPost<{ intent: McIntent; intentSource: string }>(`/follow-up/threads/${threadId}/intent`, { intent });
+export const mcClassify = (threadId: number) =>
+  mcPost<{ intent: McIntent; intentSource: string; summary: string | null; optOutSuggested: boolean }>(`/follow-up/threads/${threadId}/classify`);
+export const mcAiDraft = (threadId: number, b: { brief: string; useFacts: boolean; ctaUrl: string }) =>
+  mcPost<McDraft>(`/follow-up/threads/${threadId}/ai-draft`, b);
+export const mcFollowUnsubscribe = (recipientId: number) => mcPost<void>(`/follow-up/people/${recipientId}/unsubscribe`);
+export const mcAiFacts = () => request<{ facts: string; updatedBy: string; updatedAt: string }>(`${MC}/ai/facts`);
+export const mcSaveAiFacts = (facts: string) =>
+  request<{ facts: string; updatedBy: string; updatedAt: string }>(`${MC}/ai/facts`, { method: "PUT", body: JSON.stringify({ facts }) });
+export const mcCtaTargets = () => request<McCtaTarget[]>(`${MC}/cta-targets`);
+
+// ---- Mail Center automations (Phase 6)
+export interface McRuleInput {
+  title: string; segments: string[]; tagLabel?: string; repeatType: "MONTHLY" | "YEARLY"; dayOfMonth?: number | null;
+  yearlyDates?: string; offsets: string; sendTime: string; identityId?: number | null;
+  subject: string; preheader?: string; html: string; text?: string; ctaUrl?: string;
+}
+export interface McRule extends McRuleInput {
+  id: number; active: boolean; ruleVersion: number; createdBy: string | null; updatedAt: string | null;
+  nextSendAt?: string | null; nextDueDate?: string | null; dispatchCount?: number;
+}
+export interface McRulePreview { upcoming: { dueDate: string; daysBefore: number; sendAt: string }[]; audience: number | null; note: string }
+export interface McRuleDispatch {
+  id: number; ruleId: number; ruleTitle: string | null; ruleVersion: number; dueDate: string; daysBefore: number;
+  plannedAt: string; status: "QUEUED" | "SKIPPED" | "MISSED" | "FAILED"; recipients: number | null; campaignId: number | null; error: string | null;
+}
+export const mcRules = () => request<McRule[]>(`${MC}/rules`);
+export const mcSaveRule = (id: number | null, b: McRuleInput) =>
+  id == null ? mcPost<McRule>("/rules", b) : request<McRule>(`${MC}/rules/${id}`, { method: "PUT", body: JSON.stringify(b) });
+export const mcSetRuleActive = (id: number, active: boolean) => mcPost<McRule>(`/rules/${id}/${active ? "activate" : "deactivate"}`);
+export const mcDuplicateRule = (id: number) => mcPost<McRule>(`/rules/${id}/duplicate`);
+export const mcDeleteRule = (id: number) => request<void>(`${MC}/rules/${id}`, { method: "DELETE" });
+export const mcPreviewRule = (b: McRuleInput) => mcPost<McRulePreview>("/rules/preview", b);
+export const mcRuleHistory = (rule: number | null, page: number) =>
+  request<{ rows: McRuleDispatch[]; total: number; page: number }>(`${MC}/rules/history?page=${page}${rule != null ? `&rule=${rule}` : ""}`);
+
+// ---- Mail Center insights (Phase 7)
+export interface McInsightsOverview {
+  setup: { trackingConfigured: boolean; lastDeliveryEventAt: string; receivingConfigured: boolean; untrackedModeConfigured: boolean };
+  unread: number; receivedWeek: number; sentWeek: number;
+  last30: { sent: number; delivered: number | null; bounced: number | null; opened: number | null; clicked: number | null; replied: number; campaigns: number };
+  days: { day: string; broadcast: number; sent: number; received: number }[];
+  lists: { count: number; people: number }; rules: { active: number; total: number }; mailIds: { active: number; total: number };
+  scheduled: { id: number; name: string; at: string }[];
+  attention: { kind: string; text: string; campaignId?: number }[];
+}
+export interface McReportRow {
+  id: number; name: string; subject: string; status: McStatus; sender: string; audience: string; tracking: boolean;
+  recipients: number; sent: number; failed: number; delivered: number; bounced: number; opened: number; clicked: number; replied: number;
+  startedAt: string | null; scheduledAt: string | null;
+}
+export interface McReportsData {
+  rows: McReportRow[]; trackingConfigured: boolean;
+  totals: { campaigns: number; sent: number; delivered: number | null; bounced: number | null; opened: number | null; clicked: number | null; replied: number };
+}
+export interface McActivityRow {
+  at: string; type: "RECEIVED" | "SENT" | "BROADCAST"; mailbox: string | null; from: string | null; to: string | null;
+  subject: string | null; threadId?: number; campaignId?: number; status: string;
+}
+export interface McSystemData {
+  sentToday: number; failedToday: number; skippedToday: number;
+  todayByCategory: { category: string; sent: number; failed: number; failurePct: number }[];
+  trend: { day: string; sent: number; failed: number }[];
+  loggingSince: string; queue: string; checkedAt: string;
+}
+export interface McSystemLogRow { id: number; mailType: string; category: string; recipient: string | null; subject: string | null; status: string; error: string | null; createdAt: string }
+export const mcInsightsOverview = () => request<McInsightsOverview>(`${MC}/insights/overview`);
+export const mcInsightsReports = (status: string) => request<McReportsData>(`${MC}/insights/reports${status ? `?status=${status}` : ""}`);
+export const mcActivity = (p: { type: string; mailbox: number | null; q: string; before?: string }) => {
+  const s = new URLSearchParams({ type: p.type, q: p.q });
+  if (p.mailbox != null) s.set("mailbox", String(p.mailbox));
+  if (p.before) s.set("before", p.before);
+  return request<{ rows: McActivityRow[]; hasMore: boolean; note: string }>(`${MC}/insights/activity?${s}`);
+};
+export const mcSystem = () => request<McSystemData>(`${MC}/system`);
+export const mcSystemLog = (p: { category: string; status: string; q: string; page: number }) =>
+  request<{ rows: McSystemLogRow[]; total: number; page: number }>(`${MC}/system/log?${new URLSearchParams({ ...p, page: String(p.page) })}`);
+export const mcTestTransport = (email: string) => mcPost<{ sentTo: string }>("/system/test-transport", { email });
+export const mcProcessDue = () => mcPost<{ started: boolean }>("/system/process-due");

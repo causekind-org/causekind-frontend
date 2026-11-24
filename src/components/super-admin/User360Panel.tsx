@@ -1,5 +1,6 @@
 "use client";
 
+import { SaLoadError } from "./SaLoadError";
 import { ListingDetailModal } from "@/components/super-admin/ListingDetailModal";
 import { RequestDetailModal } from "@/components/super-admin/RequestDetailModal";
 import { serverDate } from "@/lib/serverTime";
@@ -65,14 +66,18 @@ export function User360Panel({
   const [tab, setTab] = useState<Tab>("identity");
   const [profile, setProfile] = useState<SaUserProfile | null>(null);
   const [loading, setLoading] = useState(true);
+  // A failed load used to fall through to "User not found."
+  const [failed, setFailed] = useState(false);
+  const [reloadKey, setReloadKey] = useState(0);
 
   useEffect(() => {
     setLoading(true);
+    setFailed(false);
     superAdminUserProfile(userId)
       .then(setProfile)
-      .catch(() => toast.error("Couldn't load this user."))
+      .catch(() => { setFailed(true); toast.error("Couldn't load this user."); })
       .finally(() => setLoading(false));
-  }, [userId]);
+  }, [userId, reloadKey]);
 
   const backBtn = (
     <button
@@ -87,6 +92,15 @@ export function User360Panel({
     return (
       <div className="flex justify-center py-20">
         <Loader2 className={`size-8 animate-spin ${t.dim}`} />
+      </div>
+    );
+  }
+
+  if (!profile && failed) {
+    return (
+      <div className="space-y-4">
+        {backBtn}
+        <SaLoadError what="this user" onRetry={() => setReloadKey((k) => k + 1)} />
       </div>
     );
   }
@@ -532,7 +546,7 @@ function PanRevealCard({ userId, t }: { userId: number; t: SaTheme }) {
     <section className={`rounded-xl border p-4 ${t.card}`}>
       <h3 className={`mb-3 text-sm font-bold ${t.heading}`}>PAN</h3>
       <p className={`mb-2 text-xs ${t.muted}`}>
-        Captured on this user's most recent trust donation. Government ID — requires a stated
+        Captured on this user&apos;s most recent trust donation. Government ID — requires a stated
         reason, and every read is logged (see Governance).
       </p>
 
@@ -602,11 +616,13 @@ function TimelineTab({ userId, t, isDark }: { userId: number; t: SaTheme; isDark
   const [page, setPage] = useState(0);
   const [loading, setLoading] = useState(true);
 
+  const [failed, setFailed] = useState(false);
   const load = useCallback(() => {
     setLoading(true);
+    setFailed(false);
     superAdminUserTimeline(userId, { categories, page, size: 50 })
       .then(setData)
-      .catch(() => toast.error("Couldn't load the timeline."))
+      .catch(() => { setFailed(true); toast.error("Couldn't load the timeline."); })
       .finally(() => setLoading(false));
   }, [userId, categories, page]);
 
@@ -649,6 +665,8 @@ function TimelineTab({ userId, t, isDark }: { userId: number; t: SaTheme; isDark
         <div className="flex justify-center py-16">
           <Loader2 className={`size-6 animate-spin ${t.dim}`} />
         </div>
+      ) : failed ? (
+        <SaLoadError what="the timeline" onRetry={load} />
       ) : !data || data.events.items.length === 0 ? (
         <p className={`py-10 text-center text-sm ${t.muted}`}>
           Nothing on this timeline{categories.length > 0 ? " for the selected categories" : ""}.
@@ -706,13 +724,16 @@ function RecordsTab({ userId, t, isDark }: { userId: number; t: SaTheme; isDark:
   const [open, setOpen] = useState<SaRecordSummary | null>(null);
   const clickable = (r: SaRecordSummary) => r.type === "LISTING" || r.type === "REQUEST";
 
+  const [failed, setFailed] = useState(false);
+  const [reloadKey, setReloadKey] = useState(0);
   useEffect(() => {
     setLoading(true);
+    setFailed(false);
     superAdminUserRecords(userId, type, page, 25)
       .then(setData)
-      .catch(() => toast.error("Couldn't load these records."))
+      .catch(() => { setFailed(true); toast.error("Couldn't load these records."); })
       .finally(() => setLoading(false));
-  }, [userId, type, page]);
+  }, [userId, type, page, reloadKey]);
 
   const th = `px-3 py-2 text-left text-[10px] font-bold uppercase tracking-wider ${t.dim}`;
 
@@ -736,6 +757,8 @@ function RecordsTab({ userId, t, isDark }: { userId: number; t: SaTheme; isDark:
         <div className="flex justify-center py-16">
           <Loader2 className={`size-6 animate-spin ${t.dim}`} />
         </div>
+      ) : failed ? (
+        <SaLoadError what="these records" onRetry={() => setReloadKey((k) => k + 1)} />
       ) : !data || data.items.length === 0 ? (
         <p className={`py-10 text-center text-sm ${t.muted}`}>No records of this type.</p>
       ) : (

@@ -1,95 +1,87 @@
 "use client";
 
-import { motion, MotionProps, Variants, useReducedMotion } from "framer-motion";
-import React from "react";
+import { motion, MotionProps, useInView, useReducedMotion } from "framer-motion";
+import React, { useEffect, useRef, useState } from "react";
 
 type Direction = "up" | "down" | "left" | "right" | "none";
 
 type AnimatedWrapperProps = {
   children: React.ReactNode;
   className?: string;
-  /** optional custom variants */
+  /** optional custom variants (expects `hidden` and `visible` keys) */
   variants?: MotionProps["variants"];
-  /** delay in seconds */
   delay?: number;
-  /** duration in seconds */
   duration?: number;
-  /** slide direction */
   direction?: Direction;
-  /** use scroll-triggered animation instead of mount animation */
   inView?: boolean;
-  /** amount of element visible before triggering: a fraction 0–1, or the
-   *  framer-motion keywords "some" (any part visible) / "all" (fully visible) */
   threshold?: number | "some" | "all";
+  /** Never hide, even below the fold (first-screen text). */
+  eager?: boolean;
 };
 
-function buildVariants(direction: Direction, duration: number, delay: number): Variants {
-  const offsets: Record<Direction, { x?: number; y?: number; scale?: number }> = {
-    up:    { y: 30, scale: 0.97 },
-    down:  { y: -30, scale: 0.97 },
-    left:  { x: 30, scale: 0.97 },
-    right: { x: -30, scale: 0.97 },
-    none:  { scale: 0.97 },
-  };
-  const hidden = { opacity: 0, ...offsets[direction] };
-  const visible = {
-    opacity: 1,
-    x: 0,
-    y: 0,
-    scale: 1,
-    transition: {
-      type: "spring" as const,
-      stiffness: 90,
-      damping: 18,
-      mass: 0.9,
-      delay,
-    },
-  };
-  return { hidden, visible };
-}
+const OFFSETS: Record<Direction, { x?: number; y?: number; scale?: number }> = {
+  up:    { y: 30, scale: 0.97 },
+  down:  { y: -30, scale: 0.97 },
+  left:  { x: 30, scale: 0.97 },
+  right: { x: -30, scale: 0.97 },
+  none:  { scale: 0.97 },
+};
 
+/** How far below the first screen an element must start to be animated in. */
+const BELOW_FOLD_MARGIN = 100;
+
+/**
+ * Content is visible by default: the server HTML and the first client render
+ * carry no hidden state, so text never waits for JavaScript.
+ *
+ * After hydration, only an element that starts clearly below the fold
+ * (top > viewport height + 100px) is hidden — instantly, while off screen —
+ * and animates in when it scrolls into view. Elements on or near the first
+ * screen stay as they are (no animation reset). Reduced motion: never hidden.
+ * (`inView={false}` used to animate on mount; on the first screen that is now
+ * a no-op, and below the fold it behaves like `inView`.)
+ */
 export const AnimatedWrapper: React.FC<AnimatedWrapperProps> = ({
   children,
   className = "",
   variants,
   delay = 0,
-  duration = 0.5,
   direction = "up",
-  inView = false,
   threshold = 0.15,
+  eager = false,
 }) => {
-  // Respect the OS-level motion preference: skip the slide/scale entrance
-  // (and the scroll observer work behind whileInView) and just fade content
-  // in instantly. Cheaper for the browser and required for a11y.
   const prefersReducedMotion = useReducedMotion();
-  const resolvedVariants = prefersReducedMotion
-    ? { hidden: { opacity: 1 }, visible: { opacity: 1 } }
-    : variants ?? buildVariants(direction, duration, delay);
+  const ref = useRef<HTMLDivElement>(null);
+  const seen = useInView(ref, { once: true, amount: threshold });
+  const [armed, setArmed] = useState(false);
+
+  useEffect(() => {
+    if (eager || prefersReducedMotion || !ref.current) return;
+    if (ref.current.getBoundingClientRect().top > window.innerHeight + BELOW_FOLD_MARGIN) setArmed(true);
+  }, [eager, prefersReducedMotion]);
 
   if (prefersReducedMotion) {
     return <div className={className}>{children}</div>;
   }
 
-  if (inView) {
-    return (
-      <motion.div
-        className={className}
-        initial="hidden"
-        whileInView="visible"
-        viewport={{ once: true, amount: threshold }}
-        variants={resolvedVariants}
-      >
-        {children}
-      </motion.div>
-    );
-  }
+  const resolved = variants ?? {
+    hidden: { opacity: 0, ...OFFSETS[direction], transition: { duration: 0 } },
+    visible: {
+      opacity: 1,
+      x: 0,
+      y: 0,
+      scale: 1,
+      transition: { type: "spring" as const, stiffness: 90, damping: 18, mass: 0.9, delay },
+    },
+  };
 
   return (
     <motion.div
+      ref={ref}
       className={className}
-      initial="hidden"
-      animate="visible"
-      variants={resolvedVariants}
+      initial={false}
+      variants={resolved}
+      animate={armed && !seen ? "hidden" : "visible"}
     >
       {children}
     </motion.div>

@@ -8,6 +8,8 @@ import {
   adminApproveNgoProfileChange, adminGetNgoProfileChanges, adminRejectNgoProfileChange, type AdminNgoProfileChange,
 } from "@/lib/api";
 import { documentLabel } from "@/features/ngo-registration/ngoRegistrationModel";
+import { AdminReviewTable, BackToList, TwoLine } from "@/components/admin/AdminReviewTable";
+import { useReviewParam } from "@/components/admin/useReviewParam";
 
 const FIELD_LABELS: Record<string, string> = {
   organizationName: "Legal name", panNumber: "PAN", registrationNumber: "Registration number",
@@ -53,6 +55,7 @@ export function NgoProfileChangesPanel({ onChange }: { onChange?: () => void } =
   const [reasons, setReasons] = useState<Record<number, string>>({});
   const [busy, setBusy] = useState<number | null>(null);
   const [error, setError] = useState("");
+  const [reviewId, setReviewId] = useReviewParam();
 
   // Every request once: the tab counts and lists come from the same rows.
   const load = useCallback(() => {
@@ -78,21 +81,34 @@ export function NgoProfileChangesPanel({ onChange }: { onChange?: () => void } =
 
   const shownChanges = (list: AdminNgoProfileChange[]) => list.filter(x => tab.matches(changeStatus(x))
     && matchesQuery(query, x.organizationName, x.request.field, x.request.newValue, x.request.oldValue));
+  const fieldName = (f: string) => FIELD_LABELS[f] ?? (f.startsWith("documents.") ? `Document: ${documentLabel(f.slice(10))}` : f);
+  const reviewing = reviewId ? (items ?? []).find(x => String(x.request.id) === reviewId) : undefined;
 
   return (
     <section aria-label="NGO profile changes" className="rounded-xl border border-stone-200 bg-white p-5 dark:border-zinc-700 dark:bg-zinc-900">
       <h2 className="text-lg font-bold">Profile changes</h2>
-      <div className="mt-3"><AdminStatusTabs label="Profile change status" options={tabOptions(CHANGE_TABS, items ?? [], changeStatus)} selected={statusIndex} onSelect={setStatusIndex} /></div>
+      <div className="mt-3"><AdminStatusTabs label="Profile change status" options={tabOptions(CHANGE_TABS, items ?? [], changeStatus)} selected={statusIndex} onSelect={i => { setReviewId(null); setStatusIndex(i); }} /></div>
       <div className="mt-3"><AdminSearchBox value={query} onChange={setQuery} label="Search profile changes" placeholder="Search NGO name or value" /></div>
       {error && <p role="alert" className="mt-3 text-xs font-semibold text-red-600">{error}</p>}
+      {reviewing && <div className="mt-3"><BackToList onBack={() => setReviewId(null)} /></div>}
       {items == null ? <p className="mt-4 text-sm text-stone-500">Loading…</p>
-        : shownChanges(items).length === 0 ? (query && items.some(x => tab.matches(changeStatus(x))) ? <NoSearchResults query={query} onClear={() => setQuery("")} /> : <p className="mt-4 text-sm text-stone-500">Nothing here.</p>)
-        : (
+        : !reviewing && shownChanges(items).length === 0 ? (query && items.some(x => tab.matches(changeStatus(x))) ? <NoSearchResults query={query} onClear={() => setQuery("")} /> : <p className="mt-4 text-sm text-stone-500">Nothing here.</p>)
+        : !reviewing ? (
+          <div className="mt-4">
+            <AdminReviewTable label="Profile changes" rows={shownChanges(items)} name={x => `${x.organizationName ?? "NGO"} ${fieldName(x.request.field)}`} rowTestId="admin-profile-change-row" rowKey={x => x.request.id}
+              highlight={x => x.request.status === "PENDING"} onReview={x => setReviewId(String(x.request.id))}
+              columns={[
+                { header: "NGO", cell: x => <TwoLine main={x.organizationName} /> },
+                { header: "Field", cell: x => fieldName(x.request.field) },
+                { header: "State", cell: x => x.request.status === "PENDING" ? "Waiting" : x.request.status === "APPROVED" ? "Approved" : "Not approved" },
+              ]} />
+          </div>
+        ) : (
           <ul className="mt-4 space-y-3">
-            {shownChanges(items).map(({ request: r, organizationName, slug, idProofUrls, decidedBy }) => (
+            {[reviewing].map(({ request: r, organizationName, slug, idProofUrls, decidedBy }) => (
               <li key={r.id} data-testid="admin-profile-change" className="rounded-lg border border-stone-200 p-4 dark:border-zinc-700">
                 <p className="text-sm font-bold ck-user-text">{organizationName}{slug && <a href={`/ngos/${slug}`} className="ml-2 text-xs font-semibold text-emerald-700 underline">public page</a>}</p>
-                <p className="mt-1 text-xs font-bold uppercase tracking-wide text-stone-500">{FIELD_LABELS[r.field] ?? (r.field.startsWith("documents.") ? `Document: ${documentLabel(r.field.slice(10))}` : r.field)}</p>
+                <p className="mt-1 text-xs font-bold uppercase tracking-wide text-stone-500">{fieldName(r.field)}</p>
                 <dl className="mt-2 grid gap-2 text-sm sm:grid-cols-2">
                   <div><dt className="text-xs text-stone-500">Current</dt><dd className="ck-user-text"><ShowValue field={r.field} value={r.oldValue} idProofUrls={idProofUrls} /></dd></div>
                   <div><dt className="text-xs text-stone-500">Requested</dt><dd className="ck-user-text"><ShowValue field={r.field} value={r.newValue} idProofUrls={idProofUrls} /></dd></div>

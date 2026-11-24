@@ -6,30 +6,20 @@ import React, { useState, useEffect, useRef } from "react";
 import { FEATURES } from "@/lib/features";
 import Link from "next/link";
 import { motion, useReducedMotion } from "framer-motion";
-import { gsap } from "gsap";
-import { ScrollTrigger } from "gsap/ScrollTrigger";
+import { loadGsap, isInViewport } from "@/lib/gsapLoader";
 import {
   Heart,
   HandHeart,
   Building2,
   ArrowRight,
-  MessageCircle,
   Sparkles,
   ShieldCheck,
   CheckCircle2,
 } from "lucide-react";
 import { CONTACT_INFO, LANDING_ROUTES, HOME_ROLE_COLORS } from "@/lib/landingConstants";
-import { WhatsAppTellAFriendButton } from "@/components/home/WhatsAppTellAFriend";
 import { TRUST_PILL_EYEBROW } from "@/components/home/DoneeSectionHeading";
 
-if (typeof window !== "undefined") {
-  gsap.registerPlugin(ScrollTrigger);
-}
 
-/** Pre-filled WhatsApp message for launch updates (both layouts). */
-const WHATSAPP_NOTIFY_URL = `https://wa.me/917887890208?text=${encodeURIComponent(
-  "Hi CauseKind! Please notify me when online donations and fundraising launch."
-)}`;
 
 export function FinalCtaSection({
   variant = "desktop",
@@ -59,10 +49,20 @@ function FinalCtaCard({
   useEffect(() => {
     if (reduce) return;
 
-    const mm = gsap.matchMedia();
+    // gsap loads after the browser is idle (lib/gsapLoader); until then the
+    // section shows its normal resting state.
+    let mm: { revert: () => void } | null = null;
+    let cancelled = false;
+    void loadGsap().then(({ gsap }) => {
+    if (cancelled) return;
+    // Already visible when gsap arrives: the aurora drift still runs, the
+    // from-hidden entrance is skipped.
+    const skipEntrance = isInViewport(cardRef.current);
+    const m = gsap.matchMedia();
+    mm = m;
     const mediaQuery = variant === "desktop" ? "(min-width: 1024px)" : "(max-width: 1023px)";
 
-    mm.add(mediaQuery, () => {
+    m.add(mediaQuery, () => {
       // 1. Aurora background gradient blobs drift
       gsap.to(".aurora-blob-1", {
         x: 40,
@@ -94,6 +94,7 @@ function FinalCtaCard({
         ease: "sine.inOut",
       });
 
+      if (skipEntrance) return;
       // 2. Entrance Animation via ScrollTrigger
       const tl = gsap.timeline({
         scrollTrigger: {
@@ -127,10 +128,10 @@ function FinalCtaCard({
       );
     });
 
-    return () => mm.revert();
-  }, [reduce, variant]);
+    });
 
-  const whatsappNotifyUrl = WHATSAPP_NOTIFY_URL;
+    return () => { cancelled = true; mm?.revert(); };
+  }, [reduce, variant]);
 
   return (
     <LandingAttributes><section
@@ -210,36 +211,12 @@ function FinalCtaCard({
               )}
             </div>
 
-            {/* ════════ TELL A FRIEND ON WHATSAPP ════════ */}
-            <div className="mt-5 sm:mt-6 flex flex-col items-center gap-2">
-              <p className="text-xs sm:text-[13px] font-semibold text-stone-300"><LandingText>
-                Know someone who&apos;d love this?
-              </LandingText></p>
-              <WhatsAppTellAFriendButton variant="outline" />
-            </div>
-
             {/* Small reassurance line */}
             <p className="mt-3 text-[11px] sm:text-xs font-medium text-stone-400"><LandingText>
               Free for everyone · Verified · Local
             </LandingText></p>
           </div>
 
-          {/* ════════ COMING SOON STRIP ════════ */}
-          <div className="relative z-10 mt-5 pt-4 sm:mt-6 sm:pt-4 border-t border-stone-800 dark:border-stone-700/60 flex flex-col sm:flex-row items-center justify-between gap-3 text-left">
-            <div className="text-stone-300 text-xs sm:text-[13px] font-normal text-center sm:text-left">
-              <span><LandingText>Fundraising, online donations and CSR partnerships are coming soon.</LandingText></span>
-            </div>
-
-            <a
-              href={whatsappNotifyUrl}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-full bg-emerald-600/90 hover:bg-emerald-600 text-white text-xs font-semibold shadow-xs hover:shadow-emerald-500/20 transition-all duration-200 active:scale-95 flex-shrink-0"
-            >
-              <MessageCircle className="w-3.5 h-3.5" aria-hidden="true" />
-              <span><LandingText>Get updates on WhatsApp</LandingText></span>
-            </a>
-          </div>
         </div>
       </div>
     </section></LandingAttributes>
@@ -322,17 +299,11 @@ function FinalCtaSplit({ variant }: { variant: "desktop" | "mobile" }) {
               ))}
             </ul></LandingAttributes>
 
-            <div className="mt-5 sm:mt-6 flex flex-wrap items-center gap-x-3 gap-y-2">
-              <p className="text-xs sm:text-[13px] font-medium text-stone-500 dark:text-stone-400"><LandingText>
-                Know someone who&apos;d love this?
-              </LandingText></p>
-              <WhatsAppTellAFriendButton variant="outline-light" />
-            </div>
           </div>
 
           {/* ════════ RIGHT: choose your path ════════ */}
           <div className="min-w-0">
-            <p id="join-paths-label" className="mb-3 text-xs sm:text-sm font-semibold text-stone-500 dark:text-stone-400"><LandingText>
+            <p id="join-paths-label" className="mb-3 text-xs sm:text-sm font-semibold text-stone-600 dark:text-stone-400"><LandingText>
               Choose how you want to join
             </LandingText></p>
             <ul className="flex flex-col gap-3" aria-labelledby="join-paths-label">
@@ -380,22 +351,6 @@ function FinalCtaSplit({ variant }: { variant: "desktop" | "mobile" }) {
           </div>
         </div>
 
-        {/* ════════ BOTTOM: coming-soon announcement ════════ */}
-        <div className="mt-8 sm:mt-10 rounded-2xl border border-dashed border-stone-300! dark:border-stone-700! px-4 py-3 sm:px-5 flex flex-col sm:flex-row items-center justify-between gap-3 text-center sm:text-left">
-          <p className="inline-flex items-center gap-2 text-xs sm:text-[13px] text-stone-600 dark:text-stone-300">
-            <Sparkles className="w-4 h-4 shrink-0 text-[#B5480F] dark:text-[#F4A25B]" aria-hidden="true" />
-            <span><LandingText>Fundraising, online donations and CSR partnerships are coming soon.</LandingText></span>
-          </p>
-          <a
-            href={WHATSAPP_NOTIFY_URL}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-full bg-emerald-600/90 hover:bg-emerald-600 text-white text-xs font-semibold shadow-xs hover:shadow-emerald-500/20 transition-all duration-200 active:scale-95 flex-shrink-0"
-          >
-            <MessageCircle className="w-3.5 h-3.5" aria-hidden="true" />
-            <span><LandingText>Get updates on WhatsApp</LandingText></span>
-          </a>
-        </div>
       </div>
     </section></LandingAttributes>
   );

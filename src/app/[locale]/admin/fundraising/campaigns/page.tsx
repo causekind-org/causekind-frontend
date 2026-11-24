@@ -13,6 +13,10 @@ const FILTERS: { label: string; status?: CampaignFlowStatus }[] = [
   { label: "Changes requested", status: "CHANGES_REQUESTED" },
   { label: "Approved — setup incomplete", status: "APPROVED_SETUP_INCOMPLETE" },
   { label: "Live", status: "APPROVED" },
+  // Without these three, a paused or closed fundraiser left every tab and could not be found here.
+  { label: "Paused", status: "PAUSED" },
+  { label: "Collections closed", status: "COLLECTIONS_CLOSED" },
+  { label: "Outcome reporting", status: "OUTCOME_REPORTING" },
   { label: "Declined", status: "PUBLICATION_DECLINED" },
   { label: "Drafts", status: "DRAFT" },
   { label: "Cancelled", status: "CANCELLED" },
@@ -31,11 +35,11 @@ export default function AdminCampaignQueuePage() {
   useEffect(() => { if (FEATURES.fundraising) load(); }, [load]);
   const counts = useTabCounts(FILTERS.map((f) => f.status), fundraisingCampaigns.admin.queue, rows);
 
-  if (!FEATURES.fundraising) return <div className={a.root}><main className={a.wrap} style={{ paddingTop: 40 }}><p className={a.muted}>Fundraising is switched off.</p></main></div>;
+  if (!FEATURES.fundraising) return <div className={a.root}><div className={a.wrap} style={{ paddingTop: 40 }}><p className={a.muted}>Fundraising is switched off.</p></div></div>;
 
   return (
     <div className={a.root}>
-      <main className={a.wrap} style={{ paddingTop: 28, paddingBottom: 56, display: "flex", flexDirection: "column", gap: 18 }}>
+      <div className={a.wrap} style={{ paddingTop: 28, paddingBottom: 56, display: "flex", flexDirection: "column", gap: 18 }}>
         <nav className={a.switch} aria-label="Fundraising review"><Link href="/admin/fundraising" className={a.switchBtn}>Applications</Link><span className={`${a.switchBtn} ${a.switchOn}`} aria-current="page">Publication review</span><Link href="/admin/fundraising/review" className={a.switchBtn}>Updates &amp; changes</Link><Link href="/admin/fundraising/reports" className={a.switchBtn}>Reports</Link></nav>
         <div><h1 className={a.serif} style={{ fontSize: 28 }}>Publication review</h1><p className={a.muted}>Check each fundraiser page against its approved application before it can go public.</p></div>
         <nav className={a.tabs} aria-label="Filter by state">
@@ -69,7 +73,7 @@ export default function AdminCampaignQueuePage() {
             </table>
           </div>
         )}
-      </main>
+      </div>
     </div>
   );
 }

@@ -13,31 +13,43 @@ import { getBlogTranslation, getInsiderTipTranslation, preloadBlogTranslations }
 import { AnimatedWrapper } from "../components/AnimatedWrapper";
 import { StaggerContainer, itemVariants } from "../components/StaggerContainer";
 import { Search, X, BookOpen } from "lucide-react";
-import { getRecentActivity, getPositiveUpdate, type RecentActivity } from "@/lib/api";
+import { getRecentActivity, type RecentActivity } from "@/lib/api";
+import { serverDate } from "@/lib/serverTime";
 import { searchBlogPosts } from "@/lib/blogSearch";
 import { formatReadTime, formatPublishedDate } from "@/lib/blogMeta";
-import { Sparkles } from "lucide-react";
 import { LanguageSwitcher } from "@/components/LanguageSwitcher";
 
 // Categories are derived from blogPosts itself, so adding a new post with a
 // new category automatically shows up here — no manual list to maintain.
 const ALL_CATEGORIES = "All";
 
-function timeAgo(date: Date): string {
-  const mins = Math.floor((Date.now() - date.getTime()) / 60000);
+/** "X AGO" from a real timestamp (ms). Unknown time gives "RECENTLY". */
+function timeAgo(at: number | null, now: number): string {
+  if (at == null || Number.isNaN(at)) return "RECENTLY";
+  const mins = Math.max(0, Math.floor((now - at) / 60000));
   if (mins < 1) return "JUST NOW";
   if (mins < 60) return `${mins} MINUTE${mins > 1 ? "S" : ""} AGO`;
   const hrs = Math.floor(mins / 60);
   if (hrs < 24) return `${hrs} HOUR${hrs > 1 ? "S" : ""} AGO`;
-  return `${Math.floor(hrs / 24)} DAYS AGO`;
+  const days = Math.floor(hrs / 24);
+  if (days < 30) return `${days} DAY${days > 1 ? "S" : ""} AGO`;
+  const months = Math.floor(days / 30);
+  return `${months} MONTH${months > 1 ? "S" : ""} AGO`;
 }
 
 function activityToFeedItem(a: RecentActivity, i: number) {
   const text = a.type === "DONATION"
     ? `donated ₹${a.amount?.toLocaleString("en-IN") ?? ""} to "${a.campaignTitle}".`
     : `posted a new campaign: "${a.campaignTitle}".`;
-  const name = a.type === "DONATION" ? `Donor from ${a.city || "India"}` : `${a.city || "India"} fundraiser`;
-  return { id: i, time: timeAgo(new Date(Date.now() - i * 8 * 60000)), user: name, text };
+  // Named donors read "Prasanta Kumar Barman from Vasai West"; anyone who
+  // chose not to show their name stays "Donor from Vasai West".
+  const name = a.type === "DONATION"
+    ? `${a.donorName?.trim() || "Donor"} from ${a.city || "India"}`
+    : `${a.city || "India"} fundraiser`;
+  // The real time of the event from the backend (zone-less stamps are UTC,
+  // see lib/serverTime). It used to be invented as i x 8 minutes ago.
+  const at = serverDate(a.createdAt).getTime();
+  return { id: i, at: Number.isNaN(at) ? null : at, user: name, text };
 }
 
 function BlogListingContent() {
@@ -88,8 +100,15 @@ function BlogListingContent() {
   const [selectedCategory, setSelectedCategory] = useState(categoryFromUrl || ALL_CATEGORIES);
   const [isSearchFocused, setIsSearchFocused] = useState(false);
   const searchBoxRef = useRef<HTMLDivElement>(null);
-  const [liveFeed, setLiveFeed] = useState<{ id: number; time: string; user: string; text: string }[]>([]);
-  const [positiveUpdate, setPositiveUpdate] = useState<string | null>(null);
+  const [liveFeed, setLiveFeed] = useState<{ id: number; at: number | null; user: string; text: string }[]>([]);
+  // Re-render the "X ago" labels every minute so they stay true.
+  const [now, setNow] = useState(() => Date.now());
+  useEffect(() => {
+    const id = setInterval(() => setNow(Date.now()), 60000);
+    return () => clearInterval(id);
+  }, []);
+  // True once the feed loaded with no rows (or failed): a neutral empty line.
+  const [feedEmpty, setFeedEmpty] = useState(false);
 
   // Category list is computed from the live blogPosts array — new posts with
   // a new category value appear here automatically.
@@ -164,38 +183,24 @@ function BlogListingContent() {
     setTipIndex(next);
   };
 
-  // Fetch real recent activity for live feed
+  // Live feed: the 5 newest rows of the existing recent-activity response,
+  // newest first. Only real rows are shown; no invented fallback text.
   useEffect(() => {
     getRecentActivity()
-      .then(data => {
-        if (data.length > 0) {
-          setLiveFeed(data.slice(0, 3).map(activityToFeedItem));
-        } else {
-          setLiveFeed([
-            { id: 1, time: "RECENTLY", user: "CauseKind Community", text: "is growing - be the first donor in your area!" },
-          ]);
-        }
+      .then((data) => {
+        const rows = [...data]
+          .sort((a, b) => serverDate(b.createdAt).getTime() - serverDate(a.createdAt).getTime())
+          .slice(0, 5);
+        setLiveFeed(rows.map(activityToFeedItem));
+        setFeedEmpty(rows.length === 0);
       })
-      .catch(() => {
-        setLiveFeed([
-          { id: 1, time: "RECENTLY", user: "CauseKind Community", text: "is growing - be the first donor in your area!" },
-        ]);
-      });
-  }, []);
-
-  // Fetch the AI-generated positive spin on recent activity (refreshed
-  // server-side on a schedule, not per-request — see PositiveUpdateService).
-  // Silently keeps the widget's existing content if this fails or the
-  // feature isn't configured (no GEMINI_API_KEY) — never a hard failure.
-  useEffect(() => {
-    getPositiveUpdate()
-      .then((data) => setPositiveUpdate(data.text))
-      .catch(() => {});
+      .catch(() => setFeedEmpty(true));
   }, []);
 
   // Cycle through live feed items
   useEffect(() => {
     if (liveFeed.length < 2) return;
+    const phone = window.matchMedia("(max-width: 767px)").matches;
     const interval = setInterval(() => {
       setLiveFeed((prev) => {
         const next = [...prev];
@@ -203,7 +208,7 @@ function BlogListingContent() {
         if (last) next.unshift(last);
         return next;
       });
-    }, 8000);
+    }, phone ? 3000 : 8000);
     return () => clearInterval(interval);
   }, [liveFeed.length]);
 
@@ -271,17 +276,17 @@ function BlogListingContent() {
         <section className="mb-12">
           <div className="flex flex-col md:flex-row md:items-end justify-between gap-6 mb-8">
             <div className="max-w-2xl">
-              <AnimatedWrapper delay={0} duration={0.5} direction="up">
+              <AnimatedWrapper eager delay={0} duration={0.5} direction="up">
                 <span className="inline-block py-1 px-3 bg-orange-100 dark:bg-orange-950/40 text-[#b04a15] dark:text-orange-400 rounded-lg font-bold text-xs uppercase tracking-wider mb-3">
                   {t("badge")}
                 </span>
               </AnimatedWrapper>
-              <AnimatedWrapper delay={0.1} duration={0.6} direction="up">
+              <AnimatedWrapper eager delay={0.1} duration={0.6} direction="up">
                 <h1 className="font-extrabold text-3xl md:text-5xl text-stone-900 dark:text-stone-100 mb-3 tracking-tight">
                   {t("headline")}
                 </h1>
               </AnimatedWrapper>
-              <AnimatedWrapper delay={0.22} duration={0.6} direction="up">
+              <AnimatedWrapper eager delay={0.22} duration={0.6} direction="up">
                 <p className="text-stone-600 dark:text-stone-400 text-base md:text-lg">
                   {t("subtitle")}
                 </p>
@@ -370,7 +375,7 @@ function BlogListingContent() {
           </div>
 
           {/* Manifesto strip — recurring editorial pull-quote motif */}
-          <AnimatedWrapper delay={0.15} duration={0.6} direction="up">
+          <AnimatedWrapper eager delay={0.15} duration={0.6} direction="up">
             <div className="border-y border-stone-200 dark:border-stone-800 py-6 mb-10 flex items-center gap-6">
               <span className="hidden sm:flex items-center flex-shrink-0">
                 <BookOpen className="w-4 h-4 text-[#b04a15] dark:text-orange-400" strokeWidth={2} />
@@ -401,7 +406,7 @@ function BlogListingContent() {
                 />
               </div>
               <nav className="hidden lg:block lg:sticky lg:top-28 border-t border-stone-200 dark:border-stone-800">
-                <p className="pt-4 pb-2 text-3xs font-bold uppercase tracking-widest text-stone-400 dark:text-stone-500">
+                <p className="pt-4 pb-2 text-3xs font-bold uppercase tracking-widest text-stone-500 dark:text-stone-400">
                   {t("categories")}
                 </p>
                 <div className="flex flex-col divide-y divide-stone-200 dark:divide-stone-800">
@@ -436,11 +441,10 @@ function BlogListingContent() {
             </AnimatedWrapper>
 
             <div className="flex-1 min-w-0">
-          {/* Featured Story Bento.
-              Two columns on a phone: stacked full-width these two filled about
-              two screens before a single post appeared. `gap-8` is a third of a
-              phone's width once split in two, hence the smaller mobile gap. */}
-          <div className="grid grid-cols-2 gap-3 md:grid-cols-12 md:gap-8">
+          {/* Featured Story Bento. On phones the featured post and the feed
+              stack full width and look like the post cards below (owner
+              request, 24 Nov 2026); desktop is unchanged. */}
+          <div className="grid grid-cols-1 gap-6 md:grid-cols-12 md:gap-8">
             {/* Large Featured Card */}
             <AnimatedWrapper inView delay={0} duration={0.6} direction="up" className="min-w-0 md:col-span-8" threshold="some">
               {filteredPosts.length > 0 ? (
@@ -452,33 +456,33 @@ function BlogListingContent() {
                       href={`/blog/${featured.slug}`}
                       className="group block cursor-pointer overflow-hidden rounded-2xl border border-stone-200 dark:border-stone-800 bg-white dark:bg-stone-900/40 hover:shadow-[0_20px_50px_rgba(176,74,21,0.06)] transition-all duration-500 hover:-translate-y-1"
                     >
-                      <div className="aspect-[16/9] overflow-hidden relative">
+                      <div className="aspect-[16/10] md:aspect-[16/9] overflow-hidden relative">
                         <div className="absolute inset-0 bg-stone-900/5 group-hover:bg-transparent transition-colors z-10"></div>
                         <Image
                           alt={tr.title}
                           fill
                           priority
-                          sizes="(min-width: 768px) 66vw, 50vw"
+                          sizes="(min-width: 1280px) 820px, (min-width: 768px) 66vw, 100vw"
                           className="object-cover group-hover:scale-[1.02] transition-transform duration-700"
                           src={featured.image}
                         />
-                        <div className="absolute top-2 left-2 z-20 md:top-4 md:left-4">
+                        <div className="absolute top-2 left-2 z-20 hidden md:block md:top-4 md:left-4">
                           <span className="bg-[#b04a15] text-white px-2 py-0.5 text-4xs rounded-lg font-bold uppercase tracking-wider shadow-sm md:px-3 md:py-1 md:text-xs">
                             {tr.category}
                           </span>
                         </div>
                       </div>
-                      <div className="p-3 md:p-8">
-                        <p className="text-4xs md:text-3xs font-bold uppercase tracking-widest text-stone-400 dark:text-stone-500 mb-1.5 md:mb-3">
+                      <div className="p-6 md:p-8">
+                        <p className="text-3xs font-bold uppercase tracking-widest text-stone-500 dark:text-stone-400 mb-2 md:mb-3">
                           {tr.category} · {formatPublishedDate(featured.publishedDate, locale)}
                         </p>
-                        <h2 className="font-extrabold text-base md:text-3xl text-stone-900 dark:text-stone-100 mb-1.5 md:mb-3 line-clamp-3 md:line-clamp-none group-hover:text-[#b04a15] dark:group-hover:text-orange-400 transition-colors leading-tight">
+                        <h2 className="font-bold md:font-extrabold text-lg md:text-3xl text-stone-900 dark:text-stone-100 mb-2 md:mb-3 group-hover:text-[#b04a15] dark:group-hover:text-orange-400 transition-colors leading-tight">
                           {tr.title}
                         </h2>
-                        <p className="text-stone-600 dark:text-stone-400 text-xs md:text-base line-clamp-2 mb-3 md:mb-5 leading-relaxed">
+                        <p className="text-stone-600 dark:text-stone-400 text-xs md:text-base line-clamp-2 mb-4 md:mb-5 leading-relaxed">
                           {tr.description}
                         </p>
-                        <div className="flex flex-col items-start gap-1.5 md:flex-row md:items-center md:justify-between">
+                        <div className="flex flex-row items-center justify-between gap-1.5">
                           <div className="flex items-center gap-1.5">
                             <span className="text-orange-500 animate-pulse text-xs md:text-sm">🔥</span>
                             <span className="text-3xs md:text-xs text-orange-500 font-bold uppercase tracking-wider">
@@ -517,42 +521,39 @@ function BlogListingContent() {
 
             {/* Live Impact Feed Sidebar */}
             <AnimatedWrapper inView delay={0.15} duration={0.6} direction="right" className="min-w-0 md:col-span-4 flex flex-col gap-3 md:gap-8">
-              <div className="bg-gradient-to-br from-stone-50 to-stone-100/50 dark:from-stone-900/30 dark:to-stone-950/20 border border-stone-200 dark:border-stone-800 text-stone-800 dark:text-stone-200 p-3 md:p-6 rounded-2xl flex-1 relative overflow-hidden shadow-xs">
+              <div className="max-md:bg-white max-md:dark:bg-stone-900/40 md:bg-gradient-to-br md:from-stone-50 md:to-stone-100/50 md:dark:from-stone-900/30 md:dark:to-stone-950/20 border border-stone-200 dark:border-stone-800 text-stone-800 dark:text-stone-200 p-6 rounded-2xl flex-1 relative overflow-hidden shadow-xs">
                 <div className="relative z-10 h-full flex flex-col justify-between">
                   <div>
-                    <div className="flex items-center gap-2 mb-3 md:mb-5">
-                      <span className="w-1.5 h-1.5 md:w-2 md:h-2 rounded-full bg-emerald-500 animate-pulse"></span>
-                      <h3 className="text-3xs md:text-xs uppercase tracking-widest text-[#b04a15] dark:text-orange-400 font-bold">
+                    <div className="flex items-center gap-2 mb-4 md:mb-5">
+                      <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
+                      <h3 className="text-xs uppercase tracking-widest text-[#b04a15] dark:text-orange-400 font-bold">
                         {t("liveFeedTitle")}
       </h3>
                     </div>
-                    {positiveUpdate && (
-                      <div className="flex items-start gap-2 mb-2.5 p-2 md:mb-4 md:p-3 rounded-xl bg-[#b04a15]/8 dark:bg-orange-400/10 border border-[#b04a15]/15 dark:border-orange-400/20">
-                        <Sparkles className="w-3 h-3 md:w-3.5 md:h-3.5 text-[#b04a15] dark:text-orange-400 shrink-0 mt-0.5" />
-                        <p className="text-3xs md:text-xs leading-[1.4] md:leading-relaxed text-stone-700 dark:text-stone-300 font-medium line-clamp-4 md:line-clamp-none">
-                          {positiveUpdate}
-                        </p>
-                      </div>
+                    {feedEmpty && (
+                      <p className="text-3xs md:text-xs leading-[1.35] md:leading-normal text-stone-600 dark:text-stone-400">
+                        No recent activity yet.
+                      </p>
                     )}
-                    <div className="space-y-2 md:space-y-4">
+                    <div className="space-y-3 md:space-y-4">
                       {liveFeed.map((item, idx) => (
                         <div
                           key={item.id}
-                          className={`pl-2.5 py-1.5 md:pl-4 md:py-2 transition-all duration-500 border-l-2 ${
+                          className={`pl-4 py-2 transition-all duration-500 border-l-2 ${idx >= 2 ? "max-md:hidden " : ""}${
                             idx === 0 ? "border-[#b04a15] dark:border-orange-500 bg-white dark:bg-stone-900/50 rounded-r-lg" : "border-stone-200 dark:border-stone-800"
                           }`}
                         >
-                          <p className="text-4xs md:text-3xs text-orange-600 dark:text-orange-400 font-bold opacity-80 uppercase tracking-wide md:tracking-wider">
-                            {item.time}
+                          <p className="text-3xs text-orange-600 dark:text-orange-400 font-bold opacity-80 uppercase tracking-wider">
+                            {timeAgo(item.at, now)}
                           </p>
-                          <p className="text-3xs md:text-xs leading-[1.35] md:leading-normal mt-0.5 text-stone-600 dark:text-stone-400">
+                          <p className="text-sm md:text-xs leading-snug md:leading-normal mt-0.5 text-stone-600 dark:text-stone-400">
                             <strong className="text-stone-800 dark:text-stone-200">{item.user}</strong> {item.text}
                           </p>
                         </div>
                       ))}
                     </div>
                   </div>
-                  <Link href="/requests" className="mt-3 md:mt-6 block text-center w-full py-2 md:py-3 bg-[#b04a15] hover:bg-[#963c0d] text-white rounded-xl font-bold text-2xs md:text-sm transition-all duration-300 shadow-md hover:-translate-y-0.5 active:scale-[0.97]">
+                  <Link href="/requests" data-donate-choice className="mt-5 md:mt-6 block text-center w-full py-3 bg-[#b04a15] hover:bg-[#963c0d] text-white rounded-xl font-bold text-sm transition-all duration-300 shadow-md hover:-translate-y-0.5 active:scale-[0.97]">
                     {t("startYourImpact")}
                   </Link>
                 </div>
@@ -597,13 +598,13 @@ function BlogListingContent() {
                       <Image
                         alt={tr.title}
                         fill
-                        sizes={isLarge ? "(min-width: 1024px) 66vw, 100vw" : "(min-width: 1024px) 33vw, (min-width: 768px) 50vw, 100vw"}
+                        sizes={isLarge ? "(min-width: 1280px) 820px, (min-width: 1024px) 66vw, 100vw" : "(min-width: 1280px) 400px, (min-width: 1024px) 33vw, (min-width: 768px) 50vw, 100vw"}
                         className="object-cover group-hover:scale-[1.02] transition-transform duration-700"
                         src={post.image}
                       />
                     </div>
                     <div className={`flex flex-col flex-1 ${isLarge ? "p-8" : "p-6"}`}>
-                      <p className="text-3xs font-bold uppercase tracking-widest text-stone-400 dark:text-stone-500 mb-2">
+                      <p className="text-3xs font-bold uppercase tracking-widest text-stone-500 dark:text-stone-400 mb-2">
                         {tr.category} · {formatPublishedDate(post.publishedDate, locale)}
                       </p>
                       <h3

@@ -6,6 +6,7 @@ import { FEATURES } from "@/lib/features";
 import { fundraisingReports, type ReportCaseRow } from "@/lib/api";
 import { CampaignChip, formatDate } from "@/features/fundraising/ui";
 import a from "@/features/fundraising/admin.module.css";
+import { TabCount } from "@/features/fundraising/TabCount";
 
 /** Report cases, one per fundraiser (opens F34). */
 export default function AdminReportsPage() {
@@ -17,12 +18,21 @@ export default function AdminReportsPage() {
     fundraisingReports.admin.cases(open).then(setRows).catch(() => setFailed(true));
   }, [open]);
   useEffect(() => { if (FEATURES.fundraising) load(); }, [load]);
+  // Tab counts, like the other three fundraising pages (this one had none).
+  const [counts, setCounts] = useState<[number | null, number | null]>([null, null]);
+  useEffect(() => {
+    if (!FEATURES.fundraising) return;
+    Promise.all([
+      fundraisingReports.admin.cases(true).then((r) => r.length).catch(() => null),
+      fundraisingReports.admin.cases(false).then((r) => r.length).catch(() => null),
+    ]).then((c) => setCounts(c));
+  }, [rows]);
 
-  if (!FEATURES.fundraising) return <div className={a.root}><main className={a.wrap} style={{ paddingTop: 40 }}><p className={a.muted}>Fundraising is switched off.</p></main></div>;
+  if (!FEATURES.fundraising) return <div className={a.root}><div className={a.wrap} style={{ paddingTop: 40 }}><p className={a.muted}>Fundraising is switched off.</p></div></div>;
 
   return (
     <div className={a.root}>
-      <main className={a.wrap} style={{ paddingTop: 28, paddingBottom: 56, display: "flex", flexDirection: "column", gap: 18 }}>
+      <div className={a.wrap} style={{ paddingTop: 28, paddingBottom: 56, display: "flex", flexDirection: "column", gap: 18 }}>
         <nav className={a.switch} aria-label="Fundraising review">
           <Link href="/admin/fundraising" className={a.switchBtn}>Applications</Link>
           <Link href="/admin/fundraising/campaigns" className={a.switchBtn}>Publication review</Link>
@@ -31,15 +41,15 @@ export default function AdminReportsPage() {
         </nav>
         <div><h1 className={a.serif} style={{ fontSize: 28 }}>Reports</h1><p className={a.muted}>Concerns raised about fundraisers. Reporter identities are visible to admins only.</p></div>
         <nav className={a.tabs} aria-label="Filter">
-          <button type="button" className={`${a.tab} ${open ? a.tabOn : ""}`} aria-pressed={open} onClick={() => setOpen(true)}>Open</button>
-          <button type="button" className={`${a.tab} ${!open ? a.tabOn : ""}`} aria-pressed={!open} onClick={() => setOpen(false)}>All</button>
+          <button type="button" className={`${a.tab} ${open ? a.tabOn : ""}`} aria-pressed={open} onClick={() => setOpen(true)}>Open<TabCount n={counts[0]} /></button>
+          <button type="button" className={`${a.tab} ${!open ? a.tabOn : ""}`} aria-pressed={!open} onClick={() => setOpen(false)}>All<TabCount n={counts[1]} /></button>
         </nav>
         {failed ? (
           <div className={a.card} role="alert" style={{ padding: 20, display: "flex", flexDirection: "column", gap: 8, alignItems: "flex-start", borderColor: "#e9b8b3" }}>
             <strong className={a.err}>Couldn&apos;t load reports</strong><button type="button" className={`${a.btn} ${a.bs}`} onClick={load}>Retry</button>
           </div>
         ) : rows === null ? <div className={a.card} aria-busy="true" style={{ padding: 20 }}><div className={a.skel} /></div>
-          : rows.length === 0 ? <div className={a.card} style={{ padding: 20 }}><strong>Nothing here</strong><p className={a.muted}>No reports in this list.</p></div>
+          : rows.length === 0 ? <div className={a.card} style={{ padding: 20 }}><strong>Nothing here</strong><p className={a.muted}>{open ? "No fundraiser has an open report. Switch to All to see past cases." : "No fundraiser has ever been reported."}</p></div>
           : (
             <div className={a.card} style={{ overflowX: "auto" }}>
               <table className={a.table}>
@@ -60,7 +70,7 @@ export default function AdminReportsPage() {
               </table>
             </div>
           )}
-      </main>
+      </div>
     </div>
   );
 }

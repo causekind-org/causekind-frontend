@@ -1,5 +1,6 @@
 "use client";
 import { useTranslations } from "next-intl";
+import { slugForCategory } from "@/lib/inKindCategories";
 
 import { serverDate } from "@/lib/serverTime";
 import { useEffect, useReducer, useRef, useState } from "react";
@@ -252,8 +253,7 @@ function shareRequest(title: string, requestId: number, text: string, openingMsg
   if (typeof navigator !== "undefined" && navigator.share) {
     navigator.share({ title, text, url }).catch(() => {});
   } else {
-    window.open(`https://wa.me/?text=${encodeURIComponent(`${text}\n${url}`)}`, "_blank", "noopener,noreferrer");
-    toast.success(openingMsg);
+    void navigator.clipboard?.writeText(url).then(() => toast.success(openingMsg));
   }
 }
 
@@ -581,7 +581,7 @@ export default function OfferWizardPage() {
   if (requestLoadFailed) {
     return (
       <div className="flex min-h-screen flex-col items-center justify-center gap-3 sm:gap-4 px-4 text-center">
-        <p className="text-gray-600 dark:text-gray-400"><UiText>This request couldn't be loaded — it may have been withdrawn or is no longer accepting offers.</UiText></p>
+        <p className="text-gray-600 dark:text-gray-400"><UiText>This request couldn&apos;t be loaded — it may have been withdrawn or is no longer accepting offers.</UiText></p>
         <button
           onClick={() => router.push("/requests")}
           className="rounded-xl bg-[#b04a15] px-3.5 sm:px-5 py-2.5 text-sm font-semibold text-white hover:bg-[#c45520] transition-colors"
@@ -649,13 +649,13 @@ export default function OfferWizardPage() {
   }
   if (request && offersChecked && step !== 3 && !activeOfferSubmitted && !passedLocation && !draftHasLocation) {
     return (
-      <main className="min-h-screen bg-[#faf8f5] px-4 py-6 sm:py-10 dark:bg-zinc-950">
+      <div className="min-h-screen bg-[#faf8f5] px-4 py-6 sm:py-10 dark:bg-zinc-950">
         <OfferLocationGate
           requestId={requestId} requestTitle={request.title}
           onPass={(loc) => { setPassedLocation(loc); window.scrollTo({ top: 0 }); }}
           onDecline={leaveOffer}
         />
-      </main>
+      </div>
     );
   }
 
@@ -669,7 +669,7 @@ export default function OfferWizardPage() {
     // ClickSpark's page-sized wrapper (see WizardNavigation) — an ancestor of
     // this <main>, so this class never clipped it and never could.
     return (
-      <main
+      <div
         data-donation-offer-wizard
         className="min-h-screen overflow-x-clip bg-[#faf8f5] dark:bg-zinc-950"
       >
@@ -711,12 +711,12 @@ export default function OfferWizardPage() {
             />
           </div>
         )}
-      </main>
+      </div>
     );
   }
 
   return (
-    <main className="min-h-screen bg-gray-50 dark:bg-gray-950 pb-20">
+    <div className="min-h-screen bg-gray-50 dark:bg-gray-950 pb-20">
       <AlertDialog open={blockedByOther} onOpenChange={setBlockedByOther}>
         <AlertDialogContent>
           <AlertDialogHeader>
@@ -824,7 +824,7 @@ export default function OfferWizardPage() {
             <div className="mb-4 flex items-center gap-1.5 text-2xs font-semibold uppercase tracking-wide text-gray-400">
               <Link href="/requests" className="hover:text-[#b04a15] dark:hover:text-[#e07b3a]"><UiText>Requests</UiText></Link>
               <span>/</span>
-              <Link href={`/requests?category=${encodeURIComponent(request.category)}`} className="hover:text-[#b04a15] dark:hover:text-[#e07b3a]">
+              <Link href={slugForCategory(request.category) ? `/requests/category/${slugForCategory(request.category)}` : `/requests?category=${encodeURIComponent(request.category)}`} className="hover:text-[#b04a15] dark:hover:text-[#e07b3a]">
                 {request.category}
               </Link>
               <span>/</span>
@@ -973,7 +973,7 @@ export default function OfferWizardPage() {
               <span className="inline-flex items-center gap-1.5"><Package className="h-3.5 w-3.5" /> {rt("stillNeeded", { count: stillNeeded })}</span>
               <span className="text-gray-300 dark:text-gray-700">•</span>
               <button
-                onClick={() => shareRequest(request.title, request.id, rt("shareText", { title: request.title }), ui("Opening WhatsApp to share"))}
+                onClick={() => shareRequest(request.title, request.id, rt("shareText", { title: request.title }), ui("Link copied"))}
                 className="inline-flex items-center gap-1.5 font-semibold text-[#b04a15] transition-colors hover:text-[#c45520] dark:text-[#e07b3a]"
               >
                 <Share2 className="h-3.5 w-3.5" /> <UiText>Share this Request</UiText>
@@ -1007,7 +1007,7 @@ export default function OfferWizardPage() {
           />
         )}
       </div>
-    </main>
+    </div>
   );
 }
 

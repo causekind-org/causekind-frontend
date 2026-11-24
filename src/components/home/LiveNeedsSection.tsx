@@ -6,7 +6,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
 import { NewRequestLink } from "@/components/NewRequestLink";
 import { useInView, useReducedMotion } from "framer-motion";
-import { ScrollTrigger } from "gsap/ScrollTrigger";
+import { refreshScrollTrigger } from "@/lib/gsapLoader";
 import {
   ArrowRight,
   ChevronLeft,
@@ -150,7 +150,7 @@ export function LiveNeedsSection({
   useEffect(() => {
     // Refresh ScrollTrigger when filtered card count changes layout height
     const timer = setTimeout(() => {
-      ScrollTrigger.refresh();
+      refreshScrollTrigger();
     }, 60);
     return () => clearTimeout(timer);
   }, [selectedCategory, displayedNeeds.length]);
@@ -168,7 +168,7 @@ export function LiveNeedsSection({
           slightly different warm colour, which is most of why the page read as
           a stack of separate pages rather than one surface. */}
 
-      <div className="relative mx-auto max-w-7xl px-0 lg:px-8">
+      <div className="relative mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
         {/* ── Section Header ── */}
         <div className="flex flex-col md:flex-row md:items-end justify-between gap-6 ck-live-needs-header-gap">
           <div className="max-w-2xl min-w-0">
@@ -322,7 +322,7 @@ export function LiveNeedsSection({
               card, so six needs cost one card of height, not six. */}
           <LandingAttributes><div
             ref={needsRowRef}
-            className="grid gap-4 sm:gap-5 md:grid-cols-2 lg:grid-cols-3"
+            className="grid gap-4 sm:gap-5 md:grid-cols-2 xl:grid-cols-3"
             role="region"
             aria-label="Open needs"
             tabIndex={-1}
@@ -358,6 +358,7 @@ export function LiveNeedsSection({
                   ctaLabel={isDrive ? "See this drive" : isDonor ? "Offer this item" : "Log in to offer this item"}
                   locked={!isDonor && !isDrive}
                   showCta={isDrive || !isDonee}
+                  viewHref={isDrive ? undefined : `/requests/${need.id}`}
                 />
               );
             })}

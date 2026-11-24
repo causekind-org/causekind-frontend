@@ -61,3 +61,6 @@ Dev Log/
 
 # Local Diwali reference image mockups
 diwaliassets/
+
+# Unused and replaced assets kept locally only (SEO batch 3A); not deployed, not committed.
+archive/

@@ -72,7 +72,7 @@ function Section({
             <Icon className="h-5 w-5" />
           </span>
           <div>
-            <span className="block text-2xs font-black uppercase tracking-widest text-stone-400 dark:text-stone-500">
+            <span className="block text-2xs font-black uppercase tracking-widest text-stone-500 dark:text-stone-400">
               Section {num}
             </span>
             <h2 className="text-xl font-extrabold tracking-tight text-stone-900 dark:text-white sm:text-2xl">
@@ -137,7 +137,6 @@ export default function RefundClient() {
           background-clip: text;
           -webkit-background-clip: text;
           color: transparent;
-          animation: pp-shimmer 4.5s linear infinite;
         }
         @media (prefers-reduced-motion: reduce) {
           .pp-float,.pp-blob,.pp-shimmer-text,.pp-ring { animation: none !important; }
@@ -168,7 +167,7 @@ export default function RefundClient() {
             </div>
           </div>
 
-          <p className="mb-3 text-xs font-black uppercase tracking-[0.2em] text-[#e07b3a]">
+          <p className="mb-3 text-xs font-black uppercase tracking-[0.2em] text-[#f0b97a]">
             Cancellations & Refunds
           </p>
           <h1 className="pp-shimmer-text text-4xl font-extrabold tracking-tight sm:text-5xl">
@@ -191,7 +190,7 @@ export default function RefundClient() {
         <div className="lg:grid lg:grid-cols-[220px_1fr] lg:gap-12">
           <aside className="hidden lg:block">
             <div className="sticky top-24">
-              <p className="mb-4 text-2xs font-black uppercase tracking-widest text-stone-400 dark:text-stone-500">
+              <p className="mb-4 text-2xs font-black uppercase tracking-widest text-stone-500 dark:text-stone-400">
                 On this page
               </p>
               <div className="relative">
@@ -227,7 +226,7 @@ export default function RefundClient() {
             </div>
           </aside>
 
-          <main className="min-w-0">
+          <div className="min-w-0">
             <details className="mb-8 rounded-2xl border border-stone-200 bg-white p-4 dark:border-zinc-800 dark:bg-zinc-900 lg:hidden">
               <summary className="cursor-pointer text-sm font-bold text-stone-800 dark:text-stone-100">
                 On this page
@@ -308,7 +307,7 @@ export default function RefundClient() {
                 </p>
               </div>
             </Reveal>
-          </main>
+          </div>
         </div>
       </div>
     </div>

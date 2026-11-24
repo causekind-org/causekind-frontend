@@ -9,7 +9,7 @@ import { Reveal } from "@/components/Reveal";
 import { CauseKindWaySections } from "@/components/about/CauseKindWaySections";
 
 export const metadata = {
-  title: "About Us — CauseKind",
+  title: "About Us",
   description: "Learn about CauseKind's mission, story, and how we facilitate verified in-kind donations.",
   alternates: { canonical: "/about" },
 };
@@ -48,7 +48,7 @@ export default async function AboutPage({ params }: LocaleParams) {
         <div className="mx-auto max-w-7xl px-6 sm:px-10">
           <Link
             href="/"
-            className="inline-flex items-center gap-1.5 text-stone-400 hover:text-white text-xs font-semibold mb-8 transition-all duration-300"
+            className="inline-flex min-h-6 items-center gap-1.5 text-stone-400 hover:text-white text-xs font-semibold mb-8 transition-all duration-300"
           >
             <ArrowLeft className="w-3.5 h-3.5" />
             {t("backToHome")}
@@ -70,7 +70,7 @@ export default async function AboutPage({ params }: LocaleParams) {
 
       {/* ── Section 1: Our Story — PHOTO RIGHT (7/5 split reversed) ── */}
       <div className="mx-auto max-w-7xl px-6 sm:px-10 py-10 md:py-14">
-        <Reveal>
+        <Reveal eager>
         <div className="grid gap-6 md:gap-10 lg:grid-cols-[3fr_2fr] items-center">
 
           {/* Story text — LEFT, with oversized decorative number */}
@@ -232,12 +232,12 @@ export default async function AboutPage({ params }: LocaleParams) {
               <div className="w-9 h-9 md:w-12 md:h-12 rounded-2xl bg-[#1e3a60]/10 flex items-center justify-center text-[#1e3a60] dark:text-blue-400 mb-3 md:mb-6 group-hover:scale-110 transition-transform">
                 <Shield className="w-5 h-5 md:w-6 md:h-6" />
               </div>
-              <h4 className="font-extrabold text-base md:text-base text-stone-900 dark:text-white mb-1.5 md:mb-2">{t("securePlatformTitle")}</h4>
+              <h3 className="font-extrabold text-base md:text-base text-stone-900 dark:text-white mb-1.5 md:mb-2">{t("securePlatformTitle")}</h3>
               <p className="text-xs text-stone-600 dark:text-stone-400 leading-relaxed font-medium">
                 {t("securePlatformText")}
               </p>
             </div>
-            <div className="pt-4 mt-4 md:pt-6 md:mt-6 border-t border-stone-100 dark:border-zinc-800 text-2xs font-bold text-stone-400 uppercase tracking-widest">
+            <div className="pt-4 mt-4 md:pt-6 md:mt-6 border-t border-stone-100 dark:border-zinc-800 text-2xs font-bold text-stone-500 dark:text-stone-400 uppercase tracking-widest">
               {t("razorpaySecured")}
             </div>
           </div>
@@ -253,12 +253,12 @@ export default async function AboutPage({ params }: LocaleParams) {
               <div className="w-9 h-9 md:w-12 md:h-12 rounded-2xl bg-[#b04a15]/10 flex items-center justify-center text-[#b04a15] mb-3 md:mb-6 group-hover:scale-110 transition-transform">
                 <Heart className="w-5 h-5 md:w-6 md:h-6 fill-[#b04a15]" />
               </div>
-              <h4 className="font-extrabold text-base md:text-base text-stone-900 dark:text-white mb-1.5 md:mb-2">{t("verifiedNeedsTitle")}</h4>
+              <h3 className="font-extrabold text-base md:text-base text-stone-900 dark:text-white mb-1.5 md:mb-2">{t("verifiedNeedsTitle")}</h3>
               <p className="text-xs text-stone-600 dark:text-stone-400 leading-relaxed font-medium">
                 {t("verifiedNeedsText")}
               </p>
             </div>
-            <div className="pt-4 mt-4 md:pt-6 md:mt-6 border-t border-stone-100 dark:border-zinc-800 text-2xs font-bold text-stone-400 uppercase tracking-widest">
+            <div className="pt-4 mt-4 md:pt-6 md:mt-6 border-t border-stone-100 dark:border-zinc-800 text-2xs font-bold text-stone-500 dark:text-stone-400 uppercase tracking-widest">
               {t("adminAudited")}
             </div>
           </div>

@@ -20,7 +20,7 @@ export function CampaignStatusView({ c }: { c: FundraisingCampaign }) {
   );
   const title = c.title || ui("Untitled campaign");
   return (
-    <main className={s.wrap} style={{ paddingTop: 40, paddingBottom: 72, display: "flex", flexDirection: "column", gap: 22, maxWidth: 900 }}>
+    <div className={s.wrap} style={{ paddingTop: 40, paddingBottom: 72, display: "flex", flexDirection: "column", gap: 22, maxWidth: 900 }}>
       <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
         <Link href="/fundraising" className={s.small} style={{ textDecoration: "none" }}><UiText>← Back to fundraisers</UiText></Link>
         <span style={{ alignSelf: "flex-start" }}><CampaignChip status={c.status} localize /></span>
@@ -63,6 +63,6 @@ export function CampaignStatusView({ c }: { c: FundraisingCampaign }) {
         <p className={s.small}><strong><UiText>Message from the reviewer:</UiText></strong> {c.reviewerMessage}</p>
       )}
       <div style={{ display: "flex", gap: 12, flexWrap: "wrap" }}><Link href="/fundraising" className={`${s.btn} ${s.bs}`}><UiText>Back to dashboard</UiText></Link></div>
-    </main>
+    </div>
   );
 }

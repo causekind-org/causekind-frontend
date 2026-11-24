@@ -1,0 +1,37 @@
+# CauseKind
+
+> CauseKind is an Indian giving platform for in-kind donations. People give clothes, books, electronics and household items directly to verified people and NGOs near them. Requests are verified by admins, donors are matched within about 10 km, there are zero platform fees, and every donation is tracked to a confirmed handover.
+
+CauseKind also hosts campaigns and fundraisers for verified community needs across India.
+
+## Main pages
+
+- [Home](https://www.causekind.com): Overview of in-kind giving on CauseKind
+- [About](https://www.causekind.com/about): Mission, story, and how verified in-kind donations work
+- [Requests](https://www.causekind.com/requests): Items that verified people and NGOs have asked for
+- [FAQ](https://www.causekind.com/faq): Donating, receiving, verification and matching explained
+- [Contact](https://www.causekind.com/contact): Reach the team by email, phone or WhatsApp
+
+## Articles
+
+- [Blog](https://www.causekind.com/blog): Guides on donating items and giving well in India
+- [How to Donate Books in India](https://www.causekind.com/blog/how-to-donate-books-india): Which books NGOs and schools accept, how to prepare them, and how to give to a verified request
+- [How to Donate Furniture in India](https://www.causekind.com/blog/how-to-donate-furniture-india): What furniture is accepted, how to prepare it, plan transport and give to a verified request
+- [How to Donate Blankets in India](https://www.causekind.com/blog/how-to-donate-blankets-india): What makes a good winter blanket donation, how to clean and pack it, and where it is needed
+- [How to Donate Sports Equipment in India](https://www.causekind.com/blog/how-to-donate-sports-equipment-india): Which sports items are useful, what is unsafe to give, and how to give to a verified request
+- [How to Donate Kitchen Utensils in India](https://www.causekind.com/blog/how-to-donate-kitchen-utensils-india): Which kitchen and household items help, what to leave out, and how to give to a verified request
+- [How to Donate Wheelchairs in India](https://www.causekind.com/blog/how-to-donate-wheelchairs-india): Which mobility aids help, the safety checks before giving, and how to give to a verified request
+- [What to Donate Each Month in India](https://www.causekind.com/blog/what-to-donate-each-month-india): A month-by-month giving calendar of the items most needed in each season
+- [How to Help an NGO Without Money in India](https://www.causekind.com/blog/how-to-help-ngo-without-money-india): Ways to support an NGO with items, time and skills instead of cash
+- [How to Donate a Loved One's Belongings](https://www.causekind.com/blog/how-to-donate-loved-ones-belongings-india): A gentle, practical guide to sorting and giving the things of someone you have lost
+- [What to Do With Old Items in India](https://www.causekind.com/blog/what-to-do-with-old-items-india): How to decide what to donate, reuse or recycle, room by room
+
+## Policies
+
+- [Privacy Policy](https://www.causekind.com/privacy)
+- [Terms](https://www.causekind.com/terms)
+- [Refund Policy](https://www.causekind.com/refund)
+
+## Optional
+
+- [Sitemap](https://www.causekind.com/sitemap.xml): Full list of public pages, including every blog post and NGO profile

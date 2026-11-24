@@ -41,7 +41,7 @@ vi.mock("@/hooks/useLocations", () => ({
     dialCodes: [{ value: "IN", label: "India (+91)", phonecode: "91" }],
   }),
 }));
-vi.mock("@react-oauth/google", () => ({ useGoogleLogin: () => vi.fn() }));
+vi.mock("@/lib/lazyGoogleLogin", () => ({ useGoogleLogin: () => vi.fn() }));
 
 beforeAll(() => {
   global.ResizeObserver = class { observe() {} unobserve() {} disconnect() {} };

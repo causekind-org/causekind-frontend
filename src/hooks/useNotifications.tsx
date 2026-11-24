@@ -10,7 +10,7 @@ export type AppNotification = {
   id: string;
   title: string;
   body: string;
-  type: "match" | "approved" | "rejected" | "fulfilled" | "info";
+  type: "match" | "approved" | "rejected" | "fulfilled" | "info" | "proof_published";
   link: string;
   /** When the underlying event happened (entity createdAt) */
   timestamp: number;
@@ -82,7 +82,7 @@ function purgeLegacyStores() {
   } catch {}
 }
 
-const KNOWN_TYPES: AppNotification["type"][] = ["match", "approved", "rejected", "fulfilled", "info"];
+const KNOWN_TYPES: AppNotification["type"][] = ["match", "approved", "rejected", "fulfilled", "info", "proof_published"];
 
 function fromSaved(n: SavedNotification): AppNotification {
   const ts = toTimestamp(n.createdAt) || Date.now();

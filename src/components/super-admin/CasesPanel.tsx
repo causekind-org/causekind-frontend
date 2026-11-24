@@ -1,5 +1,6 @@
 "use client";
 
+import { SaLoadError } from "./SaLoadError";
 import { serverDate } from "@/lib/serverTime";
 import { useCallback, useEffect, useState } from "react";
 import {
@@ -61,14 +62,17 @@ function CaseQueue({
   const [queryInput, setQueryInput] = useState("");
   const [page, setPage] = useState(0);
   const [loading, setLoading] = useState(true);
+  const [failed, setFailed] = useState(false);
+  const [reloadKey, setReloadKey] = useState(0);
 
   useEffect(() => {
     setLoading(true);
+    setFailed(false);
     superAdminCaseQueue(filters, page, 25)
       .then(setData)
-      .catch(() => toast.error("Couldn't load the case queue."))
+      .catch(() => { setFailed(true); toast.error("Couldn't load the case queue."); })
       .finally(() => setLoading(false));
-  }, [filters, page]);
+  }, [filters, page, reloadKey]);
 
   function setFilter(patch: SaCaseFilters) {
     setPage(0);
@@ -128,6 +132,8 @@ function CaseQueue({
 
       {loading ? (
         <div className="flex justify-center py-20"><Loader2 className={`size-8 animate-spin ${t.dim}`} /></div>
+      ) : failed ? (
+        <SaLoadError what="the case queue" onRetry={() => setReloadKey((k) => k + 1)} />
       ) : !data || data.items.length === 0 ? (
         <p className={`py-10 text-center text-sm ${t.muted}`}>No cases match these filters.</p>
       ) : (

@@ -103,6 +103,60 @@ const NgoCampaignPrompt = dynamic(
   { ssr: false },
 );
 
+// The reading-progress bar starts at scaleX(0) (invisible), so loading it after
+// hydration changes nothing on first paint and keeps it out of the shared chunk.
+const ScrollProgress = dynamic(
+  () => import("@/components/ScrollProgress").then((m) => m.ScrollProgress),
+  { ssr: false },
+);
+
+// Lighthouse 24 Nov 2026: these were static imports in the root layout, so
+// their code (vaul drawer, dialogs, framer-motion via HandoverCelebration) was
+// in the bundle every page hydrates. None paints on first load: the donate
+// choices open on a click (links fall through to their href until this loads;
+// openDonateChoice() calls are remembered), the docks and the celebration
+// appear only after a signed-in user's data arrives.
+const DonateChoice = dynamic(
+  () => import("@/components/donate/DonateChoice").then((m) => m.DonateChoice),
+  { ssr: false },
+);
+const DonateItemsChoiceModal = dynamic(
+  () => import("@/components/donate/DonateItemsChoiceModal").then((m) => m.DonateItemsChoiceModal),
+  { ssr: false },
+);
+const MatchActionDock = dynamic(
+  () => import("@/components/matches/MatchActionDock").then((m) => m.MatchActionDock),
+  { ssr: false },
+);
+const DriveNotificationDock = dynamic(
+  () => import("@/components/notifications/DriveNotificationDock").then((m) => m.DriveNotificationDock),
+  { ssr: false },
+);
+const CompletionCelebrationWatcher = dynamic(
+  () => import("@/components/handover/CompletionCelebrationWatcher").then((m) => m.CompletionCelebrationWatcher),
+  { ssr: false },
+);
+
+export function DeferredDonateChoice() {
+  return <DonateChoice />;
+}
+export function DeferredDonateItemsChoice() {
+  return <DonateItemsChoiceModal />;
+}
+export function DeferredMatchActionDock() {
+  return <MatchActionDock />;
+}
+export function DeferredDriveNotificationDock() {
+  return <DriveNotificationDock />;
+}
+export function DeferredCompletionCelebration() {
+  return <CompletionCelebrationWatcher />;
+}
+
+export function DeferredScrollProgress() {
+  return <ScrollProgress />;
+}
+
 export function DeferredOverlays() {
   return (
     <>

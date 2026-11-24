@@ -3,7 +3,15 @@
 import { createContext, useCallback, useContext, useMemo, useRef, useState } from "react";
 import { useAuth } from "@/hooks/useAuth";
 import { ApiError, getDoneeNeedProfile } from "@/lib/api";
-import { NeedProfileGateModal } from "@/components/NeedProfileGateModal";
+import dynamic from "next/dynamic";
+
+// Loaded on first open only. The modal uses framer-motion, and as a static
+// import in this root provider it kept that library in the bundle every page
+// hydrates (Lighthouse, 24 Nov 2026).
+const NeedProfileGateModal = dynamic(
+  () => import("@/components/NeedProfileGateModal").then((m) => m.NeedProfileGateModal),
+  { ssr: false },
+);
 
 export type NeedProfileGateState =
   | { mode: "closed" }
@@ -97,11 +105,16 @@ export function NeedProfileGateProvider({ children }: { children: React.ReactNod
   }, []);
 
   const value = useMemo(() => ({ requestAccess, checking }), [requestAccess, checking]);
+  // Mount the modal once it has been needed, then keep it so its exit animation runs.
+  const everOpened = useRef(false);
+  if (state.mode !== "closed") everOpened.current = true;
 
   return (
     <NeedProfileGateContext.Provider value={value}>
       {children}
-      <NeedProfileGateModal state={state} checking={checking} onClose={close} onRetry={requestAccess} />
+      {everOpened.current && (
+        <NeedProfileGateModal state={state} checking={checking} onClose={close} onRetry={requestAccess} />
+      )}
     </NeedProfileGateContext.Provider>
   );
 }

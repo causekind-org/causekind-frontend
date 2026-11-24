@@ -29,7 +29,7 @@ vi.mock("@/lib/api", async () => {
   return { ...actual, sahasCampaigns: { live: () => live(), detail: (s: string) => detail(s), item: vi.fn() } };
 });
 
-import SahasHubPage from "@/app/[locale]/sahas/page";
+import SahasHubPage from "@/app/[locale]/sahas/SahasHubClient";
 import SahasCampaignPage from "@/app/[locale]/sahas/[slug]/page";
 import { SahasSpotlight } from "@/components/home/SahasSpotlight";
 

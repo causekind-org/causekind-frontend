@@ -3,6 +3,7 @@
 import Script from "next/script";
 import { useCookieConsent } from "@/hooks/useCookieConsent";
 import { isInternalTraffic } from "@/lib/internalTraffic";
+import { useAfterFirstInteraction } from "@/hooks/useAfterFirstInteraction";
 
 const CLARITY_PROJECT_ID = "ykpnfnuc02";
 
@@ -23,22 +24,22 @@ const TRACKING_DISABLED = process.env.NEXT_PUBLIC_DISABLE_TRACKING === "true";
 export default function ClarityAnalytics() {
   const consent = useCookieConsent();
   const consentAccepted = TESTING_BYPASS || consent === "accepted";
+  const ready = useAfterFirstInteraction();
 
   if (TRACKING_DISABLED || isInternalTraffic() || !consentAccepted) return null;
 
+  // Queue stub at once (early window.clarity calls are kept); the tag script
+  // loads after the page has shown (on the first scroll, tap, key press or mouse move; see useAfterFirstInteraction).
   return (
-    <Script
-      id="ms-clarity"
-      strategy="afterInteractive"
-      dangerouslySetInnerHTML={{
-        __html: `
-          (function(c,l,a,r,i,t,y){
-              c[a]=c[a]||function(){(c[a].q=c[a].q||[]).push(arguments)};
-              t=l.createElement(r);t.async=1;t.src="https://www.clarity.ms/tag/"+i;
-              y=l.getElementsByTagName(r)[0];y.parentNode.insertBefore(t,y);
-          })(window, document, "clarity", "script", "${CLARITY_PROJECT_ID}");
-        `,
-      }}
-    />
+    <>
+      <Script
+        id="ms-clarity-stub"
+        strategy="afterInteractive"
+        dangerouslySetInnerHTML={{
+          __html: `window.clarity=window.clarity||function(){(window.clarity.q=window.clarity.q||[]).push(arguments)};`,
+        }}
+      />
+      {ready && <Script id="ms-clarity" src={`https://www.clarity.ms/tag/${CLARITY_PROJECT_ID}`} strategy="afterInteractive" />}
+    </>
   );
 }

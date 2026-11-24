@@ -1,0 +1,383 @@
+/* Layer order first. If this file loads before styles.css, its `@layer components`
+   would otherwise be declared first and rank BELOW `base` (where Tailwind sets
+   `* { border-color: var(--border) }`), so base won and every nav item showed an
+   outline. Stating the canonical order here keeps components above base either way. */
+@layer theme, base, components, utilities;
+
+/*
+ * Staff console theme — Admin (/admin/**) and Super Admin (/super-admin).
+ *
+ * Everything is scoped under `.ck-staff`, which only StaffShell renders, so
+ * public, donor, donee and NGO pages are untouched. Visual direction: forest
+ * green surroundings, floating glass sidebar and topbar, pale frosted workspace
+ * (reference: CodeXr Admin Dashboard v7, re-implemented independently).
+ *
+ * Glass is paint only: static gradients, one restrained backdrop blur on the
+ * chrome, and an opaque fallback where backdrop-filter is unsupported. No
+ * continuous animation. Dense content (tables, forms, evidence) uses
+ * `.ck-glass-solid`, which is near-opaque for reading comfort.
+ *
+ * Lives in @layer components so Tailwind utilities at call sites still win.
+ */
+@layer components {
+  .ck-staff {
+    --st-bg: #12355c;
+    --st-sidebar: rgba(31, 84, 144, 0.72);
+    --st-sidebar-solid: #1f5490;
+    --st-primary: #2d7fd6;
+    --st-primary-strong: #1f66b3;
+    --st-panel: #e3edf8;
+    --st-text: #10233a;
+    --st-text-2: #4f6480;
+    --st-on-dark: #f2f7fd;
+    --st-on-dark-2: rgba(242, 247, 244, 0.66);
+    --st-line-dark: rgba(255, 255, 255, 0.14);
+    --st-line-light: rgba(255, 255, 255, 0.6);
+    --st-amber: #b7791f;
+    --st-red: #c0392b;
+    --st-info: #2f7f8f;
+    --st-radius-shell: 32px;
+    --st-radius-card: 22px;
+    --st-sidebar-w: 232px;
+    --st-gutter: 24px;
+    --st-ease: cubic-bezier(0.32, 0.72, 0, 1);
+
+    font-family: var(--font-plus-jakarta-sans), Inter, system-ui, sans-serif;
+    color: var(--st-text);
+    min-height: 100vh;
+    background-color: var(--st-bg);
+    background-image:
+      radial-gradient(900px 600px at 78% -10%, rgba(120, 190, 255, 0.28), transparent 60%),
+      radial-gradient(700px 520px at 10% 110%, rgba(45, 127, 214, 0.22), transparent 60%);
+    background-attachment: fixed;
+  }
+  .ck-staff .tabular,
+  .ck-staff .tabular-nums { font-variant-numeric: tabular-nums; }
+
+  /* Floating glass sidebar (lg+). */
+  .ck-staff-aside {
+    position: fixed;
+    top: var(--st-gutter);
+    bottom: var(--st-gutter);
+    left: var(--st-gutter);
+    width: var(--st-sidebar-w);
+    z-index: 30;
+    display: flex;
+    flex-direction: column;
+    border-radius: 26px;
+    color: var(--st-on-dark);
+    background: linear-gradient(170deg, rgba(255, 255, 255, 0.1), rgba(255, 255, 255, 0.02) 40%), var(--st-sidebar-solid);
+    border: 1px solid var(--st-line-dark);
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.16), 0 24px 48px -28px rgba(0, 0, 0, 0.6);
+  }
+  @supports ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
+    .ck-staff-aside {
+      background: linear-gradient(170deg, rgba(255, 255, 255, 0.1), rgba(255, 255, 255, 0.02) 40%), var(--st-sidebar);
+      backdrop-filter: blur(12px) saturate(1.3);
+      -webkit-backdrop-filter: blur(12px) saturate(1.3);
+    }
+  }
+
+  .ck-staff-nav-heading {
+    padding: 14px 12px 6px;
+    font-size: 10.5px;
+    font-weight: 700;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--st-on-dark-2);
+  }
+  .ck-staff-nav-item {
+    display: flex;
+    width: 100%;
+    align-items: center;
+    gap: 10px;
+    min-height: 38px;
+    padding: 8px 12px;
+    border-radius: 12px;
+    border: 1px solid transparent;
+    font-size: 13.5px;
+    font-weight: 500;
+    text-align: left;
+    color: var(--st-on-dark);
+    transition: background-color 180ms var(--st-ease), border-color 180ms var(--st-ease);
+  }
+  .ck-staff-nav-item:hover { background: rgba(255, 255, 255, 0.07); }
+  .ck-staff-nav-item[aria-current="page"] {
+    background: linear-gradient(135deg, rgba(255, 255, 255, 0.28), rgba(255, 255, 255, 0.07) 50%, rgba(255, 255, 255, 0.16));
+    border-color: rgba(255, 255, 255, 0.55);
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.55), inset 0 -1px 0 rgba(255, 255, 255, 0.12);
+    font-weight: 600;
+  }
+  .ck-staff-nav-item:focus-visible,
+  .ck-staff :focus-visible {
+    outline: 2px solid #c4e2ff;
+    outline-offset: 2px;
+  }
+  .ck-staff-nav-badge {
+    margin-left: auto;
+    min-width: 22px;
+    padding: 1px 7px;
+    border-radius: 999px;
+    font-size: 11px;
+    font-weight: 700;
+    text-align: center;
+    font-variant-numeric: tabular-nums;
+    color: var(--st-text);
+    background: rgba(255, 255, 255, 0.82);
+  }
+  .ck-staff-nav-badge[data-tone="danger"] { background: #fde2dc; color: #8a2417; }
+
+  /* Rounded glass topbar. */
+  .ck-staff-topbar {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    min-height: 64px;
+    padding: 10px 12px 10px 20px;
+    border-radius: 999px;
+    color: var(--st-on-dark);
+    background: rgba(31, 84, 144, 0.9);
+    border: 1px solid var(--st-line-dark);
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.12);
+  }
+  @supports ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
+    .ck-staff-topbar {
+      background: rgba(31, 84, 144, 0.55);
+      backdrop-filter: blur(12px);
+      -webkit-backdrop-filter: blur(12px);
+    }
+  }
+  .ck-staff-icon-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 40px;
+    height: 40px;
+    border-radius: 999px;
+    color: var(--st-on-dark);
+    background: rgba(255, 255, 255, 0.1);
+    border: 1px solid var(--st-line-dark);
+    transition: background-color 180ms var(--st-ease);
+  }
+  .ck-staff-icon-btn:hover { background: rgba(255, 255, 255, 0.18); }
+
+  /* The large softly tinted workspace. Opaque enough that existing panels
+     written for the old cream ground keep their contrast. */
+  .ck-staff-workspace {
+    border-radius: var(--st-radius-shell);
+    background:
+      linear-gradient(160deg, rgba(255, 255, 255, 0.5), rgba(255, 255, 255, 0) 45%),
+      linear-gradient(180deg, #e7eff9, #d6e3f2);
+    border: 1px solid var(--st-line-light);
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.7), 0 30px 60px -40px rgba(0, 0, 0, 0.55);
+    padding: 32px;
+    min-width: 0;
+  }
+  @media (max-width: 767px) {
+    .ck-staff-workspace { padding: 18px 14px; border-radius: 24px; }
+  }
+
+  /* Frosted card + near-opaque variant for dense content. */
+  .ck-glass-card {
+    border-radius: var(--st-radius-card);
+    background: linear-gradient(155deg, rgba(255, 255, 255, 0.35), rgba(255, 255, 255, 0) 42%), rgba(255, 255, 255, 0.7);
+    border: 1px solid rgba(255, 255, 255, 0.7);
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.6), 0 16px 34px -26px rgba(16, 35, 58, 0.5);
+  }
+  .ck-glass-solid {
+    border-radius: var(--st-radius-card);
+    background: rgba(255, 255, 255, 0.92);
+    border: 1px solid rgba(255, 255, 255, 0.85);
+    box-shadow: 0 16px 34px -28px rgba(16, 35, 58, 0.45);
+  }
+  .ck-glass-interactive {
+    transition: transform 180ms var(--st-ease), box-shadow 180ms var(--st-ease), background-color 180ms var(--st-ease);
+  }
+  .ck-glass-interactive:hover {
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.7), 0 20px 40px -24px rgba(16, 35, 58, 0.55);
+    transform: translateY(-1px);
+  }
+
+  .ck-staff-eyebrow {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 3px 10px;
+    border-radius: 999px;
+    font-size: 11px;
+    font-weight: 600;
+    color: var(--st-text);
+    background: rgba(255, 255, 255, 0.85);
+    box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.55);
+  }
+
+  /* Compact status badge — always carries a text label, so meaning never
+     depends on colour alone. */
+  .ck-status {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 3px 10px;
+    border-radius: 999px;
+    font-size: 12px;
+    font-weight: 600;
+    white-space: nowrap;
+  }
+  .ck-status::before { content: ""; width: 6px; height: 6px; border-radius: 999px; background: currentColor; }
+  .ck-status[data-tone="waiting"] { background: #fbefd5; color: #8a5a10; }
+  .ck-status[data-tone="success"] { background: #dcf1e7; color: #1c6b4c; }
+  .ck-status[data-tone="danger"]  { background: #fbe1dc; color: #9a2a1b; }
+  .ck-status[data-tone="info"]    { background: #dcedf1; color: #1f5f6d; }
+  .ck-status[data-tone="neutral"] { background: #e6eef8; color: #41567a; }
+
+  @media (prefers-reduced-motion: reduce) {
+    .ck-staff-nav-item,
+    .ck-staff-icon-btn,
+    .ck-glass-interactive { transition: none; }
+    .ck-glass-interactive:hover { transform: none; }
+  }
+}
+
+/*
+ * Sidebar groups (2026-11-19, owner request): each group is ONE card, items
+ * inside are split by hairlines — no per-item pills, borders or outlines.
+ * Deliberately unlayered with a two-class selector so no global outline/border
+ * rule (e.g. the base `outline-ring` tint, which reads as orange) can bleed in.
+ */
+.ck-staff .ck-staff-nav-group {
+  overflow: hidden;
+  border-radius: 16px;
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.08);
+}
+.ck-staff .ck-staff-nav-group .ck-staff-nav-item {
+  border: 0;
+  border-radius: 0;
+  outline: none;
+  box-shadow: none;
+  min-height: 42px;
+  padding: 10px 14px;
+}
+.ck-staff .ck-staff-nav-group .ck-staff-nav-item + .ck-staff-nav-item,
+.ck-staff .ck-staff-nav-group > * + * {
+  border-top: 1px solid rgba(255, 255, 255, 0.1);
+}
+.ck-staff .ck-staff-nav-group .ck-staff-nav-item[aria-current="page"] {
+  background: rgba(255, 255, 255, 0.16);
+  border-color: rgba(255, 255, 255, 0.1);
+  box-shadow: inset 3px 0 0 #c4e2ff;
+}
+.ck-staff .ck-staff-nav-group .ck-staff-nav-item:focus-visible {
+  outline: 2px solid #c4e2ff;
+  outline-offset: -2px;
+}
+
+/*
+ * Phase 3 (2026-11-19): re-tint the shared palettes inside the consoles only.
+ * Tailwind v4 utilities read `var(--color-stone-*)`, and the shadcn tokens are
+ * plain variables, so redefining them on `.ck-staff` restyles every existing
+ * admin / super-admin panel (stone borders, text, white cards, primary buttons,
+ * focus rings) without touching each file — and without leaking out, because
+ * the variables only change under `.ck-staff`.
+ *
+ * Caveat: Radix/vaul content portaled to <body> sits outside `.ck-staff` and
+ * keeps the site palette.
+ */
+.ck-staff {
+  --color-stone-50:  oklch(98.2% 0.006 255);
+  --color-stone-100: oklch(96.2% 0.008 255);
+  --color-stone-150: oklch(94.4% 0.010 255);
+  --color-stone-200: oklch(91.6% 0.012 255);
+  --color-stone-250: oklch(88.6% 0.013 255);
+  --color-stone-300: oklch(84.0% 0.015 255);
+  --color-stone-400: oklch(67.0% 0.018 255);
+  --color-stone-500: oklch(52.5% 0.020 255);
+  --color-stone-600: oklch(43.0% 0.020 255);
+  --color-stone-700: oklch(34.5% 0.020 255);
+  --color-stone-800: oklch(25.5% 0.018 255);
+  --color-stone-850: oklch(21.5% 0.016 255);
+  --color-stone-900: oklch(18.5% 0.015 255);
+  --color-stone-950: oklch(13.5% 0.012 255);
+
+  --primary: #1f66b3;
+  --primary-foreground: #ffffff;
+  --ring: #2d7fd6;
+  --rust-action: #1f66b3;
+  --border: oklch(91.6% 0.012 255);
+  --input: oklch(88.6% 0.013 255);
+  --muted: oklch(96.2% 0.008 255);
+  --muted-foreground: oklch(43% 0.02 255);
+  --accent: oklch(94.4% 0.02 255);
+  --accent-foreground: oklch(25.5% 0.018 255);
+  --background: #e3edf8;
+  --foreground: #10233a;
+  --card-foreground: #10233a;
+}
+
+/* White panels written for the old cream ground: give them the card radius
+   feel and the soft forest shadow. Only plain `bg-white` blocks that already
+   carry a border and a large radius — controls are left alone. */
+.ck-staff .ck-staff-workspace .bg-white.border.rounded-2xl,
+.ck-staff .ck-staff-workspace .bg-white.border.rounded-xl {
+  border-color: rgba(255, 255, 255, 0.85);
+  box-shadow: 0 14px 30px -26px rgba(16, 35, 58, 0.5);
+}
+.ck-staff .ck-staff-workspace table thead th {
+  font-size: 12px;
+  font-weight: 600;
+  color: #4f6480;
+}
+.ck-staff .ck-staff-workspace :is(input, select, textarea):focus-visible {
+  outline: 2px solid #2d7fd6;
+  outline-offset: 1px;
+}
+
+/* Attention colour is amber in the consoles: any remaining `*-orange-*`
+   utility inside them resolves to the matching amber step. */
+.ck-staff {
+  --color-orange-50: var(--color-amber-50);
+  --color-orange-100: var(--color-amber-100);
+  --color-orange-200: var(--color-amber-200);
+  --color-orange-300: var(--color-amber-300);
+  --color-orange-400: var(--color-amber-400);
+  --color-orange-500: var(--color-amber-500);
+  --color-orange-600: var(--color-amber-600);
+  --color-orange-700: var(--color-amber-700);
+  --color-orange-800: var(--color-amber-800);
+  --color-orange-900: var(--color-amber-900);
+  --color-orange-950: var(--color-amber-950);
+}
+
+/* One page-title style for every console section (round 2). Panels that
+   print their own heading carry `ck-page-title`; sections without one get a
+   PageHeader from the shell. Unlayered so it beats the old text-lg/font-black. */
+.ck-staff .ck-page-title {
+  font-size: clamp(24px, 2.3vw, 32px);
+  font-weight: 700;
+  line-height: 1.15;
+  letter-spacing: -0.02em;
+  color: #10233a;
+}
+
+/* Sidebar scrollbar: thin and translucent instead of the default white bar. */
+.ck-staff .ck-staff-aside nav,
+.ck-staff nav {
+  scrollbar-width: thin;
+  scrollbar-color: rgba(255, 255, 255, 0.22) transparent;
+}
+.ck-staff nav::-webkit-scrollbar { width: 6px; }
+.ck-staff nav::-webkit-scrollbar-track { background: transparent; }
+.ck-staff nav::-webkit-scrollbar-thumb { background: rgba(255, 255, 255, 0.22); border-radius: 999px; }
+
+/* Phones (2026-11-20): a grid with no column sizes below a breakpoint gets one
+   implicit `auto` column, sized to its widest content (one-line truncated
+   text), wider than the screen, so cards were cut off on the right. Letting
+   every grid item shrink to 0 caps that column at the container width. */
+.ck-staff .ck-staff-workspace .grid > * { min-width: 0; }
+
+/* The root <main> reserves room for the public site's mobile bottom dock
+   (.ck-main-bottom-pad, ~92-126px). The staff consoles have no dock, so that
+   room showed as a cream strip under the console. Scoped with :has() to pages
+   that render a console. */
+.ck-main-bottom-pad:has(.ck-staff) { padding-bottom: 0; }

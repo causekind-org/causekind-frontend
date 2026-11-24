@@ -30,7 +30,7 @@ function Respond({ id }: { id: number }) {
 
   useEffect(() => { fundraising.get(id).then(setApp).catch(() => setLoadError(ui("Couldn't load this application."))); }, [id]);
 
-  if (!app) return <main className={s.wrap} aria-busy="true" style={{ minHeight: 400 }}>{loadError && <p role="alert" className={s.errText}>{loadError}</p>}</main>;
+  if (!app) return <div className={s.wrap} aria-busy="true" style={{ minHeight: 400 }}>{loadError && <p role="alert" className={s.errText}>{loadError}</p>}</div>;
   return <RespondBody id={id} app={app} setApp={setApp} />;
 }
 
@@ -56,11 +56,11 @@ function RespondBody({ id, app, setApp }: { id: number; app: FundraisingApplicat
   useEffect(() => { if (app.status === "INFORMATION_REQUESTED") reloadPage(); }, [evidenceKey, app.status, reloadPage]);
   if (app.status !== "INFORMATION_REQUESTED") {
     return (
-      <main className={s.wrap} style={{ paddingTop: 64, paddingBottom: 64, display: "flex", flexDirection: "column", gap: 12 }}>
+      <div className={s.wrap} style={{ paddingTop: 64, paddingBottom: 64, display: "flex", flexDirection: "column", gap: 12 }}>
         <StatusChip status={app.status} localize />
         <h1 className={s.serif} style={{ fontSize: 28 }}><UiText>There are no open questions</UiText></h1>
         <Link href={`/fundraising/applications/${id}`}><UiText>See where your application is</UiText></Link>
-      </main>
+      </div>
     );
   }
 
@@ -91,7 +91,7 @@ function RespondBody({ id, app, setApp }: { id: number; app: FundraisingApplicat
           <Link href="/fundraising" className={`${s.btn} ${s.bs}`}><UiText>Save and exit</UiText></Link>
         </div>
       </header>
-      <main className={s.wrap} style={{ paddingTop: 32, paddingBottom: 72, display: "flex", flexDirection: "column", gap: 24 }}>
+      <div className={s.wrap} style={{ paddingTop: 32, paddingBottom: 72, display: "flex", flexDirection: "column", gap: 24 }}>
         <div style={{ display: "flex", justifyContent: "space-between", gap: 20, alignItems: "flex-end", flexWrap: "wrap" }}>
           <div style={{ display: "flex", flexDirection: "column", gap: 8, maxWidth: 700 }}>
             <StatusChip status="INFORMATION_REQUESTED" localize />
@@ -156,7 +156,7 @@ function RespondBody({ id, app, setApp }: { id: number; app: FundraisingApplicat
           </div>
         </div>
         <p className={`${s.muted} ${s.small}`}><UiText>Once sent, your application shows</UiText> <strong><UiText>Resubmitted</UiText></strong> <UiText>and goes back to the reviewer. Need to replace a document? Uploads during a review are kept alongside the earlier version.</UiText></p>
-      </main>
+      </div>
     </>
   );
 }

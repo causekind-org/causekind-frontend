@@ -32,7 +32,7 @@ vi.mock("@/lib/api", () => ({
 vi.mock("@/hooks/useLocations", () => ({
   useLocations: () => ({ countries: [{ value: "IN", label: "India" }], states: [], cities: [], dialCodes: [{ value: "IN", label: "India (+91)", phonecode: "91" }] }),
 }));
-vi.mock("@react-oauth/google", () => ({ useGoogleLogin: () => vi.fn() }));
+vi.mock("@/lib/lazyGoogleLogin", () => ({ useGoogleLogin: () => vi.fn() }));
 
 beforeAll(() => {
   global.ResizeObserver = class { observe() {} unobserve() {} disconnect() {} };

@@ -274,7 +274,7 @@ export function PurchaseHub({
 
         <div className="flex flex-wrap items-start gap-6">
           {/* What this person has to do now */}
-          <main className="flex min-w-0 flex-[999_1_560px] flex-col gap-6">
+          <div className="flex min-w-0 flex-[999_1_560px] flex-col gap-6">
             {showReconfirm && (
               <Panel title={direct ? "Still planning to buy it?" : "Can you still purchase this item?"} icon={<Check className="size-5 text-[var(--ck-role-accent)]" aria-hidden />}>
                 <p className="mb-4 text-[15px] text-[#3D4756] dark:text-stone-300">
@@ -673,7 +673,7 @@ export function PurchaseHub({
                 </AlertDialogFooter>
               </AlertDialogContent>
             </AlertDialog>
-          </main>
+          </div>
 
           {/* Reference: what was agreed, where it goes, help */}
           <aside aria-label="About this purchase" className="flex min-w-0 flex-[1_1_360px] flex-col gap-5">
@@ -1351,6 +1351,8 @@ function EvidencePanel({ title, hint, type, done, doneText = "Uploaded", busy, a
   replaceable?: boolean;
   onUpload: (f: File) => Promise<boolean>;
 }) {
+  // Before the early return, so the hook order is the same on every render.
+  const ref = useRef<HTMLInputElement>(null);
   if (done && !replaceable) {
     return (
       <Panel title={title} icon={<Upload className="size-4 text-[var(--ck-role-accent)]" aria-hidden />}>
@@ -1359,7 +1361,6 @@ function EvidencePanel({ title, hint, type, done, doneText = "Uploaded", busy, a
       </Panel>
     );
   }
-  const ref = useRef<HTMLInputElement>(null);
   return (
     <Panel title={title} icon={<Upload className="size-4 text-[var(--ck-role-accent)]" aria-hidden />}>
       <p className="mb-3 text-sm text-stone-600 dark:text-stone-300">{hint}</p>

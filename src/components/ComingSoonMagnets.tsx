@@ -381,7 +381,7 @@ function CardModal({ cardIdx, startRect, onClose }: {
           }}>
             <span style={{ fontSize: "var(--text-sm)" }}>🔔</span>
             <p style={{ margin: 0, fontSize: "var(--text-xs)", fontWeight: 700, color: detail.accent, lineHeight: 1.4 }}>
-              We're building this now — follow CauseKind for early access.
+              We&apos;re building this now — follow CauseKind for early access.
             </p>
           </div>
         </div>

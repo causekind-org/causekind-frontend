@@ -27,6 +27,8 @@ import {
   NgoMarquee,
   NgoFinalCtaBand,
 } from "./NgoSharedComponents";
+import { RevealGroup, SwipeRow } from "./NgoMotion";
+import { FadeUp, GlassPhotoCard } from "./NgoShowcase";
 
 /* Helper for animated counting number */
 function AnimatedCounter({ value, duration = 1.2 }: { value: number; duration?: number }) {
@@ -177,14 +179,19 @@ export function PostApprovalLanding({ status }: { status: NgoStatusData }) {
 
           {!hasAnyData ? (
             /* Illustrated Empty State */
-            <div className="w-full rounded-[24px] border border-stone-200 dark:border-white/10 bg-white dark:bg-[#0F2A20] p-12 text-center shadow-sm">
-              <div className="w-16 h-16 mx-auto rounded-full bg-[#F6F1E4] dark:bg-white/10 flex items-center justify-center text-[#2F8F5B] mb-5">
+            <div className="w-full overflow-hidden rounded-[32px] border border-[var(--ngo-line)] bg-[var(--ngo-card)] shadow-sm grid grid-cols-1 md:grid-cols-2">
+              <div className="relative min-h-[260px] md:min-h-[380px]">
+                <Image src="/images/ngo-steps/post-a-need.webp" alt="" fill sizes="(max-width: 768px) 100vw, 600px" className="object-cover" />
+                <div className="absolute inset-0 bg-gradient-to-t from-black/40 to-transparent" />
+              </div>
+              <div className="flex flex-col items-start justify-center p-8 md:p-14 text-left">
+              <div className="w-16 h-16 rounded-2xl bg-[#F6F1E4] dark:bg-white/10 flex items-center justify-center text-[#2F8F5B] mb-5">
                 <Sparkles className="w-8 h-8 stroke-[1.8]" />
               </div>
-              <h3 className="ngo-heading text-2xl text-stone-900 dark:text-stone-100 mb-2">
+              <h3 className="ngo-heading text-3xl md:text-4xl text-stone-900 dark:text-stone-100 mb-2">
                 No active metrics yet
               </h3>
-              <p className="text-base text-stone-600 dark:text-stone-400 max-w-md mx-auto mb-6">
+              <p className="text-base text-stone-600 dark:text-stone-400 max-w-md mb-6">
                 Appears once your first drive is live.
               </p>
               <Link
@@ -194,66 +201,59 @@ export function PostApprovalLanding({ status }: { status: NgoStatusData }) {
                 <span>Create your first drive</span>
                 <ArrowRight className="w-4 h-4 ml-2" />
               </Link>
+              </div>
             </div>
           ) : (
-            /* 3 Equal-Height Cards (3 columns desktop, 2 tablet, 1 mobile). No beneficiaries
-               card: the overview API has no real count, and an estimate is not evidence. */
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 items-stretch">
-              {/* Card 1: Drive Progress */}
-              <div className="ngo-card ngo-card-interactive group h-full justify-between">
-                <div className="flex items-center justify-between mb-8">
-                  <span className="text-[12px] font-semibold uppercase tracking-[0.12em] opacity-65">
-                    Drive progress
-                  </span>
-                  <div className="w-11 h-11 rounded-full bg-[#F6F1E4] dark:bg-white/10 flex items-center justify-center shrink-0">
-                    <TrendingUp className="w-[22px] h-[22px] text-[#2F8F5B] stroke-[1.8]" />
+            /* Dark stats slab. No beneficiaries cell: the overview API has no real count. */
+            <FadeUp>
+              <div className="ngo-stat-slab">
+                <div className="ngo-blob -right-16 -top-20 h-72 w-72 opacity-60" aria-hidden />
+                <div className="relative grid grid-cols-1 md:grid-cols-3">
+                <div className="ngo-stat-cell">
+                  <div className="mb-6 flex items-center gap-3">
+                    <span className="inline-flex h-10 w-10 items-center justify-center rounded-full border border-white/15 bg-white/10 text-[var(--ngo-gold-light)]">
+                      <TrendingUp className="h-5 w-5" strokeWidth={1.8} />
+                    </span>
+                    <span className="text-[12px] font-semibold uppercase tracking-[0.16em] text-[#EFEADB]/75">Drive progress</span>
+                  </div>
+                  <div className="flex items-baseline gap-3">
+                    <span className="ngo-stat-num">
+                      {status.statsUnavailable ? "—" : <AnimatedCounter value={campaignProgress} />}
+                    </span>
+                    <span className="text-base text-[#EFEADB]/70">active</span>
                   </div>
                 </div>
-                <div className="flex items-baseline gap-2.5">
-                  <span className="ngo-heading text-[52px] leading-none text-stone-900 dark:text-stone-100">
-                    {status.statsUnavailable ? "—" : <AnimatedCounter value={campaignProgress} />}
-                  </span>
-                  <span className="text-[15px] opacity-60 font-medium">active</span>
-                </div>
-              </div>
-
-              {/* Card 2: Donations Received */}
-              <div className="ngo-card ngo-card-interactive group h-full justify-between">
-                <div className="flex items-center justify-between mb-8">
-                  <span className="text-[12px] font-semibold uppercase tracking-[0.12em] opacity-65">
-                    Donations received
-                  </span>
-                  <div className="w-11 h-11 rounded-full bg-[#F6F1E4] dark:bg-white/10 flex items-center justify-center shrink-0">
-                    <Heart className="w-[22px] h-[22px] text-[#2F8F5B] stroke-[1.8]" />
+                <div className="ngo-stat-cell">
+                  <div className="mb-6 flex items-center gap-3">
+                    <span className="inline-flex h-10 w-10 items-center justify-center rounded-full border border-white/15 bg-white/10 text-[var(--ngo-gold-light)]">
+                      <Heart className="h-5 w-5" strokeWidth={1.8} />
+                    </span>
+                    <span className="text-[12px] font-semibold uppercase tracking-[0.16em] text-[#EFEADB]/75">Donations received</span>
+                  </div>
+                  <div className="flex items-baseline gap-3">
+                    <span className="ngo-stat-num">
+                      {status.statsUnavailable ? "—" : <AnimatedCounter value={donationsReceived} />}
+                    </span>
+                    <span className="text-base text-[#EFEADB]/70">pledged</span>
                   </div>
                 </div>
-                <div className="flex items-baseline gap-2.5">
-                  <span className="ngo-heading text-[52px] leading-none text-stone-900 dark:text-stone-100">
-                    {status.statsUnavailable ? "—" : <AnimatedCounter value={donationsReceived} />}
-                  </span>
-                  <span className="text-[15px] opacity-60 font-medium">pledged</span>
-                </div>
-              </div>
-
-              {/* Card 3: Items Delivered */}
-              <div className="ngo-card ngo-card-interactive group h-full justify-between">
-                <div className="flex items-center justify-between mb-8">
-                  <span className="text-[12px] font-semibold uppercase tracking-[0.12em] opacity-65">
-                    Items delivered
-                  </span>
-                  <div className="w-11 h-11 rounded-full bg-[#F6F1E4] dark:bg-white/10 flex items-center justify-center shrink-0">
-                    <Package className="w-[22px] h-[22px] text-[#2F8F5B] stroke-[1.8]" />
+                <div className="ngo-stat-cell">
+                  <div className="mb-6 flex items-center gap-3">
+                    <span className="inline-flex h-10 w-10 items-center justify-center rounded-full border border-white/15 bg-white/10 text-[var(--ngo-gold-light)]">
+                      <Package className="h-5 w-5" strokeWidth={1.8} />
+                    </span>
+                    <span className="text-[12px] font-semibold uppercase tracking-[0.16em] text-[#EFEADB]/75">Items delivered</span>
+                  </div>
+                  <div className="flex items-baseline gap-3">
+                    <span className="ngo-stat-num">
+                      {status.statsUnavailable ? "—" : <AnimatedCounter value={itemsDelivered} />}
+                    </span>
+                    <span className="text-base text-[#EFEADB]/70">confirmed</span>
                   </div>
                 </div>
-                <div className="flex items-baseline gap-2.5">
-                  <span className="ngo-heading text-[52px] leading-none text-stone-900 dark:text-stone-100">
-                    {status.statsUnavailable ? "—" : <AnimatedCounter value={itemsDelivered} />}
-                  </span>
-                  <span className="text-[15px] opacity-60 font-medium">confirmed</span>
                 </div>
               </div>
-
-            </div>
+            </FadeUp>
           )}
         </div>
       </section>
@@ -269,7 +269,7 @@ export function PostApprovalLanding({ status }: { status: NgoStatusData }) {
             h2="Say what you need, clearly."
           />
 
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+          <SwipeRow label="Create your first drive" className="grid grid-cols-1 md:grid-cols-3 gap-6">
             <NgoCard
               number="1"
               title="Describe your need"
@@ -285,7 +285,7 @@ export function PostApprovalLanding({ status }: { status: NgoStatusData }) {
               title="Publish"
               body="Go live for donors to see."
             />
-          </div>
+          </SwipeRow>
         </div>
       </section>
 
@@ -444,86 +444,77 @@ export function PostApprovalLanding({ status }: { status: NgoStatusData }) {
             className="mb-12"
           />
 
-          {/* Row 1: 4 status cards, equal height, 24px gap */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 items-stretch mb-12">
-            {/* Card 1: Offers */}
-            <div className="ngo-card ngo-card-interactive group h-full">
-              <div className="w-11 h-11 rounded-full bg-[#F6F1E4] dark:bg-white/10 flex items-center justify-center mb-4 shrink-0">
-                <Heart className="w-[22px] h-[22px] text-[#2F8F5B] stroke-[1.8]" />
+          {/* Row 1: status tiles in the NGO palette */}
+          <SwipeRow label="Track donations and requests" className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5 items-stretch">
+            <div className="ngo-tile ngo-tile-deep h-full">
+              <div className="flex items-center justify-between">
+                <span className="ngo-tile-tag">Offers</span>
+                <span className="ngo-tile-icon"><Heart className="h-5 w-5" strokeWidth={1.8} /></span>
               </div>
-              <span className="ngo-card-tag mb-3">Offers</span>
-              <h3 className="ngo-card-title text-xl mb-1.5">Offers</h3>
-              <p className="ngo-card-body text-sm">Review what donors propose.</p>
-              <Link href="/dashboard/ngo#live-drives" className="mt-3 inline-flex items-center gap-1 text-xs font-semibold text-[#2F8F5B] dark:text-[#5BE49B] hover:underline">
-                <span>View offers →</span>
-              </Link>
+              <div>
+                <h3 className="ngo-heading text-[28px] leading-tight">Offers</h3>
+                <p className="mt-1 text-[15px] opacity-80">Review what donors propose.</p>
+                <Link href="/dashboard/ngo#live-drives" className="mt-4 inline-flex min-h-11 items-center gap-1 text-sm font-semibold text-[var(--ngo-gold-light)] underline-offset-4 hover:underline">
+                  <span>View offers →</span>
+                </Link>
+              </div>
             </div>
-
-            {/* Card 2: Pending requests */}
-            <div className="ngo-card ngo-card-interactive group h-full">
-              <div className="w-11 h-11 rounded-full bg-[#F6F1E4] dark:bg-white/10 flex items-center justify-center mb-4 shrink-0">
-                <Clock className="w-[22px] h-[22px] text-[#2F8F5B] stroke-[1.8]" />
+            <div className="ngo-tile ngo-tile-card h-full">
+              <div className="flex items-center justify-between">
+                <span className="ngo-tile-tag">Pending</span>
+                <span className="ngo-tile-icon"><Clock className="h-5 w-5" strokeWidth={1.8} /></span>
               </div>
-              <span className="ngo-card-tag mb-3">Pending</span>
-              <h3 className="ngo-card-title text-xl mb-1.5">Pending requests</h3>
-              <p className="ngo-card-body text-sm">Needs waiting for a match.</p>
+              <div>
+                <h3 className="ngo-heading text-[28px] leading-tight">Pending requests</h3>
+                <p className="mt-1 text-[15px] opacity-80">Needs waiting for a match.</p>
+              </div>
             </div>
-
-            {/* Card 3: Partially fulfilled */}
-            <div className="ngo-card ngo-card-interactive group h-full">
-              <div className="w-11 h-11 rounded-full bg-[#F6F1E4] dark:bg-white/10 flex items-center justify-center mb-4 shrink-0">
-                <CircleDot className="w-[22px] h-[22px] text-[#2F8F5B] stroke-[1.8]" />
+            <div className="ngo-tile ngo-tile-gold h-full">
+              <div className="flex items-center justify-between">
+                <span className="ngo-tile-tag">Partial</span>
+                <span className="ngo-tile-icon"><CircleDot className="h-5 w-5" strokeWidth={1.8} /></span>
               </div>
-              <span className="ngo-card-tag mb-3">Partial</span>
-              <h3 className="ngo-card-title text-xl mb-1.5">Partially fulfilled</h3>
-              <p className="ngo-card-body text-sm">Needs with items still open.</p>
+              <div>
+                <h3 className="ngo-heading text-[28px] leading-tight">Partially fulfilled</h3>
+                <p className="mt-1 text-[15px] opacity-80">Needs with items still open.</p>
+              </div>
             </div>
-
-            {/* Card 4: Completed */}
-            <div className="ngo-card ngo-card-interactive group h-full">
-              <div className="w-11 h-11 rounded-full bg-[#F6F1E4] dark:bg-white/10 flex items-center justify-center mb-4 shrink-0">
-                <Package className="w-[22px] h-[22px] text-[#2F8F5B] stroke-[1.8]" />
+            <div className="ngo-tile ngo-tile-forest h-full">
+              <div className="flex items-center justify-between">
+                <span className="ngo-tile-tag">Done</span>
+                <span className="ngo-tile-icon"><Package className="h-5 w-5" strokeWidth={1.8} /></span>
               </div>
-              <span className="ngo-card-tag mb-3">Done</span>
-              <h3 className="ngo-card-title text-xl mb-1.5">Completed</h3>
-              <p className="ngo-card-body text-sm">Fully delivered and confirmed.</p>
+              <div>
+                <h3 className="ngo-heading text-[28px] leading-tight">Completed</h3>
+                <p className="mt-1 text-[15px] opacity-80">Fully delivered and confirmed.</p>
+              </div>
             </div>
-          </div>
+          </SwipeRow>
+          <div className="h-5" />
 
-          {/* Row 2 (48px below row 1): 2 wide cards in a 2-column grid, same total width, 24px gap, equal height */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6 items-stretch">
-            {/* Wide Card 1: Delivery and handover proof */}
-            <div className="ngo-card group h-full">
-              <div className="w-11 h-11 rounded-full bg-[#F6F1E4] dark:bg-white/10 flex items-center justify-center mb-4 shrink-0">
-                <Camera className="w-[22px] h-[22px] text-[#2F8F5B] stroke-[1.8]" />
+          {/* Row 2: photo cards with glass text boxes */}
+          <SwipeRow label="Delivery and certificates" className="grid grid-cols-1 md:grid-cols-2 gap-5 items-stretch">
+            <GlassPhotoCard src="/images/ngo-steps/handover-proof.webp" alt="Handover photo proof uploaded" className="h-full">
+              <div className="mb-3 flex items-center gap-2 text-[var(--ngo-gold-light)]">
+                <Camera className="h-5 w-5" strokeWidth={1.8} />
+                <span className="text-[12px] font-semibold uppercase tracking-[0.12em]">Delivery and handover proof</span>
               </div>
-              <span className="text-[12px] font-semibold uppercase tracking-[0.08em] opacity-70 mb-2 block">
-                Delivery and handover proof
-              </span>
-              <h3 className="ngo-heading text-2xl md:text-3xl text-stone-900 dark:text-stone-100 mb-3">
-                Confirm receipt, upload photos.
-              </h3>
-              <p className="text-stone-600 dark:text-stone-300 text-base leading-relaxed">
+              <h3 className="ngo-heading text-2xl md:text-3xl mb-2">Confirm receipt, upload photos.</h3>
+              <p className="text-white/85 text-[15px] leading-relaxed">
                 Once items arrive, confirm receipt and add handover photos as proof of a successful delivery.
               </p>
-            </div>
-
-            {/* Wide Card 2: Certificates and recognition */}
-            <div className="ngo-card group h-full">
-              <div className="w-11 h-11 rounded-full bg-[#F6F1E4] dark:bg-white/10 flex items-center justify-center mb-4 shrink-0">
-                <Award className="w-[22px] h-[22px] text-[#2F8F5B] stroke-[1.8]" />
+            </GlassPhotoCard>
+            <GlassPhotoCard src="/images/ngo-steps/confirmation.webp" alt="Completed confirmed handover loop" className="h-full" position="85% center">
+              <div className="mb-3 flex items-center gap-2 text-[var(--ngo-gold-light)]">
+                <Award className="h-5 w-5" strokeWidth={1.8} />
+                <span className="text-[12px] font-semibold uppercase tracking-[0.12em]">Certificates and recognition</span>
               </div>
-              <span className="text-[12px] font-semibold uppercase tracking-[0.08em] opacity-70 mb-2 block">
-                Certificates and recognition
-              </span>
-              <h3 className="ngo-heading text-2xl md:text-3xl text-stone-900 dark:text-stone-100 mb-3">
-                Donors receive a certificate for contributing.
-              </h3>
-              <p className="text-stone-600 dark:text-stone-300 text-base leading-relaxed">
+              <h3 className="ngo-heading text-2xl md:text-3xl mb-2">Donors receive a certificate for contributing.</h3>
+              <p className="text-white/85 text-[15px] leading-relaxed">
                 When a donor contributes to your drive, they receive a certificate as thanks for their support.
               </p>
-            </div>
-          </div>
+            </GlassPhotoCard>
+          </SwipeRow>
         </div>
       </section>
 
@@ -538,23 +529,41 @@ export function PostApprovalLanding({ status }: { status: NgoStatusData }) {
             h2="Small details, bigger response."
           />
 
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-            <NgoCard
-              number="1"
-              title="Write clearly"
-              body="Say who it helps and why."
-            />
-            <NgoCard
-              number="2"
-              title="Add photos"
-              body="Real images build trust."
-            />
-            <NgoCard
-              number="3"
-              title="Be realistic"
-              body="Ask for what you can use."
-            />
-          </div>
+          <SwipeRow reveal={false} label="Tips for better drives" className="grid grid-cols-1 md:grid-cols-3 gap-6">
+            <div className="ngo-card ngo-card-interactive group !p-0 overflow-hidden">
+              <div className="relative aspect-[4/3] overflow-hidden">
+                <Image src="/images/ngo-steps/post-a-need.webp" alt="" fill sizes="(max-width: 768px) 100vw, 380px" className="object-cover ngo-zoom-img" loading="lazy" />
+                <div className="absolute inset-0 bg-gradient-to-t from-black/55 to-transparent" />
+                <span className="ngo-heading absolute bottom-3 left-6 text-7xl text-white/95">1</span>
+              </div>
+              <div className="p-7">
+                <h3 className="ngo-card-title">Write clearly</h3>
+                <p className="ngo-card-body">Say who it helps and why.</p>
+              </div>
+            </div>
+            <div className="ngo-card ngo-card-interactive group !p-0 overflow-hidden">
+              <div className="relative aspect-[4/3] overflow-hidden">
+                <Image src="/images/ngo-steps/handover-proof.webp" alt="" fill sizes="(max-width: 768px) 100vw, 380px" className="object-cover ngo-zoom-img" loading="lazy" />
+                <div className="absolute inset-0 bg-gradient-to-t from-black/55 to-transparent" />
+                <span className="ngo-heading absolute bottom-3 left-6 text-7xl text-white/95">2</span>
+              </div>
+              <div className="p-7">
+                <h3 className="ngo-card-title">Add photos</h3>
+                <p className="ngo-card-body">Real images build trust.</p>
+              </div>
+            </div>
+            <div className="ngo-card ngo-card-interactive group !p-0 overflow-hidden">
+              <div className="relative aspect-[4/3] overflow-hidden">
+                <Image src="/images/ngo-steps/delivery.webp" alt="" fill sizes="(max-width: 768px) 100vw, 380px" className="object-cover ngo-zoom-img" loading="lazy" />
+                <div className="absolute inset-0 bg-gradient-to-t from-black/55 to-transparent" />
+                <span className="ngo-heading absolute bottom-3 left-6 text-7xl text-white/95">3</span>
+              </div>
+              <div className="p-7">
+                <h3 className="ngo-card-title">Be realistic</h3>
+                <p className="ngo-card-body">Ask for what you can use.</p>
+              </div>
+            </div>
+          </SwipeRow>
         </div>
       </section>
 

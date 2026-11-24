@@ -94,7 +94,7 @@ describe("NGO wizard: prefill from signup (point 2)", () => {
     const { rerender } = render(<NgoDetailsPage />);
 
     const regNo = await screen.findByLabelText(/Registration Number/i);
-    await userEvent.type(regNo, "TR-1");
+    await userEvent.setup({ delay: null }).type(regNo, "TR-1");
     signedIn({ ...NGO });
     rerender(<NgoDetailsPage />);
 
@@ -185,7 +185,11 @@ describe("NGO wizard: per-item corrections (point 9)", () => {
 
     // Fix the two items.
     await openStep(/Organization Details/i);
-    await userEvent.type(await screen.findByLabelText(/Registration Number/i), "TR/2026/1002");
+    // One paste, not 12 keystrokes: each keystroke re-renders the whole wizard,
+    // which pushed this test past its timeout under full-suite load.
+    const user = userEvent.setup({ delay: null });
+    await user.click(await screen.findByLabelText(/Registration Number/i));
+    await user.paste("TR/2026/1002");
     await openStep(/Legal Documents/i);
     await screen.findAllByText(/Step 2 of 6/i);
     fireEvent.change(document.querySelector<HTMLInputElement>('input[type="file"]')!, {
@@ -281,8 +285,9 @@ describe("NGO wizard: resubmission mode", () => {
 
     await openStep(/Organization Details/i);
     const reg = await screen.findByLabelText(/Registration Number/i);
-    await userEvent.clear(reg);
-    await userEvent.type(reg, "TR/NEW");
+    const user = userEvent.setup({ delay: null });
+    await user.clear(reg);
+    await user.type(reg, "TR/NEW");
     expect(screen.getByTestId("correction-note")).toHaveAttribute("data-updated", "true");
     expect(screen.getByTestId("correction-note")).toHaveTextContent("Does not match the certificate");
     expect(screen.queryByTestId("to-fix-org-details")).toBeNull();

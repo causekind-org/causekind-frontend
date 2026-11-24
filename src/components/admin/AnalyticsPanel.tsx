@@ -4,8 +4,6 @@ import { serverDate } from "@/lib/serverTime";
 import { useEffect, useMemo, useState } from "react";
 import { useTranslations } from "next-intl";
 import {
-  LineChart,
-  Line,
   BarChart,
   Bar,
   PieChart,
@@ -38,7 +36,7 @@ import {
   XCircle,
 } from "lucide-react";
 
-const CHART_COLORS = ["#b04a15", "#e07b3a", "#1e3a60", "#f0b97a", "#4a7fba", "#6b7280"];
+const CHART_COLORS = ["#1f66b3", "#2d7fd6", "#1e3a60", "#c4e2ff", "#4a7fba", "#6b7280"];
 
 function formatINR(n: number) {
   return new Intl.NumberFormat("en-IN", {
@@ -90,7 +88,7 @@ export function AnalyticsPanel() {
     completedDonations.forEach((d) => {
       const date = serverDate(d.createdAt);
       const key = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}`;
-      const label = date.toLocaleString("en-IN", { month: "short", year: "2-digit" });
+      const label = date.toLocaleString("en-IN", { month: "short", year: "numeric" }) /* "Oct 26" read as 26 October */;
       if (!map[key]) map[key] = { key, month: label, amount: 0, count: 0 };
       map[key].amount += Number(d.amount);
       map[key].count += 1;
@@ -109,7 +107,8 @@ export function AnalyticsPanel() {
       });
     return Object.entries(map)
       .sort(([, a], [, b]) => b - a)
-      .map(([name, value]) => ({ name, value }));
+      // Legend showed raw enums ("MEDICAL") with no sizes.
+      .map(([name, value]) => ({ name: `${name.charAt(0)}${name.slice(1).toLowerCase().replace(/_/g, " ")} (${value})`, value }));
   }, [campaigns]);
 
   const topCampaigns = useMemo(() => {
@@ -154,7 +153,7 @@ export function AnalyticsPanel() {
     return (
       <div className="flex flex-col items-center justify-center gap-3 text-center py-20 px-4">
         <XCircle className="size-8 text-red-400" />
-        <p className="text-sm text-stone-600">Couldn't load analytics data — the server may be having an issue. Try refreshing.</p>
+        <p className="text-sm text-stone-600">Couldn&apos;t load analytics data — the server may be having an issue. Try refreshing.</p>
       </div>
     );
   }
@@ -172,7 +171,7 @@ export function AnalyticsPanel() {
         <div className="grid gap-3 sm:gap-4 sm:grid-cols-2 lg:grid-cols-4">
           <Card>
             <CardContent className="flex items-center gap-3 sm:gap-4 p-3.5 sm:p-5">
-              <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-[#b04a15]/10 text-[#b04a15]">
+              <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-[#1f66b3]/10 text-[#1f66b3]">
                 <HandCoins className="h-5 w-5" />
               </div>
               <div>
@@ -232,7 +231,9 @@ export function AnalyticsPanel() {
               </div>
             ) : (
               <ResponsiveContainer width="100%" height={280}>
-                <LineChart data={monthlyTrend} margin={{ top: 5, right: 20, left: 10, bottom: 5 }}>
+                {/* Bars, not a line: each month is a separate total, and a line between two
+                    months implied a steady trend that never happened. */}
+                <BarChart data={monthlyTrend} margin={{ top: 5, right: 20, left: 10, bottom: 5 }}>
                   <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
                   <XAxis dataKey="month" tick={{ fontSize: 12, fill: "hsl(var(--muted-foreground))" }} />
                   <YAxis
@@ -250,15 +251,8 @@ export function AnalyticsPanel() {
                       color: "hsl(var(--foreground))",
                     }}
                   />
-                  <Line
-                    type="monotone"
-                    dataKey="amount"
-                    stroke="#b04a15"
-                    strokeWidth={2.5}
-                    dot={{ r: 4, fill: "#b04a15", strokeWidth: 0 }}
-                    activeDot={{ r: 6, fill: "#b04a15" }}
-                  />
-                </LineChart>
+                  <Bar dataKey="amount" fill="#1f66b3" radius={[6, 6, 0, 0]} maxBarSize={56} />
+                </BarChart>
               </ResponsiveContainer>
             )}
           </CardContent>
@@ -343,7 +337,7 @@ export function AnalyticsPanel() {
                   />
                   <Bar dataKey="amount" radius={[0, 4, 4, 0]}>
                     {topCampaigns.map((_, i) => (
-                      <Cell key={i} fill={i === 0 ? "#b04a15" : i === 1 ? "#e07b3a" : "#f0b97a"} />
+                      <Cell key={i} fill={i === 0 ? "#1f66b3" : i === 1 ? "#2d7fd6" : "#c4e2ff"} />
                     ))}
                   </Bar>
                 </BarChart>
@@ -383,7 +377,7 @@ export function AnalyticsPanel() {
 
             <div className="rounded-xl border p-3 sm:p-4 text-center">
               <p className="text-xs text-muted-foreground">{t("approvalRate")}</p>
-              <p className="mt-0.5 text-xl sm:text-3xl font-extrabold text-[#b04a15]">{approvalRate}%</p>
+              <p className="mt-0.5 text-xl sm:text-3xl font-extrabold text-[#1f66b3]">{approvalRate}%</p>
               <p className="text-xs text-muted-foreground">{t("ofReviewedCampaigns")}</p>
             </div>
           </CardContent>

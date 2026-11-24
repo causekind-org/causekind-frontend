@@ -11,9 +11,8 @@ import { getItemRequests, getPublicItemRequests, getNgoDrives, donateToRequest, 
 import { useAuth } from "@/hooks/useAuth";
 import { useEntityUpdates } from "@/hooks/useEntityUpdates";
 import { NgoDrivesRedirect } from "@/components/ngo-landing/NgoDrivesRedirect";
-import { registerUrlPreserving } from "@/lib/postAuthDestination";
+import { loginUrlFor } from "@/lib/safeRedirect";
 import { CardGridSkeleton, PageSkeleton } from "@/components/skeletons";
-import { Skeleton } from "@/components/ui/skeleton";
 import { Reveal } from "@/components/Reveal";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -164,8 +163,8 @@ function RequestsHero() {
 
             {/* Scroll cue */}
             <div className="flex items-center gap-2 pt-1 anim-up anim-d4">
-              <span className="text-white/25 text-3xs font-bold uppercase tracking-widest"><UiText>Browse needs below</UiText></span>
-              <ChevronDown className="h-4 w-4 text-white/25 animate-bounce-slow" />
+              <span className="text-white/60 text-3xs font-bold uppercase tracking-widest"><UiText>Browse needs below</UiText></span>
+              <ChevronDown className="h-4 w-4 text-white/60 animate-bounce-slow" />
             </div>
           </div>
         </div>
@@ -194,6 +193,10 @@ export default function RequestsClient({
   const { user, isLoading: authLoading, isRestoring } = useAuth();
   const router   = useRouter();
 
+  // Declared before the live-update subscription that reads them.
+  const [requests,  setRequests]  = useState<ItemRequest[]>([]);
+  const [gpsCoords, setGpsCoords] = useState<{ lat: number; lng: number } | null>(null);
+
   useEntityUpdates(["REQUEST"], () => {
     if (!user || user.role === "DONEE") return;
     getItemRequests(undefined, gpsCoords?.lat, gpsCoords?.lng)
@@ -215,7 +218,6 @@ export default function RequestsClient({
   // authLoading -> guest -> DONEE -> donor, and every data effect in this
   // component is gated on `user`, so a guest fetches nothing from here.
 
-  const [requests,  setRequests]  = useState<ItemRequest[]>([]);
   const [myProfile, setMyProfile] = useState<UserProfile | null>(null);
   const [loading,   setLoading]   = useState(true);
   const [search,    setSearch]    = useState("");
@@ -274,7 +276,6 @@ export default function RequestsClient({
   const [aiGenerated,   setAiGenerated]   = useState(false);
 
   // ── GPS and Profile load ───────────────────────────────────────────────────
-  const [gpsCoords, setGpsCoords] = useState<{ lat: number; lng: number } | null>(null);
   const [gpsBlocked, setGpsBlocked] = useState(false);
   const [gpsLoading, setGpsLoading] = useState(false);
 
@@ -595,7 +596,7 @@ export default function RequestsClient({
   function openDonateModal(req: ItemRequest) {
     // A guest signs up first (Donor preselected, "Log in" offered there) and
     // comes back to this need's offer through `?next=`.
-    if (!user) { router.push(registerUrlPreserving(`/requests/${req.id}/offer`)); return; }
+    if (!user) { router.push(loginUrlFor(`/requests/${req.id}/offer`)); return; }
     router.push(`/requests/${req.id}/offer`);
   }
 
@@ -689,17 +690,21 @@ export default function RequestsClient({
   if (isRestoring) {
     // Shaped like the board that follows, so the page settles once rather than
     // jumping from a centred spinner to a three-column grid.
+    //
+    // The hero needs no signed-in state, so it renders here too: it is then in
+    // the server HTML (the page's H1 and intro), and because this return has
+    // the same shape as the board's below (wrapper > RequestsHero > directory
+    // div), React keeps the same hero when restoring finishes. Only the area
+    // under it swaps from skeleton to board, so there is no second H1.
     return (
-      <PageSkeleton>
-        <div className="space-y-2">
-          <Skeleton className="h-3 w-24" />
-          <Skeleton className="h-9 w-64 max-w-full" />
-          <Skeleton className="h-4 w-full max-w-xl" />
+      <div className="min-h-screen bg-[#f2ede7] dark:bg-zinc-950 text-stone-900 dark:text-stone-100 transition-colors duration-300">
+        <RequestsHero />
+        <div id="request-directory" className="scroll-mt-20">
+          <PageSkeleton>
+            <CardGridSkeleton count={6} label={ui("Loading in-kind requests")} />
+          </PageSkeleton>
         </div>
-        <div className="mt-7">
-          <CardGridSkeleton count={6} label={ui("Loading in-kind requests")} />
-        </div>
-      </PageSkeleton>
+      </div>
     );
   }
 

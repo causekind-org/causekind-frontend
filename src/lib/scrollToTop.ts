@@ -1,4 +1,4 @@
-import { getLenis } from "@/components/SmoothScroll";
+import { getLenis } from "@/lib/lenisInstance";
 
 /**
  * Scrolls the page to the top (mobile bottom bar, handoffs/Mobile Tab Scroll-to-Top Plan.md).

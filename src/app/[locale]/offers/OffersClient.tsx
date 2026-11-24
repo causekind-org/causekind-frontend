@@ -103,7 +103,7 @@ export default function OffersClient() {
   if (!user) return null;
 
   return (
-    <main className="min-h-screen bg-gray-50 dark:bg-gray-950 pb-20">
+    <div className="min-h-screen bg-gray-50 dark:bg-gray-950 pb-20">
       <div className="mx-auto max-w-2xl px-4 pt-5 sm:pt-8">
         <Link
           href="/dashboard#offers"
@@ -142,7 +142,7 @@ export default function OffersClient() {
           <div className="rounded-xl sm:rounded-2xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 p-5 sm:p-8 text-center shadow-sm">
             <div className="text-2xl sm:text-4xl mb-3">📦</div>
             <h2 className="font-semibold text-gray-800 dark:text-gray-200">No offers yet</h2>
-            <p className="mt-1 text-sm text-gray-500">Browse verified requests and click "I Can Donate This Item" to get started.</p>
+            <p className="mt-1 text-sm text-gray-500">Browse verified requests and click &quot;I Can Donate This Item&quot; to get started.</p>
             <Link href="/requests" className="mt-4 inline-block rounded-xl bg-[#b04a15] px-3.5 sm:px-5 py-2.5 text-sm font-semibold text-white">
               Browse Requests
             </Link>
@@ -239,6 +239,6 @@ export default function OffersClient() {
           ))}
         </div>
       </div>
-    </main>
+    </div>
   );
 }

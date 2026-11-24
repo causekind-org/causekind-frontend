@@ -1,6 +1,7 @@
 "use client";
 
-import { GoogleAnalytics } from "@next/third-parties/google";
+import Script from "next/script";
+import { useAfterFirstInteraction } from "@/hooks/useAfterFirstInteraction";
 import { useCookieConsent } from "@/hooks/useCookieConsent";
 import { isInternalTraffic } from "@/lib/internalTraffic";
 
@@ -21,7 +22,23 @@ const TRACKING_DISABLED = process.env.NEXT_PUBLIC_DISABLE_TRACKING === "true";
  */
 export default function GoogleAnalyticsGated() {
   const consent = useCookieConsent();
+  const ready = useAfterFirstInteraction();
   if (!GA_ID || TRACKING_DISABLED || isInternalTraffic()) return null;
   if (!TESTING_BYPASS && consent !== "accepted") return null;
-  return <GoogleAnalytics gaId={GA_ID} />;
+  // The stub runs at once (no network): it sets up dataLayer/gtag and queues
+  // 'js' + 'config' exactly once, so the first page_view is sent once and any
+  // early trackGA events wait in the queue. gtag.js itself loads after the
+  // page has shown (on the first scroll, tap, key press or mouse move; see useAfterFirstInteraction) and drains the queue.
+  return (
+    <>
+      <Script
+        id="ga-stub"
+        strategy="afterInteractive"
+        dangerouslySetInnerHTML={{
+          __html: `window.dataLayer=window.dataLayer||[];function gtag(){dataLayer.push(arguments);}window.gtag=window.gtag||gtag;window.gtag('js',new Date());window.gtag('config','${GA_ID}');`,
+        }}
+      />
+      {ready && <Script id="ga-lib" src={`https://www.googletagmanager.com/gtag/js?id=${GA_ID}`} strategy="afterInteractive" />}
+    </>
+  );
 }

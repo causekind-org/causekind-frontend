@@ -1,5 +1,6 @@
 "use client";
 
+import { SaLoadError } from "./SaLoadError";
 import { serverDate } from "@/lib/serverTime";
 import { useCallback, useEffect, useState } from "react";
 import {
@@ -63,6 +64,8 @@ export function CommunicationsPanel({
 
   const [log, setLog] = useState<SaCommunication[]>([]);
   const [logLoading, setLogLoading] = useState(false);
+  // A failed load used to read "Nothing has been sent yet."
+  const [logFailed, setLogFailed] = useState(false);
 
   const selected = templates.find((x) => x.name === template);
   const isFreeText = selected?.freeText ?? template === "FREE_TEXT";
@@ -73,11 +76,13 @@ export function CommunicationsPanel({
 
   const loadLog = useCallback(async (userId?: number) => {
     setLogLoading(true);
+    setLogFailed(false);
     try {
       const page = await superAdminCommunicationLog({ userId, size: 25 });
       setLog(page.items);
     } catch {
       setLog([]);
+      setLogFailed(true);
     } finally {
       setLogLoading(false);
     }
@@ -144,7 +149,7 @@ export function CommunicationsPanel({
   return (
     <div className="space-y-4">
       <div>
-        <h2 className={`text-lg font-bold ${t.heading}`}>Communications</h2>
+        <h2 className={`ck-page-title ${t.heading}`}>Communications</h2>
         <p className={`text-xs ${t.muted}`}>
           Writing to a user, and the record of everything staff has sent.
         </p>
@@ -307,6 +312,8 @@ export function CommunicationsPanel({
         </h3>
         {logLoading ? (
           <p className={`text-xs ${t.muted}`}>Loading…</p>
+        ) : logFailed ? (
+          <SaLoadError what="the delivery log" onRetry={() => void loadLog(initialUserId)} />
         ) : log.length === 0 ? (
           <p className={`rounded-xl border p-6 text-center text-xs ${t.card} ${t.muted}`}>
             Nothing has been sent yet.

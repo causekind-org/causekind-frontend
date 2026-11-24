@@ -65,6 +65,11 @@ describe("sitemap", () => {
     }
   });
 
+  it("offers no individual request page", () => {
+    // Person requests carry a first name, a city and a free-text need (F-24).
+    for (const url of urls) expect(url).not.toMatch(/\/requests\/\d+/);
+  });
+
   it("offers nothing that redirects", () => {
     // /help permanently redirects to /faq, so /faq is listed and /help is not.
     expect(urls).not.toContain("https://www.causekind.com/help");

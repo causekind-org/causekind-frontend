@@ -99,7 +99,7 @@ function Dashboard() {
   const history = apps ?? [];
 
   return (
-    <main className={s.wrap} style={{ paddingTop: 40, paddingBottom: 64, display: "flex", flexDirection: "column", gap: 32 }}>
+    <div className={s.wrap} style={{ paddingTop: 40, paddingBottom: 64, display: "flex", flexDirection: "column", gap: 32 }}>
       <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
         <h1 className={s.serif} style={{ fontSize: 36, lineHeight: 1.15 }}><UiText>Your fundraisers</UiText></h1>
         <p className={s.muted} style={{ maxWidth: 640 }}><UiText>Raise money for a need, or ask for items. You can do either without the other.</UiText></p>
@@ -210,7 +210,7 @@ function Dashboard() {
       <p className={`${s.muted} ${s.small}`} style={{ maxWidth: 720 }}>
         <UiText>Confirmed totals count only payments our server has verified. Money raised is not money available to withdraw — how and when funds reach the beneficiary is still being decided.</UiText>
       </p>
-    </main>
+    </div>
   );
 }
 

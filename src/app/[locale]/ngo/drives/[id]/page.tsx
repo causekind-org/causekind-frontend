@@ -207,7 +207,7 @@ export default function NgoDriveManagePage() {
   const primary: Attention | null = attention[0] ?? (isPublic ? { key: "preview", label: "View as donor", href: `/drives/${drive.id}`, icon: ExternalLink } : null);
 
   return (
-    <main data-ck-role-theme="ngo" className="min-h-screen bg-[var(--surface-cream,#faf8f5)] pb-28 dark:bg-zinc-950 sm:pb-16">
+    <div data-ck-role-theme="ngo" className="min-h-screen bg-[var(--surface-cream,#faf8f5)] pb-28 dark:bg-zinc-950 sm:pb-16">
       {/* Header: title, status, category, needed-by, actions */}
       <div className="border-b border-stone-200 bg-white dark:border-zinc-800 dark:bg-zinc-900">
         <div className="mx-auto max-w-6xl px-4 py-5 sm:px-6 sm:py-8">
@@ -427,6 +427,6 @@ export default function NgoDriveManagePage() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
-    </main>
+    </div>
   );
 }

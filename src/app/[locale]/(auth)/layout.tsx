@@ -4,6 +4,8 @@ import Image from "next/image";
 import { usePathname } from "next/navigation";
 import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
 import { AuthDotGrid } from "@/components/AuthDotGrid";
+// Google sign-in no longer needs a provider: src/lib/lazyGoogleLogin.ts loads
+// accounts.google.com/gsi/client only when the Google button is reached.
 
 /* ── Shared auth shell for /login and /register ──────────────────────────────
    One persistent layout so the illustration panel is a single element that
