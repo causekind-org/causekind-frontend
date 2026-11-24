@@ -3,10 +3,10 @@
 import { serverDate } from "@/lib/serverTime";
 import { useEffect, useState, useCallback, useRef } from "react";
 import { motion } from "framer-motion";
-import { useRouter } from "next/navigation";
+import { useRouter } from "@/hooks/useAppRouter";
+import dynamic from "next/dynamic";
 import { toast } from "@/lib/toast";
 import { useLocations } from "@/hooks/useLocations";
-import { getDialCodes } from "@/app/[locale]/actions/locations";
 import {
   getProfile,
   updateProfile,
@@ -26,7 +26,7 @@ import {
   type DoneeNeedProfile,
 } from "@/lib/api";
 import { useAuth } from "@/hooks/useAuth";
-import { NgoProfileView } from "./ngo-view";
+const NgoProfileView = dynamic(() => import("./ngo-view").then(m => m.NgoProfileView));
 import { FEATURES } from "@/lib/features";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -237,6 +237,7 @@ export default function ProfilePage() {
    * fact, that they had achieved nothing. Unknown has to look unknown.
    */
   const [activityLoadFailed, setActivityLoadFailed] = useState(false);
+  const [activityLoading, setActivityLoading] = useState(true);
 
   // Deliberately separate from activityLoadFailed: that flag drives the ledger
   // and Milestones, and retryActivity() refetches three unrelated endpoints.
@@ -252,7 +253,7 @@ export default function ProfilePage() {
   const [storyExpanded, setStoryExpanded] = useState(false);
 
   // Derived option lists (memoized to avoid re-building every render)
-  const { countries: countryOptions, states: stateOptions, cities: cityOptions, dialCodes: dialCodeOptions } = useLocations(countryIso, stateIso);
+  const { countries: countryOptions, states: stateOptions, cities: cityOptions, dialCodes: dialCodeOptions, dialCodesLoading } = useLocations(countryIso, stateIso);
   const maxPhoneLength = PHONE_LENGTHS[dialCountry] ?? 10;
 
   // Whether we fall back to free-text for city
@@ -279,40 +280,39 @@ export default function ProfilePage() {
     const savedAvatar = localStorage.getItem(avatarKey(user.email));
     if (savedAvatar) setAvatarDataUrl(savedAvatar);
 
-    // Set by the three in-kind catches below. A plain local, not state: it is
-    // written while the promises settle and read once in `finally`, so a setter
-    // per rejection would just queue redundant renders.
+    let cancelled = false;
+    setLoading(true);
+    setActivityLoading(true);
     let activityFailed = false;
-    let profileFailed = false;
-
-    // Load the locale country suggestion, profile, donation/campaign history, and in-kind data in parallel
-    Promise.all([
-      Promise.resolve(detectCountryCode()),
-      // Caught like the activity calls: a dead /auth/me used to reject the whole
-      // Promise.all, so a single backend hiccup also threw away the donations,
-      // listings and matches that had already come back, and left the page
-      // claiming the signed-in donor was a nameless "MEMBER".
-      getProfile().catch((): UserProfile | null => { profileFailed = true; return null; }),
-      getMyDonations().catch((): Donation[] => []),
-      getMyCampaigns().catch((): Campaign[] => []),
-      // These three feed the milestones and the ledger. Still caught — but the
-      // failure is recorded rather than discarded, so the UI can distinguish
-      // "nothing yet" from "we could not find out". Campaigns and donations are
-      // excluded on purpose: money features are flagged off (see `void campaigns`
-      // below) and neither drives a milestone in that state.
+    // Activity does not block the identity card or the account page.
+    void Promise.all([
       getMyItemRequests().catch((): ItemRequest[] => { activityFailed = true; return []; }),
       getMyItemListings({ silent401: true }).catch((): ItemListing[] => { activityFailed = true; return []; }),
       getMyMatches().catch((): ItemMatch[] => { activityFailed = true; return []; }),
-      getDialCodes(),
-    ])
-      .then(([detectedCountry, p, d, c, req, listings, matches, serverDialCodes]) => {
-        setProfile(p);
-        setDonations(d);
-        setCampaigns(c);
-        setMyRequests(req);
-        setMyListings(listings);
-        setMyMatches(matches);
+    ]).then(([req, listings, matches]) => {
+      if (cancelled) return;
+      setMyRequests(req);
+      setMyListings(listings);
+      setMyMatches(matches);
+      setActivityLoadFailed(activityFailed);
+      setActivityLoading(false);
+    });
+    if (FEATURES.money) {
+      void Promise.all([
+        getMyDonations().catch((): Donation[] => []),
+        getMyCampaigns().catch((): Campaign[] => []),
+      ]).then(([d, c]) => {
+        if (!cancelled) { setDonations(d); setCampaigns(c); }
+      });
+    }
 
+    // Only the actual profile controls identity readiness. Dial-code data is
+    // already loaded by useLocations; do not request it again in this batch.
+    const detectedCountry = detectCountryCode();
+    getProfile()
+      .then((p) => {
+        if (cancelled) return;
+        setProfile(p);
         if (!p) {
           // No profile: still resolve a sensible country so the settings form
           // and the dial-code picker are usable, then stop.
@@ -323,14 +323,6 @@ export default function ProfilePage() {
         }
 
         setFullName(p.fullName);
-
-        // Parse phone: if stored with a dial-code prefix, split it back out so
-        // the dropdown and the input each hold their own half.
-        if (p.phone) {
-          const { iso, number } = splitPhone(p.phone, serverDialCodes, detectedCountry);
-          if (iso) setDialCountry(iso);
-          setPhoneNumber(number);
-        }
 
         // Location: try to parse city as "city, stateIso, countryIso"
         if (p.city) {
@@ -360,6 +352,7 @@ export default function ProfilePage() {
         }
       })
       .catch((err) => {
+        if (cancelled) return;
         console.error(err);
         toast.error(t("errorLoadProfile"));
         const fallback = detectCountryCode();
@@ -367,11 +360,20 @@ export default function ProfilePage() {
         setDialCountry(fallback);
       })
       .finally(() => {
-        setActivityLoadFailed(activityFailed || profileFailed);
-        setLoading(false);
+        if (!cancelled) setLoading(false);
       });
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [authLoading, user, router]);
+    return () => { cancelled = true; };
+  }, [authLoading, user?.email, user?.role, router]);
+
+  // Initialise the edit form from the one shared dial-code result, independently
+  // of profile display. The edit button stays disabled until these are ready.
+  useEffect(() => {
+    if (!profile?.phone || dialCodesLoading) return;
+    const { iso, number } = splitPhone(profile.phone, dialCodeOptions, detectCountryCode());
+    if (iso) setDialCountry(iso);
+    setPhoneNumber(number);
+  }, [profile?.phone, dialCodeOptions, dialCodesLoading]);
 
   /**
    * Re-fetches only the three in-kind endpoints, for the Retry control.
@@ -532,7 +534,7 @@ export default function ProfilePage() {
   }
 
   // Loading skeleton
-  if (authLoading || loading) {
+  if (authLoading) {
     return (
       <div className="bg-[#F7F0E8] min-h-screen pb-28">
         <div className="px-5 pt-14 pb-4 flex items-center justify-between">
@@ -562,7 +564,7 @@ export default function ProfilePage() {
   // a fetch that failed). The signed-in session already carries an email and a
   // role, so fall back to those rather than to a blank name and a generic
   // "MEMBER" badge that contradicts what the user actually is.
-  const displayName = fullName || profile?.fullName || nameFromEmail(user.email);
+  const displayName = fullName || profile?.fullName || user.fullName || nameFromEmail(user.email);
   const displayEmail = profile?.email ?? user.email;
   const displayRole = humanizeRole(profile?.role || user.role || "Member");
   const initials = getInitials(displayName);
@@ -715,6 +717,7 @@ export default function ProfilePage() {
             <button
               type="button"
               onClick={() => setSettingsOpen(true)}
+              disabled={loading || dialCodesLoading}
               data-tour="account-settings"
               className={`mt-4 sm:mt-6 inline-flex items-center gap-2 rounded-xl bg-gradient-to-br px-4 py-2.5 sm:px-5 sm:py-3 text-2xs sm:text-xs font-bold uppercase tracking-wider text-[#faf8f5] shadow-lg ring-1 ring-white/20 transition-all hover:shadow-xl hover:-translate-y-0.5 ${
                 isDonee
@@ -722,7 +725,7 @@ export default function ProfilePage() {
                   : "from-[var(--ck-role-secondary)] to-[var(--ck-role-accent)] hover:from-[#e8894c] hover:to-[#c25620] shadow-[var(--ck-role-accent)]/40 hover:shadow-[var(--ck-role-accent)]/50"
               }`}
             >
-              Edit account details
+              {loading || dialCodesLoading ? "Loading account details…" : "Edit account details"}
               <ChevronDown className="w-3.5 h-3.5" />
             </button>
           </motion.div>
@@ -738,7 +741,7 @@ export default function ProfilePage() {
                     as the milestones: a confident "0 items listed" is a false
                     statement about this person, where "—" is merely unknown. */}
                 <p className="text-2xl sm:text-4xl md:text-5xl tabular-nums leading-none" style={{ fontFamily: "var(--font-source-serif-4), serif" }}>
-                  {activityLoadFailed ? "—" : stat.n}
+                  {activityLoading || activityLoadFailed ? "—" : stat.n}
                 </p>
                 <p className="text-4xs sm:text-3xs uppercase tracking-[0.16em] sm:tracking-[0.22em] text-white/40 mt-1 sm:mt-2 leading-tight">{stat.label}</p>
               </motion.div>
@@ -774,7 +777,9 @@ export default function ProfilePage() {
             <p className="text-xs text-stone-400 mt-1">Everything that has happened on your CauseKind journey, newest first.</p>
           </div>
 
-          {story.length === 0 ? (
+          {activityLoading ? (
+            <p role="status" className="py-8 text-sm text-stone-500">Loading your activity…</p>
+          ) : story.length === 0 ? (
             <div className="py-10 sm:py-14 text-center space-y-3">
               <div className={`w-11 h-11 sm:w-14 sm:h-14 ${acc.softBg} rounded-xl sm:rounded-2xl flex items-center justify-center mx-auto`}>
                 <BookOpen className={`w-6 h-6 ${acc.icon}`} />
@@ -839,7 +844,9 @@ export default function ProfilePage() {
           {/* A failed fetch must not render as "Locked". Locked is a claim about
               what this person has done; when the request never came back we do
               not know, and saying so is the only honest option. */}
-          {activityLoadFailed ? (
+          {activityLoading ? (
+            <p role="status" className="py-6 text-sm text-stone-500">Loading milestones…</p>
+          ) : activityLoadFailed ? (
             <div className="mt-4 sm:mt-6">
               <p className="text-xs text-stone-500 dark:text-zinc-400">
                 Couldn&apos;t load your activity, so your milestones aren&apos;t shown.

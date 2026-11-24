@@ -3,7 +3,7 @@
 import Script from "next/script";
 import { useCookieConsent } from "@/hooks/useCookieConsent";
 import { isInternalTraffic } from "@/lib/internalTraffic";
-import { useAfterFirstInteraction } from "@/hooks/useAfterFirstInteraction";
+import { useDeferredTracker } from "@/hooks/useDeferredTracker";
 
 const CLARITY_PROJECT_ID = "ykpnfnuc02";
 
@@ -24,12 +24,12 @@ const TRACKING_DISABLED = process.env.NEXT_PUBLIC_DISABLE_TRACKING === "true";
 export default function ClarityAnalytics() {
   const consent = useCookieConsent();
   const consentAccepted = TESTING_BYPASS || consent === "accepted";
-  const ready = useAfterFirstInteraction();
+  const ready = useDeferredTracker(5000);
 
   if (TRACKING_DISABLED || isInternalTraffic() || !consentAccepted) return null;
 
   // Queue stub at once (early window.clarity calls are kept); the tag script
-  // loads after the page has shown (on the first scroll, tap, key press or mouse move; see useAfterFirstInteraction).
+  // loads after interaction, a quiet window and a staggered idle slot.
   return (
     <>
       <Script

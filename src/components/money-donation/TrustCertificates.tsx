@@ -16,7 +16,7 @@ import styles from './TrustCredibility.module.css';
  */
 export function TrustCertificates() {
   return (
-    <section className="ck-below-nav py-12 lg:py-16" aria-label="Trust certificates">
+    <section className="py-8 md:min-h-[calc(100dvh_-_max(var(--ck-nav-h,0px),3.5rem))] md:py-12 lg:py-16" aria-label="Trust certificates">
       <div className="max-w-[90rem] mx-auto px-4 sm:px-6 lg:px-8">
         <motion.div
           initial={{ opacity: 0, y: 20 }}

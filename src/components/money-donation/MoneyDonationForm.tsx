@@ -11,7 +11,7 @@ import {
   trackDonationPaymentSubmitted,
   trackDonationCompleted,
 } from '@/lib/clarityEvents';
-import { Lock, ShieldCheck, Heart, Check, Receipt, ArrowRight } from 'lucide-react';
+import { Lock, ShieldCheck, Check, Receipt, ArrowRight } from 'lucide-react';
 import { initiateTrustDonation } from '@/lib/api';
 
 import { SearchableSelect, type SelectOption } from '@/components/profile/SearchableSelect';
@@ -343,12 +343,6 @@ export function MoneyDonationForm() {
                 <ShieldCheck className="size-4 shrink-0 text-amber-700 dark:text-amber-400" />
                 <span className="text-[0.8125rem] font-bold text-foreground">
                   Registered non-profit &middot; 80G eligible
-                </span>
-              </div>
-              <div className={trustPill}>
-                <Heart className="size-4 shrink-0 text-amber-700 dark:text-amber-400" />
-                <span className="text-[0.8125rem] font-bold text-foreground">
-                  Zero platform fees &middot; funded by supporters
                 </span>
               </div>
             </div>

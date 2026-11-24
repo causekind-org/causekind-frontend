@@ -5,7 +5,7 @@ import { LandingText, LandingAttributes } from "@/components/LandingTranslation"
 import Link from "@/components/AppLink";
 import { usePathname } from "next/navigation";
 import { useRouter } from "@/hooks/useAppRouter";
-import { Home, Megaphone, ClipboardList, User, MessageCircle, X, Mail, Phone, Plus, type LucideIcon } from "lucide-react";
+import { Home, LayoutDashboard, Megaphone, ClipboardList, User, MessageCircle, X, Mail, Phone, Plus, type LucideIcon } from "lucide-react";
 import { useState, useEffect, useLayoutEffect, useRef } from "react";
 import { useAuth } from "@/hooks/useAuth";
 import { useLocale, useTranslations } from "next-intl";
@@ -68,6 +68,12 @@ export function MobileBottomNav() {
         ? dashboardT("requestItem")
         : navT("signUp");
 
+  const role = user?.role?.replace(/^ROLE_/, "");
+  const dashboardHref = role === "SUPER_ADMIN" ? "/super-admin"
+    : role === "ADMIN" ? "/admin/dashboard"
+    : role === "NGO" || role === "NGO_PARTNER" ? "/dashboard/ngo"
+    : "/dashboard";
+
   const items: MobileNavItem[] = [
     { href: "/", icon: Home, label: t("home") },
     ...(FEATURES.money
@@ -97,15 +103,14 @@ export function MobileBottomNav() {
     // the desktop navbar and simply missing on a phone, which is where most
     // guests arrive.
     { href: "/requests", icon: ClipboardList, label: t("requests") },
+    ...(user ? [{ href: dashboardHref, icon: LayoutDashboard, label: navT("dashboard") }] : []),
     { href: user ? "/profile" : "/login", icon: User, label: t("profile") },
   ];
 
   const isActive = (href: string) => {
-    if (href === "/") return pathname === "/";
-    if (href === "/profile" || href === "/dashboard" || href === "/admin/dashboard") {
-      return pathname.startsWith("/profile") || pathname.startsWith("/dashboard") || pathname.startsWith("/admin/dashboard");
-    }
-    return pathname === href || pathname.startsWith(`${href}/`);
+    if (href === "/") return routeWithoutLocale === "/";
+    // Dashboard and Profile are separate tabs; only the matching one lights up.
+    return routeWithoutLocale === href || routeWithoutLocale.startsWith(`${href}/`);
   };
 
   const routeActiveIndex = items.findIndex((item) => isActive(item.href));

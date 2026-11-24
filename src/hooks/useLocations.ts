@@ -7,10 +7,16 @@ export function useLocations(countryIso: string, stateIso: string) {
   const [states, setStates] = useState<SelectOption[]>([]);
   const [cities, setCities] = useState<SelectOption[]>([]);
   const [dialCodes, setDialCodes] = useState<(SelectOption & { phonecode?: string })[]>([]);
+  const [dialCodesLoading, setDialCodesLoading] = useState(true);
 
   useEffect(() => {
     getCountries().then(setCountries);
-    getDialCodes().then(setDialCodes);
+    let active = true;
+    getDialCodes()
+      .then((codes) => { if (active) setDialCodes(codes); })
+      .catch(() => { if (active) setDialCodes([]); })
+      .finally(() => { if (active) setDialCodesLoading(false); });
+    return () => { active = false; };
   }, []);
 
   useEffect(() => {
@@ -29,5 +35,5 @@ export function useLocations(countryIso: string, stateIso: string) {
     }
   }, [countryIso, stateIso]);
 
-  return { countries, states, cities, dialCodes };
+  return { countries, states, cities, dialCodes, dialCodesLoading };
 }

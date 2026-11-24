@@ -18,6 +18,7 @@
  */
 
 export type BodyKind = "icon" | "title" | "desc" | "cta";
+export type TrayTiltInput = { x: number; y: number; wake: (() => void) | null };
 
 type BodySpec = {
   /** Heavier bodies answer the spring and drag more slowly. */
@@ -132,7 +133,7 @@ export function calmness(secondsSinceActive: number): number {
  * Advances one tray by `h` seconds. `accel` is the sheet's vertical
  * acceleration in px/s^2 (negative while it speeds up the screen).
  */
-export function stepTray(bodies: Body[], pairs: [number, number][], accel: number, calm: number, h: number, forces?: number[]) {
+export function stepTray(bodies: Body[], pairs: [number, number][], accel: number, calm: number, h: number, forces?: number[], tiltX = 0, tiltY = 0) {
   const T = TUNING;
   const home = T.homeWhileThrown + (1 - T.homeWhileThrown) * calm;
   const fy = forces ?? new Array<number>(bodies.length);
@@ -153,7 +154,7 @@ export function stepTray(bodies: Body[], pairs: [number, number][], accel: numbe
   for (let i = 0; i < bodies.length; i++) {
     const b = bodies[i];
     if (b.free) {
-      stepFreeBody(b, accel, calm, h);
+      stepFreeBody(b, accel, calm, h, tiltX, tiltY);
       continue;
     }
     const s = BODY[b.kind];
@@ -182,13 +183,13 @@ export function stepTray(bodies: Body[], pairs: [number, number][], accel: numbe
 /** A loose icon tile: sheet inertia, gravity, spin and rigid card walls.
  * Once the sheet is calm it gently returns home so the UI can settle and sleep.
  */
-function stepFreeBody(b: Body, accel: number, calm: number, h: number) {
+function stepFreeBody(b: Body, accel: number, calm: number, h: number, tiltX: number, tiltY: number) {
   const homePull = calm * calm;
   const shove = -accel * 0.85 * b.push;
   const gravity = 700 * (1 - homePull);
   const drag = 1.8 + 9 * homePull;
-  b.vx += (shove * (0.4 + Math.abs(b.lean) * 0.35) * Math.sign(b.twist) - 28 * homePull * b.x - drag * b.vx) * h;
-  b.vy += (shove + gravity - 28 * homePull * b.y - drag * b.vy) * h;
+  b.vx += (tiltX + shove * (0.4 + Math.abs(b.lean) * 0.35) * Math.sign(b.twist) - 28 * homePull * b.x - drag * b.vx) * h;
+  b.vy += (tiltY + shove + gravity - 28 * homePull * b.y - drag * b.vy) * h;
   b.vr += (-accel * 0.12 * b.twist - 32 * homePull * b.r - (2 + 9 * homePull) * b.vr) * h;
   b.x += b.vx * h;
   b.y += b.vy * h;
@@ -228,9 +229,9 @@ function stepFreeBody(b: Body, accel: number, calm: number, h: number) {
   }
 }
 
-export function isAtRest(bodies: Body[]): boolean {
+export function isAtRest(bodies: Body[], allowFreeOffset = false): boolean {
   const T = TUNING;
   return bodies.every((b) =>
-    Math.abs(b.x) < T.restOffset && Math.abs(b.y) < T.restOffset && Math.abs(b.r) < T.restAngle &&
+    ((allowFreeOffset && b.free) || (Math.abs(b.x) < T.restOffset && Math.abs(b.y) < T.restOffset && Math.abs(b.r) < T.restAngle)) &&
     Math.abs(b.vx) < T.restSpeed && Math.abs(b.vy) < T.restSpeed && Math.abs(b.vr) < T.restSpin);
 }

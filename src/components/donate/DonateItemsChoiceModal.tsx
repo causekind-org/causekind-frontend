@@ -10,6 +10,7 @@ import { Drawer, DrawerClose, DrawerContent, DrawerDescription, DrawerTitle } fr
 import { DesktopOption, PhoneOption, POPUP, openDonateChoice, useIsPhone, useTrayPhysics } from "@/components/donate/DonateChoice";
 import { useAuth } from "@/hooks/useAuth";
 import { registerUrlPreserving } from "@/lib/postAuthDestination";
+import { useDeviceTilt } from "@/hooks/useDeviceTilt";
 
 /**
  * "How would you like to donate?" — what "Donate items" opens for guests and
@@ -59,7 +60,8 @@ export function DonateItemsChoiceModal() {
   const [open, setOpen] = useState(false);
   const isPhone = useIsPhone();
   const [sheet, setSheet] = useState<HTMLDivElement | null>(null);
-  useTrayPhysics(sheet);
+  const tilt = useDeviceTilt(open && isPhone && sheet !== null);
+  useTrayPhysics(sheet, tilt);
   const router = useRouter();
   const opener = useRef<HTMLElement | null>(null);
   const afterClose = useRef<(() => void) | null>(null);
