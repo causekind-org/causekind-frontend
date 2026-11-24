@@ -16,8 +16,10 @@ const fmtDate = (d?: string | null) => (d ? formatISTDate(d) : null);
  * enlarge), people reached, quantity, date, location, note, NGO. The proof is public only
  * after admin approval and never includes the internal consent flag.
  */
-export function DriveProofCard({ proof, factsGridClassName = "grid-cols-2 sm:grid-cols-4" }: {
+export function DriveProofCard({ proof, factsGridClassName = "grid-cols-2 sm:grid-cols-4", bare = false }: {
   proof: NgoDriveProofResponse;
+  /** Inside another card (donor History): no own border, padding or heading. */
+  bare?: boolean;
   /** Column layout of the details grid (the NGO report uses 1/2/4). */
   factsGridClassName?: string;
 }) {
@@ -34,9 +36,9 @@ export function DriveProofCard({ proof, factsGridClassName = "grid-cols-2 sm:gri
   ];
   const [broken, setBroken] = useState<Set<string>>(() => new Set());
   return (
-    <section data-testid="drive-proof-card" className="rounded-2xl border border-ngo-200 bg-white p-5 shadow-sm dark:border-ngo-900/50 dark:bg-zinc-900">
-      <p className="text-3xs font-black uppercase tracking-[0.2em] text-ngo-700 dark:text-ngo-300"><UiText>Distribution proof</UiText>{proof.ngoName ? ` · ${proof.ngoName}` : ""}</p>
-      <dl className={`mt-3 grid gap-3 ${factsGridClassName}`}>
+    <section data-testid="drive-proof-card" className={bare ? "" : "rounded-2xl border border-ngo-200 bg-white p-5 shadow-sm dark:border-ngo-900/50 dark:bg-zinc-900"}>
+      {!bare && <p className="text-3xs font-black uppercase tracking-[0.2em] text-ngo-700 dark:text-ngo-300"><UiText>Distribution proof</UiText>{proof.ngoName ? ` · ${proof.ngoName}` : ""}</p>}
+      <dl className={`${bare ? "" : "mt-3 "}grid gap-3 ${factsGridClassName}`}>
         {facts.filter(([, , v]) => v).map(([Icon, label, value]) => (
           <div key={label} className="rounded-xl bg-ngo-50 p-3 dark:bg-ngo-950/30">
             <dt className="flex items-center gap-1.5 text-2xs font-bold uppercase tracking-wider text-ngo-800 dark:text-ngo-200"><Icon className="h-3.5 w-3.5" aria-hidden />{label}</dt>
@@ -69,8 +71,8 @@ export function DriveProofCard({ proof, factsGridClassName = "grid-cols-2 sm:gri
 }
 
 /** Loads the public proof for a drive and shows the card; nothing until it's published. */
-export function DriveProofCardLoader({ driveId }: { driveId: number }) {
+export function DriveProofCardLoader({ driveId, bare = false }: { driveId: number; bare?: boolean }) {
   const [proof, setProof] = useState<NgoDriveProofResponse | null>(null);
   useEffect(() => { getNgoDriveProof(driveId).then(setProof).catch(() => setProof(null)); }, [driveId]);
-  return proof ? <DriveProofCard proof={proof} /> : null;
+  return proof ? <DriveProofCard proof={proof} bare={bare} /> : null;
 }
