@@ -221,13 +221,6 @@ export function FinalCtaDesktop({
             </p>
           </div>
 
-          {/* ════════ COMING SOON STRIP ════════ */}
-          <div className="relative z-10 mt-5 pt-4 sm:mt-6 sm:pt-4 border-t border-stone-800 dark:border-stone-700/60 flex flex-col sm:flex-row items-center justify-between gap-3 text-left">
-            <div className="text-stone-300 text-xs sm:text-[13px] font-normal text-center sm:text-left">
-              <span>Fundraising, online donations and CSR partnerships are coming soon.</span>
-            </div>
-
-          </div>
         </div>
       </div>
     </section>

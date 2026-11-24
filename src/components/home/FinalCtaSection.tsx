@@ -217,13 +217,6 @@ function FinalCtaCard({
             </LandingText></p>
           </div>
 
-          {/* ════════ COMING SOON STRIP ════════ */}
-          <div className="relative z-10 mt-5 pt-4 sm:mt-6 sm:pt-4 border-t border-stone-800 dark:border-stone-700/60 flex flex-col sm:flex-row items-center justify-between gap-3 text-left">
-            <div className="text-stone-300 text-xs sm:text-[13px] font-normal text-center sm:text-left">
-              <span><LandingText>Fundraising, online donations and CSR partnerships are coming soon.</LandingText></span>
-            </div>
-
-          </div>
         </div>
       </div>
     </section></LandingAttributes>
@@ -358,13 +351,6 @@ function FinalCtaSplit({ variant }: { variant: "desktop" | "mobile" }) {
           </div>
         </div>
 
-        {/* ════════ BOTTOM: coming-soon announcement ════════ */}
-        <div className="mt-8 sm:mt-10 rounded-2xl border border-dashed border-stone-300! dark:border-stone-700! px-4 py-3 sm:px-5 flex flex-col sm:flex-row items-center justify-between gap-3 text-center sm:text-left">
-          <p className="inline-flex items-center gap-2 text-xs sm:text-[13px] text-stone-600 dark:text-stone-300">
-            <Sparkles className="w-4 h-4 shrink-0 text-[#B5480F] dark:text-[#F4A25B]" aria-hidden="true" />
-            <span><LandingText>Fundraising, online donations and CSR partnerships are coming soon.</LandingText></span>
-          </p>
-        </div>
       </div>
     </section></LandingAttributes>
   );
