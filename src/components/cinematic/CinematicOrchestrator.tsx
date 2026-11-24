@@ -33,7 +33,6 @@ import { loadGsap, refreshScrollTrigger } from "@/lib/gsapLoader";
 import { getLenis } from "@/components/SmoothScroll";
 import { SkipFilmButton } from "@/components/cinematic/SkipFilmButton";
 import styles from "@/sections/landing/cinematic/cinematic.module.css";
-import { cineFonts } from "@/sections/landing/cinematic/fonts";
 
 const COLLAPSED_STORAGE_KEY = "ck:landing-film:collapsed";
 // Runs as the server HTML is parsed, before the tracks below can add their
@@ -44,7 +43,7 @@ const RESTORE_COLLAPSED_SCRIPT = `try{if(sessionStorage.getItem("${COLLAPSED_STO
 function Chapter1Poster() {
   return (
     <section
-      className={`${styles.stage} ${styles.ch1} ${cineFonts}`}
+      className={`${styles.stage} ${styles.ch1}`}
       style={{ ["--hdr" as string]: "var(--ck-nav-h, 3.5rem)" } as React.CSSProperties}
     >
       <div
@@ -59,6 +58,7 @@ function Chapter1Poster() {
           </LandingText><span className="h-px w-8 bg-current max-md:hidden" />
         </p>
         <h2
+          style={{ fontFamily: 'Impact, "Arial Narrow", sans-serif' }}
           className={`${styles.display} text-[clamp(2.6rem,9vw,8.5rem)] max-md:text-[clamp(2.6rem,12.5vw,3.4rem)] text-stone-900 dark:text-stone-100`}
         ><LandingText>
           One small thing

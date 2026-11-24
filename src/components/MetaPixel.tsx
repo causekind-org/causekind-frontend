@@ -4,7 +4,7 @@ import { usePathname, useSearchParams } from "next/navigation";
 import Script from "next/script";
 import { useEffect, useRef, Suspense } from "react";
 import { useCookieConsent } from "@/hooks/useCookieConsent";
-import { isInternalTraffic } from "@/lib/internalTraffic";
+import { useInternalTraffic } from "@/hooks/useInternalTraffic";
 import { useDeferredTracker } from "@/hooks/useDeferredTracker";
 import { META_PIXEL_ID } from "@/lib/metaEvents";
 
@@ -113,6 +113,7 @@ export default function MetaPixel() {
 }
 
 function MetaPixelGate({ consentAccepted }: { consentAccepted: boolean }) {
+  const internal = useInternalTraffic();
   const searchParams = useSearchParams();
   // Latches for the tab's lifetime so the pixel doesn't unmount mid-session
   // if the visitor navigates to a URL without the preview param.
@@ -121,7 +122,7 @@ function MetaPixelGate({ consentAccepted }: { consentAccepted: boolean }) {
     previewRef.current = hasValidPreviewToken(searchParams);
   }
 
-  if (isInternalTraffic()) return null;
+  if (internal !== false) return null;
   if (!consentAccepted && !previewRef.current) return null;
   return <MetaPixelInner />;
 }

@@ -10,6 +10,7 @@ import { RakshaBandhanWordmark } from "@/components/brand/RakshaBandhanWordmark"
 import { isRakshaBandhanCampaignActive } from "@/lib/raksha-bandhan";
 import { LogoVideo } from "@/components/LogoVideo";
 import { usePathname } from "next/navigation";
+import { locales } from "@/i18n/config";
 import { useRouter } from "@/hooks/useAppRouter";
 import { useTranslations } from "next-intl";
 import { motion, AnimatePresence } from "framer-motion";
@@ -65,7 +66,7 @@ const logoLetterVariants = {
 const NGO_APPROVED_PILL_MS = 2 * 60 * 1000;
 
 /** The wordmark per size; md is the header's (small on phones). The icon scales with it via `dimensions`. */
-const WORDMARK_SIZE = { sm: "text-base", md: "text-base sm:text-xl", lg: "text-xl sm:text-2xl" } as const;
+const WORDMARK_SIZE = { sm: "text-base", md: "text-base sm:text-xl", lg: "text-xl sm:text-2xl", xl: "text-[1.625rem]" } as const;
 
 export function CauseKindLogo({ size = "md", hideIcon = false, seasonal = true }: { size?: "sm" | "md" | "lg" | "xl"; hideIcon?: boolean; seasonal?: boolean }) {
   const sizes = { sm: "text-base", md: "text-xl", lg: "text-2xl", xl: "text-[1.625rem]" };
@@ -112,7 +113,7 @@ export function CauseKindLogo({ size = "md", hideIcon = false, seasonal = true }
         /* The supplied rakhi artwork spells the whole word, so it replaces the
            wordmark outright rather than decorating it. Gated on the campaign
            switch, unlike the flag asset it is standing in for. */
-        <RakshaBandhanWordmark size={size} />
+        <RakshaBandhanWordmark size={size === "xl" ? "lg" : size} />
       ) : (
         <span className={`relative flex items-center font-extrabold ${WORDMARK_SIZE[size]}`} aria-hidden="true">
           {/* "Cause" — stagger letter reveal */}
@@ -298,7 +299,12 @@ export function SiteHeader() {
   // Resolved literals for GSAP/canvas colour props — see useRoleColors.
   const roleColors = useRoleColors();
   const router = useRouter();
-  const pathname = usePathname();
+  const rawPathname = usePathname();
+  // Rewrites expose /en/contact during prerender and /contact in the browser.
+  // Keep route-dependent markup identical on both sides of hydration.
+  const segments = rawPathname.split("/");
+  const pathname = locales.includes(segments[1] as (typeof locales)[number])
+    ? `/${segments.slice(2).join("/")}` : rawPathname;
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   // The CSS-driven menu is code-split and warmed at idle or pointer intent.
   const [StaggeredMenu, setStaggeredMenu] = useState<ComponentType<any> | null>(null);

@@ -9,6 +9,7 @@ import { Quote } from "lucide-react";
 import { FOUNDER } from "@/lib/landingConstants";
 import { useRevealOnce, stagger } from "@/components/home/mobile/primitives";
 import { galleryFonts } from "@/components/home/supportGallery/fonts";
+import { useNearViewportFonts } from "@/hooks/useNearViewportFonts";
 import fm from "./FoundersNoteMobile.module.css";
 import { usePlaceholderPreview } from "@/lib/placeholderPreview";
 import { DoneeSectionHeading, DONEE_HEADING_GAP } from "./DoneeSectionHeading";
@@ -99,6 +100,7 @@ function FounderAvatarPlaceholder({ tone = "donor" }: { tone?: FoundersNoteTone 
 function FoundersNoteMobile({ tone = "donor", seamless = false }: { tone?: FoundersNoteTone; seamless?: boolean }) {
   const isDonee = tone === "donee";
   const ref = useRevealOnce<HTMLElement>();
+  useNearViewportFonts(ref, galleryFonts);
   const doodleRef = useRevealOnce<HTMLDivElement>();
   const signoffRef = useRevealOnce<HTMLElement>();
   const ringId = useId();
@@ -108,7 +110,7 @@ function FoundersNoteMobile({ tone = "donor", seamless = false }: { tone?: Found
       id="founders-note"
       aria-label="Why We Built CauseKind"
       data-ck-role-theme={isDonee ? "donee" : undefined}
-      className={`${galleryFonts} ck-m-section relative w-full bg-[#FAF8F5] dark:bg-[#0E0C0A] ${seamless ? "" : ""}px-5${isDonee ? ` ${fm.donee}` : ""}`}
+      className={`ck-m-section relative w-full bg-[#FAF8F5] dark:bg-[#0E0C0A] ${seamless ? "" : ""}px-5${isDonee ? ` ${fm.donee}` : ""}`}
     >
       {isDonee ? (
         <FoundersDoneeHeading />
