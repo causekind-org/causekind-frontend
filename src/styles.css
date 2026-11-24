@@ -2960,6 +2960,12 @@ div:not([data-slot]):not([role="dialog"]):not([aria-modal="true"]):has(> .search
   border-left-color: #e07b3a;
 }
 
+/* Tap target: inline padding grows the link's hit box to 24px+ (Lighthouse
+   target-size) without moving the text or the line height. */
+.article-content a {
+  padding-block: 0.3em;
+}
+
 .dark .article-content a {
   color: #fb923c;
 }
@@ -3162,7 +3168,6 @@ div:not([data-slot]):not([role="dialog"]):not([aria-modal="true"]):has(> .search
       color-mix(in srgb, var(--rust-action) 90%, transparent) 50%,
       color-mix(in srgb, var(--rust-action) 55%, transparent) 80%,
       transparent 100%);
-  animation: ck-divider-sweep 6s linear infinite;
 }
 }
 
@@ -3238,7 +3243,6 @@ div:not([data-slot]):not([role="dialog"]):not([aria-modal="true"]):has(> .search
   -webkit-background-clip: text;
   background-clip: text;
   -webkit-text-fill-color: transparent;
-  animation: ck-kind-shine 4s linear 1.4s infinite;
 }
 
 /* ── CauseKind Logo SVG: all animation handled by Web Animations API in LogoSVG.tsx ── */

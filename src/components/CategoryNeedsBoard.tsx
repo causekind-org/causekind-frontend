@@ -613,7 +613,7 @@ function NeedCardCompact({
 
         {/* CTA Row */}
         <div className="flex items-center gap-2 mt-auto relative z-10">
-          <Link href={href} className="ck-need-card__cta flex-1 text-center justify-center">
+          <Link href={href} aria-label={`${ctaText}: ${title}`} className="ck-need-card__cta flex-1 text-center justify-center">
             {ctaText}
             <Sparkles className="w-3 h-3 opacity-0 group-hover:opacity-100 transition-opacity" />
           </Link>
@@ -660,7 +660,7 @@ function BoardShell({ children, count, near = false, onToggleExpand }: {
 
 function Spinner({ label }: { label: string }) {
   return (
-    <div className="flex items-center gap-2 rounded-2xl border border-stone-200/80 bg-white/50 p-6 text-sm text-stone-500 dark:border-white/10 dark:bg-white/[0.02] dark:text-stone-400">
+    <div className="flex min-h-[22rem] items-center justify-center gap-2 rounded-2xl border border-stone-200/80 bg-white/50 p-6 text-sm text-stone-500 dark:border-white/10 dark:bg-white/[0.02] dark:text-stone-400">
       <Loader2 className="w-4 h-4 animate-spin" aria-hidden="true" />
       {label}
     </div>

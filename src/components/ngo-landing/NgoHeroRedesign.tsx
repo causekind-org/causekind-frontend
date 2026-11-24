@@ -201,7 +201,7 @@ export function NgoHeroRedesign({ status }: { status: NgoStatusData }) {
       {/* Mobile (<768px): full-bleed photo with a dark bottom gradient, the same
           pattern as the guest homepage hero; text and buttons sit over it. */}
       <div data-testid="ngo-hero-mobile-photo" className="absolute inset-0 z-0 md:hidden" aria-hidden="true">
-        <Image src="/images/ngo-landing/ngo-hero-mobile.webp" alt="" fill priority sizes="100vw" className="object-cover object-[center_30%]" />
+        <Image src="/images/ngo-landing/ngo-hero-mobile.webp" alt="" fill priority fetchPriority="high" sizes="100vw" className="object-cover object-[center_30%]" />
         <div className="ck-ngo-hero-shade absolute inset-0" />
       </div>
 
@@ -321,6 +321,7 @@ export function NgoHeroRedesign({ status }: { status: NgoStatusData }) {
               ) : (
                 <Link
                   href={primaryCtaHref}
+                  prefetch={viewer === "guest" ? false : undefined}
                   className="ngo-btn-pill ngo-btn-gold ngo-btn-shine"
                 >
                   <span>{primaryCtaLabel}</span>

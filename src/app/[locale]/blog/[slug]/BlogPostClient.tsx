@@ -363,6 +363,7 @@ export default function BlogPostClient({ slug, content }: BlogPostClientProps) {
                     alt={post.heroAlt ?? post.title}
                     fill
                     priority
+                    fetchPriority="high"
                     sizes="(min-width: 1680px) 1600px, 100vw"
                     className="object-cover object-center"
                   />

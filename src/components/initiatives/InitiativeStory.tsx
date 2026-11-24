@@ -18,7 +18,7 @@ export function InitiativeStory({ initiative }: { initiative: Initiative }) {
     <div ref={ref} className="bg-background text-foreground">
       <section className="relative min-h-[calc(100svh-3.5rem)] overflow-hidden bg-stone-950 text-white">
         <motion.div style={{ y: imageY, scale }} className="absolute inset-0 origin-center">
-          <Image src={initiative.image} alt={initiative.imageAlt} fill priority sizes="100vw" className="object-cover opacity-75" />
+          <Image src={initiative.image} alt={initiative.imageAlt} fill priority fetchPriority="high" sizes="100vw" className="object-cover opacity-75" />
         </motion.div>
         <div className="absolute inset-0 bg-gradient-to-r from-stone-950/90 via-stone-950/55 to-stone-950/10" />
         <div className="relative mx-auto flex min-h-[calc(100svh-3.5rem)] max-w-7xl items-center px-4 py-16 sm:px-6 lg:px-8 lg:py-20">

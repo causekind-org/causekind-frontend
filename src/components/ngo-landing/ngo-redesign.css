@@ -68,7 +68,7 @@
   font-size: 12px;
   text-transform: uppercase;
   letter-spacing: 0.18em;
-  color: var(--ngo-accent);
+  color: #1F6B42;
   margin-bottom: 12px;
   display: block;
 }
@@ -1011,7 +1011,7 @@
   .ngo-mswipe-inner[data-active="false"] { transform: scale(0.94); opacity: 0.6; }
 }
 .ngo-mswipe-dots { display: flex; justify-content: center; gap: 6px; margin-top: 18px; }
-.ngo-mswipe-dots > span { width: 6px; height: 6px; border-radius: 9999px; background: var(--ngo-line); transition: width 0.3s ease, background-color 0.3s ease; }
+.ngo-mswipe-dots > span { width: 6px; height: 6px; border-radius: 9999px; background: var(--ngo-line); transition: background-color 0.3s ease; }
 .ngo-mswipe-dots > span[data-on="true"] { width: 22px; background: var(--ngo-accent); }
 @media (min-width: 768px) { .ngo-mswipe-dots { display: none; } }
 @media (prefers-reduced-motion: reduce) {
