@@ -34,23 +34,8 @@ import { DONATE_HREF } from "@/lib/donateScroll";
 import { isNgoRole } from "@/lib/isNgoRole";
 import { toast } from "@/lib/toast";
 import { useNgoStatus, triggerNgoLockedToast } from "@/components/ngo-landing/useNgoStatus";
-import {
-  AlertDialog,
-  AlertDialogContent,
-  AlertDialogHeader,
-  AlertDialogTitle,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogCancel,
-  AlertDialogAction,
-} from "@/components/ui/alert-dialog";
-import {
-  DropdownMenu,
-  DropdownMenuTrigger,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuSeparator,
-} from "@/components/ui/dropdown-menu";
+// Radix AlertDialog only loads on the first "Log out" click (Lighthouse, 24 Nov 2026).
+const LogoutConfirmDialog = dynamic(() => import("@/components/LogoutConfirmDialog"), { ssr: false });
 
 
 /*
@@ -386,6 +371,9 @@ export function SiteHeader() {
     wasSidebarOpen.current = isSidebarOpen;
   }, [isSidebarOpen]);
   const [logoutDialogOpen, setLogoutDialogOpen] = useState(false);
+  // Mount the dialog on first use, then keep it so its close animation runs.
+  const logoutDialogUsed = useRef(false);
+  if (logoutDialogOpen) logoutDialogUsed.current = true;
   const [profile, setProfile] = useState<UserProfile | null>(null);
   const [matches, setMatches] = useState<ItemMatch[]>([]);
   const [avatarDataUrl, setAvatarDataUrl] = useState<string | null>(null);
@@ -865,25 +853,9 @@ export function SiteHeader() {
   return (
     <>
       {/* ── Logout confirmation dialog ── */}
-      <AlertDialog open={logoutDialogOpen} onOpenChange={setLogoutDialogOpen}>
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>{t("logout.title")}</AlertDialogTitle>
-            <AlertDialogDescription>
-              {t("logout.description")}
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel>{t("logout.cancel")}</AlertDialogCancel>
-            <AlertDialogAction
-              onClick={confirmLogout}
-              className="bg-[var(--ck-role-accent)] hover:bg-[var(--ck-role-hover)] text-white border-0"
-            >
-              {t("logout.confirm")}
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
+      {logoutDialogUsed && (
+        <LogoutConfirmDialog open={logoutDialogOpen} onOpenChange={setLogoutDialogOpen} onConfirm={confirmLogout} />
+      )}
 
       <header data-calm-header
         ref={headerRef}
