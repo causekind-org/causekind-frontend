@@ -1397,6 +1397,10 @@ export type PublicItemRequest = {
   requesterType?: "PERSON" | "NGO";
   /** Registered organisation name; NGO requests only, and not a verification claim. */
   organizationName?: string | null;
+};
+
+/** Single-need public detail facts; never part of the public board DTO. */
+export type PublicItemRequestDetail = PublicItemRequest & {
   /*
    * "About this need" facts. Sent on the single-request detail
    * (getPublicItemRequest) only; null/absent on the board. Never a photo.
@@ -1412,7 +1416,7 @@ export type PublicItemRequest = {
 
 /** One open public request; rejects (404) once it is no longer publicly open. */
 export function getPublicItemRequest(id: number) {
-  return request<PublicItemRequest>(`/api/v1/item-requests/public/${id}`, { silent401: true });
+  return request<PublicItemRequestDetail>(`/api/v1/item-requests/public/${id}`, { silent401: true });
 }
 
 /** Public need board — no auth, no GPS, no distance sorting (newest first). */
