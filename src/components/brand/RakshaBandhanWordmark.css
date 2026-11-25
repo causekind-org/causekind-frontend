@@ -1,0 +1,71 @@
+/*
+  Moved out of src/styles.css (25 Nov 2026) so only the page that uses it
+  downloads it; every page used to block its first paint on these rules.
+  Unchanged otherwise.
+*/
+/* ── Raksha Bandhan: the wordmark video ───────────────────────────────────
+   The still and the video are stacked in one box, and EXACTLY ONE is ever
+   shown. That is the whole rule, and breaking it is not subtle: the first
+   version showed both, so a frozen copy of the wordmark sat under the moving
+   one, and because the animation shifts the letters as it plays the logo
+   rendered as two offset copies of itself.
+
+   The video needs no companion. Its `poster` attribute already covers both
+   states the still was wrongly helping with — before playback begins, and when
+   the codec cannot be decoded at all, where the poster simply stays put.
+
+   Doing the choice in CSS rather than with a `useReducedMotion()` hook keeps the
+   logo in the first HTML response: a hook resolves after the first paint, which
+   would flash the wrong one on every page load. */
+
+/* Motion allowed — the default. The video is the logo; the still stays out. */
+.ck-rb-wordmark-video { display: block; }
+.ck-rb-wordmark-static { display: none; }
+
+@media (prefers-reduced-motion: reduce) {
+  /* Reduced motion — the still IS the logo. The video is removed from the box
+     rather than merely paused: a paused video still holds a decode buffer, and
+     `display: none` is also the strongest declarative hint available that its
+     320 KB need not be fetched at all. */
+  .ck-rb-wordmark-video { display: none; }
+  .ck-rb-wordmark-static { display: block; }
+}
+
+/* Landing-page accents inherit the signed-in recipient palette. Fallbacks in
+   shared sections preserve their public appearance outside this page. Tokens
+   live on html while home is mounted so the header and portalled dialogs inherit. */
+[data-ck-role-theme="donee"]:has(.ck-home-page) {
+  --ck-home-accent: #1e3a60;
+  --ck-home-ink: var(--ck-role-accent);
+  --ck-home-hover: #2d5a96;
+  --ck-home-deep: #12253f;
+  --ck-home-highlight: #7fb0e8;
+  --ck-home-soft: #dce8f6;
+  --ck-home-surface: #f3f6fb;
+  --ck-home-shadow-rgb: 30,58,96;
+  --rust-action: #1e3a60;
+  --color-orange-50: #f3f6fb;
+  --color-orange-100: #e7eef8;
+  --color-orange-200: #dce8f6;
+  --color-orange-300: #a3c8f2;
+  --color-orange-400: #7fb0e8;
+  --color-orange-500: #4a7fc1;
+  --color-orange-600: #2d5a96;
+  --color-orange-700: #1e3a60;
+  --color-orange-800: #12253f;
+  --color-orange-900: #12253f;
+  --color-orange-950: #0b1929;
+}
+
+/* Shared home accents track every signed-in palette, including dark mode. */
+[data-ck-role-theme]:has(.ck-home-page) {
+  --ck-home-accent: var(--ck-role-accent);
+  --ck-home-ink: var(--ck-role-accent);
+  --ck-home-hover: var(--ck-role-hover);
+  --ck-home-deep: var(--ck-role-deep);
+  --ck-home-highlight: var(--ck-role-highlight);
+  --ck-home-soft: var(--ck-role-soft);
+  --ck-home-surface: var(--ck-role-soft);
+  --ck-home-shadow-rgb: var(--ck-role-shadow-rgb);
+  --rust-action: var(--ck-role-accent);
+}

@@ -4,7 +4,8 @@ import Link from "@/components/AppLink";
 import { ArrowRight } from "lucide-react";
 
 import type { PublicItemRequest } from "@/lib/api";
-import { daysWaiting, waitingLabel } from "@/lib/raksha-bandhan";
+import { daysWaiting, waitingLabel } from "@/lib/raksha-bandhan";
+import "./ThreadOfProtection.css";
 
 /**
  * The Raksha Bandhan hero pieces.

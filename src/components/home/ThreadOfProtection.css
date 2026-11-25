@@ -1,0 +1,27 @@
+/*
+  Moved out of src/styles.css (25 Nov 2026) so only the page that uses it
+  downloads it; every page used to block its first paint on these rules.
+  Unchanged otherwise.
+*/
+/* ── Raksha Bandhan: the waiting-need card ────────────────────────────────
+   A quiet rise, matching the hero's other entrances rather than introducing a
+   third easing.
+
+   This block used to also draw a gold thread across the hero, connecting the
+   headline to this card. It was removed: at real hero sizes the line crossed
+   the headline and the photograph rather than reading as a connection between
+   them, so it looked like a stray rule ruled through the copy. The card carries
+   the idea on its own. */
+@keyframes ck-thread-card-in {
+  from { opacity: 0; transform: translateY(10px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+.ck-thread-card {
+  animation: ck-thread-card-in .6s cubic-bezier(0.33, 1, 0.68, 1) both;
+  animation-delay: 0.5s;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .ck-thread-card { animation: none; }
+}

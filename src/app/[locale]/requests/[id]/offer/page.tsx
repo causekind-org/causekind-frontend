@@ -46,7 +46,8 @@ import {
   Users, Home, UserRound, Wallet, BadgeCheck, Siren,
 } from "lucide-react";
 
-import { UiText, useUiText } from "@/components/UiText";
+import { UiText, useUiText } from "@/components/UiText";
+import "./doneePortrait.css";
 /** Display copy for URGENCY_STYLE, translated (was a module constant). */
 function useUrgencyStyleCopy(): Record<string, { label: string; text: string; bg: string }> {
   const ui = useUiText();
