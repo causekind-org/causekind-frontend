@@ -241,8 +241,10 @@ export default function HomeClient({
   // see the guest's signup CTA flash during hydration.
   const isGuest = !isRestoring && !user;
   
-  // Resolve before mounting width-specific sections, so a phone never mounts
-  // the desktop versions just to hide them with CSS after hydration.
+  // Phones skip mounting the desktop sections once the width is known. Before
+  // that (server HTML, first render) the desktop "How it works", trust and
+  // founder sections ARE rendered and hidden below lg by CSS, so crawlers get
+  // their text in the HTML (SEO, 2026-11-25).
   const [isDesktop, setIsDesktop] = useState<boolean | null>(null);
   const mobileTailRef = useRef<HTMLDivElement>(null);
   const [mobileTailReady, setMobileTailReady] = useState(false);
@@ -334,7 +336,7 @@ export default function HomeClient({
       <SupportGallery />
 
       {/* SECTION 3 — HOW DO WE WORK */}
-      {isDesktop === true && <div className="hidden lg:block">
+      {isDesktop !== false && <div className="hidden lg:block">
         <HowItWorksDesktop />
       </div>}
       {!isRoleHome && isDesktop === false && (
@@ -344,12 +346,12 @@ export default function HomeClient({
       )}
 
       {/* SECTION 5 — CAN I TRUST YOU (Desktop) */}
-      {isDesktop === true && <div className="hidden lg:block">
+      {isDesktop !== false && <div className="hidden lg:block">
         <TrustSafetySection variant="desktop" />
       </div>}
 
       {/* FOUNDER'S NOTE (Desktop) */}
-      {isDesktop === true && <div className="hidden lg:block">
+      {isDesktop !== false && <div className="hidden lg:block">
         <FoundersNoteSection variant="desktop" />
       </div>}
 
