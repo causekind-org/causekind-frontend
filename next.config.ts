@@ -28,11 +28,10 @@ const nextConfig: NextConfig = {
     // Branded 404 for unmatched URLs (src/app/global-not-found.tsx). The root
     // layout lives under [locale], so a plain not-found.tsx never sees them.
     globalNotFound: true,
-    // CSS goes into the HTML as <style> instead of a render-blocking <link>
-    // (owner decision, Report 3, 23 Nov: about 105 KiB compressed blocked
-    // first paint for 300-600 ms on mobile). Trade-off accepted: every page's
-    // HTML carries the CSS and returning visitors cannot reuse a cached file.
-    inlineCss: true,
+    // External CSS avoids duplicating the large shared stylesheet in HTML/RSC
+    // and lets route transitions reuse it. Local audit (25 Nov) cut the
+    // document from ~338KB to ~75KB; throttled LCP varied across repeated runs.
+    inlineCss: false,
     optimizePackageImports: [
       "lucide-react",
       "framer-motion",

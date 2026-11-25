@@ -4,6 +4,14 @@
 
 @custom-variant dark (&:is(.dark *));
 
+/* Keep the first mobile screen free of layout/paint work for long sections.
+   The browser remembers each section's real size once it has been rendered. */
+@media (max-width: 1023px) {
+  #where-support-goes { content-visibility: auto; contain-intrinsic-size: auto 800px; }
+  #trust { content-visibility: auto; contain-intrinsic-size: auto 1100px; }
+  #founders-note { content-visibility: auto; contain-intrinsic-size: auto 1000px; }
+}
+
 :root {
   --radius: 0.75rem;
 

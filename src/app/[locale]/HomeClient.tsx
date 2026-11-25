@@ -244,6 +244,8 @@ export default function HomeClient({
   // Resolve before mounting width-specific sections, so a phone never mounts
   // the desktop versions just to hide them with CSS after hydration.
   const [isDesktop, setIsDesktop] = useState<boolean | null>(null);
+  const mobileTailRef = useRef<HTMLDivElement>(null);
+  const [mobileTailReady, setMobileTailReady] = useState(false);
   useEffect(() => {
     const mql = window.matchMedia("(min-width: 1024px)");
     setIsDesktop(mql.matches);
@@ -251,6 +253,20 @@ export default function HomeClient({
     mql.addEventListener("change", handler);
     return () => mql.removeEventListener("change", handler);
   }, []);
+
+  useEffect(() => {
+    if (isDesktop !== false || mobileTailReady) return;
+    const section = mobileTailRef.current;
+    if (!section) return;
+    if (typeof IntersectionObserver === "undefined") { setMobileTailReady(true); return; }
+    const observer = new IntersectionObserver((entries) => {
+      if (!entries.some(entry => entry.isIntersecting)) return;
+      setMobileTailReady(true);
+      observer.disconnect();
+    }, { rootMargin: "1000px" });
+    observer.observe(section);
+    return () => observer.disconnect();
+  }, [isDesktop, mobileTailReady]);
 
   // Show the guest tree if we are restoring, OR if they are not a donor/donee, OR if it is mobile (where the shared components are needed).
   const showGuestDesktopTree = isRestoring || !isDonorOrDonee || isDesktop === false;
@@ -504,7 +520,8 @@ export default function HomeClient({
       {/* Below 768px every section pads itself (`.ck-m-section`, with room for
           the bottom dock), so the column's own 44px gap and top pad drop out
           there rather than stacking on top of it. */}
-      {isDesktop === false && <div className="lg:hidden relative min-h-screen px-5 flex flex-col gap-11 max-md:gap-0 overflow-x-clip pt-11 max-md:pt-0 bg-[#fbf9f4] dark:bg-zinc-950">
+      {isDesktop === false && <div ref={mobileTailRef} data-mobile-tail-ready={mobileTailReady} className="lg:hidden relative min-h-screen px-5 flex flex-col gap-11 max-md:gap-0 overflow-x-clip pt-11 max-md:pt-0 bg-[#fbf9f4] dark:bg-zinc-950">
+        {mobileTailReady && <>
 
         {/* Mobile stats ticker — Dark mode fix: bg stays terracotta, text white.
 
@@ -630,6 +647,7 @@ export default function HomeClient({
           </div>
         )}
 
+        </>}
       </div>}
     </div>
   );
