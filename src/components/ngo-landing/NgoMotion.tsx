@@ -90,7 +90,8 @@ export function NgoSidewaysHeader({ eyebrow, h2, isDark = false }: { eyebrow: st
 export function NgoStackCards({ children, label }: { children: React.ReactNode; label: string }) {
   const reduce = useReducedMotion();
   const desktop = useIsDesktop();
-  if (!desktop) return <SwipeRow label={label} className="flex flex-col gap-5">{children}</SwipeRow>;
+  // Phones: the steps as a plain list (no greyed-out carousel, dots or auto-advance).
+  if (!desktop) return <SwipeRow label={label} className="flex flex-col gap-5" stack>{children}</SwipeRow>;
   return (
     <ol className="ngo-stack" aria-label={label}>
       {React.Children.map(children, (child, i) => (
@@ -161,7 +162,23 @@ export function useFocusFrame<T extends HTMLElement>(enabled: boolean) {
 
 /** Desktop: the given grid with a staggered reveal. Phones: one horizontal snap row with a focus card and
  *  dots that advances by itself every 3 s while on screen, and pauses while a finger or mouse is on it. */
-export function SwipeRow({ children, className = "", label, reveal = true }: { children: React.ReactNode; className?: string; label: string; reveal?: boolean }) {
+export function SwipeRow({ children, className = "", label, reveal = true, stack = false }: {
+  children: React.ReactNode; className?: string; label: string; reveal?: boolean;
+  /** Phones too: a plain vertical list, no carousel (no dimmed cards, no dots, no auto-advance, no reveal). */
+  stack?: boolean;
+}) {
+  const items = React.Children.toArray(children);
+  if (stack) {
+    return (
+      <div role="list" aria-label={label} className={className}>
+        {items.map((child, i) => <div key={i} role="listitem" className="h-full min-w-0">{child}</div>)}
+      </div>
+    );
+  }
+  return <SwipeCarousel className={className} label={label} reveal={reveal}>{children}</SwipeCarousel>;
+}
+
+function SwipeCarousel({ children, className = "", label, reveal = true }: { children: React.ReactNode; className?: string; label: string; reveal?: boolean }) {
   const items = React.Children.toArray(children);
   const desktop = useIsDesktop();
   const reduce = useReducedMotion();
