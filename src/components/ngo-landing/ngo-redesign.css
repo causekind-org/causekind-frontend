@@ -1104,11 +1104,13 @@
 .ck-ngo-hero-trust-sep { opacity: 0.6; }
 @media (max-width: 767px) {
   .ck-ngo-hero-shade {
+    /* Lighter: the photo stays clearly visible down to the badge; the shade only
+       deepens behind the headline and buttons (text keeps its own shadow). */
     background: linear-gradient(to bottom,
-      rgba(0, 0, 0, 0.45) 0%, rgba(0, 0, 0, 0.1) 18%, rgba(0, 0, 0, 0.15) 32%,
-      rgba(5, 32, 23, 0.82) 52%, rgba(5, 32, 23, 0.96) 68%, var(--ngo-deep, #0b3d2e) 100%) !important;
+      rgba(0, 0, 0, 0.3) 0%, rgba(0, 0, 0, 0) 16%, rgba(0, 0, 0, 0) 42%,
+      rgba(5, 32, 23, 0.45) 56%, rgba(5, 32, 23, 0.78) 72%, rgba(5, 32, 23, 0.92) 100%) !important;
   }
-  .ck-ngo-hero-title { text-shadow: 0 2px 18px rgba(0, 0, 0, 0.55); }
+  .ck-ngo-hero-title { text-shadow: 0 2px 18px rgba(0, 0, 0, 0.65), 0 1px 3px rgba(0, 0, 0, 0.45); }
   .ck-ngo-hero-title .ngo-gold-underline {
     color: #f7c95c;
     text-decoration-color: #f7c95c;
