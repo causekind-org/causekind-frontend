@@ -24,6 +24,7 @@ export const STAFF_PATH = /^(\/[a-z]{2})?\/(admin|super-admin)(\/|$)/;
 export function markInternalTraffic(gaId?: string): void {
   if (typeof document === "undefined") return;
   document.cookie = `${INTERNAL_TRAFFIC_COOKIE}=1; path=/; max-age=${60 * 60 * 24 * 365}; samesite=lax`;
+  window.dispatchEvent(new Event("ck:internal-traffic"));
   const w = window as unknown as Record<string, unknown>;
   if (gaId) w[`ga-disable-${gaId}`] = true;
   try { (w.clarity as ((...a: unknown[]) => void) | undefined)?.("stop"); } catch {}

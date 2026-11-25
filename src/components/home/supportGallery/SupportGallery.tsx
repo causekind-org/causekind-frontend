@@ -29,6 +29,7 @@ import Image from "next/image";
 
 import styles from "./SupportGallery.module.css";
 import { galleryFonts } from "./fonts";
+import { useNearViewportFonts } from "@/hooks/useNearViewportFonts";
 import { PHOTOS, SLOTS, type Photo } from "./photos";
 
 const DEPTH_PX = { back: 2.5, mid: 5, front: 11 } as const;
@@ -502,11 +503,14 @@ function Pile({
 /* ══ Section ═════════════════════════════════════════════════════════════ */
 
 export function SupportGallery({ photos = PHOTOS }: { photos?: Photo[] }) {
+  const sectionRef = useRef<HTMLElement>(null);
+  useNearViewportFonts(sectionRef, galleryFonts);
   return (
     <LandingAttributes><section
+      ref={sectionRef}
       id="where-support-goes"
       aria-label="Where does my support go? Photographs from CauseKind drives"
-      className={`${styles.section} ${galleryFonts} ck-m-section`}
+      className={`${styles.section} ck-m-section`}
     >
       <div className="relative hidden px-4 py-14 md:block lg:px-8 lg:py-20">
         <Table photos={photos} />

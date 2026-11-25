@@ -16,14 +16,28 @@ const ClickSpark = ({
   const sparksRef = useRef([]);
   const startTimeRef = useRef(null);
   const dprRef = useRef(1);
+  const enabledRef = useRef(false);
 
   useEffect(() => {
     const canvas = canvasRef.current;
     if (!canvas) return;
 
     let resizeTimeout;
+    const finePointer = window.matchMedia('(pointer: fine)');
+    const reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)');
 
     const resizeCanvas = () => {
+      enabledRef.current = finePointer.matches && !reducedMotion.matches;
+      canvas.style.display = enabledRef.current ? 'block' : 'none';
+      if (!enabledRef.current) {
+        sparksRef.current = [];
+        if (animIdRef.current) cancelAnimationFrame(animIdRef.current);
+        animatingRef.current = false;
+        animIdRef.current = null;
+        canvas.width = 0;
+        canvas.height = 0;
+        return;
+      }
       // Derive CSS size from the visual viewport (matches real on-screen
       // pixels on mobile even when browser chrome collapses/expands) and
       // set canvas.width/height (drawing-buffer resolution) from the SAME
@@ -33,7 +47,7 @@ const ClickSpark = ({
       const vv = window.visualViewport;
       const width = vv ? vv.width : window.innerWidth;
       const height = vv ? vv.height : window.innerHeight;
-      const dpr = window.devicePixelRatio || 1;
+      const dpr = Math.min(window.devicePixelRatio || 1, 2);
       dprRef.current = dpr;
 
       canvas.style.width = `${width}px`;
@@ -54,11 +68,15 @@ const ClickSpark = ({
 
     window.addEventListener('resize', handleResize);
     window.visualViewport?.addEventListener('resize', handleResize);
+    finePointer.addEventListener('change', resizeCanvas);
+    reducedMotion.addEventListener('change', resizeCanvas);
     resizeCanvas();
 
     return () => {
       window.removeEventListener('resize', handleResize);
       window.visualViewport?.removeEventListener('resize', handleResize);
+      finePointer.removeEventListener('change', resizeCanvas);
+      reducedMotion.removeEventListener('change', resizeCanvas);
       clearTimeout(resizeTimeout);
     };
   }, []);
@@ -143,6 +161,7 @@ const ClickSpark = ({
   }, []);
 
   const handleClick = e => {
+    if (!enabledRef.current) return;
     const canvas = canvasRef.current;
     if (!canvas) return;
     const x = e.clientX;

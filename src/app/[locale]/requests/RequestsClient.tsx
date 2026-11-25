@@ -1,8 +1,8 @@
 "use client";
 
-import { useEffect, useMemo, useRef, useState } from "react";
+import { memo, useEffect, useMemo, useRef, useState } from "react";
 import dynamic from "next/dynamic";
-import { useRouter } from "next/navigation";
+import { useRouter } from "@/hooks/useAppRouter";
 import { createPortal } from "react-dom";
 import { toast } from "@/lib/toast";
 import { useTranslations } from "next-intl";
@@ -97,12 +97,13 @@ function RequestsHero() {
 
   return (
     <div
-      onMouseMove={e => {
+      onPointerMove={e => {
+        if (e.pointerType !== "mouse") return;
         const r = e.currentTarget.getBoundingClientRect();
         setMouse({ x: ((e.clientX - r.left) / r.width) * 100, y: ((e.clientY - r.top) / r.height) * 100 });
       }}
-      onMouseEnter={() => setActive(true)}
-      onMouseLeave={() => setActive(false)}
+      onPointerEnter={e => { if (e.pointerType === "mouse") setActive(true); }}
+      onPointerLeave={() => setActive(false)}
       className="relative w-full min-h-[300px] sm:min-h-[360px] lg:min-h-[400px] flex items-center overflow-hidden select-none"
       style={{ background: "linear-gradient(135deg, #1c0905 0%, #2a0f07 45%, #0f1d30 100%)" }}
     >
@@ -174,6 +175,8 @@ function RequestsHero() {
 }
 
 // ── Main page ─────────────────────────────────────────────────────────────────
+
+const MemoizedRequestsHero = memo(RequestsHero);
 
 export default function RequestsClient({
   initialPublicRequests = null,
@@ -698,7 +701,7 @@ export default function RequestsClient({
     // under it swaps from skeleton to board, so there is no second H1.
     return (
       <div className="min-h-screen bg-[#f2ede7] dark:bg-zinc-950 text-stone-900 dark:text-stone-100 transition-colors duration-300">
-        <RequestsHero />
+        <MemoizedRequestsHero />
         <div id="request-directory" className="scroll-mt-20">
           <PageSkeleton>
             <CardGridSkeleton count={6} label={ui("Loading in-kind requests")} />
@@ -726,7 +729,7 @@ export default function RequestsClient({
     <div className="min-h-screen bg-[#f2ede7] dark:bg-zinc-950 text-stone-900 dark:text-stone-100 transition-colors duration-300">
 
       {/* ── Hero (unchanged) ── */}
-      <RequestsHero />
+      <MemoizedRequestsHero />
 
       {/* ── Category Directory ── */}
       <div id="request-directory" className="scroll-mt-20">

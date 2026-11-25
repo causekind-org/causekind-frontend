@@ -54,8 +54,7 @@ import { ROLE_THEME_BOOT_SCRIPT } from "@/lib/roleTheme";
 // They live behind their own `"use client"` file because `next/dynamic` with
 // `ssr: false` is rejected inside a Server Component, and this layout is one.
 import {
-  DeferredOverlays, DeferredScrollProgress, DeferredDonateChoice, DeferredDonateItemsChoice,
-  DeferredMatchActionDock, DeferredDriveNotificationDock, DeferredCompletionCelebration,
+  DeferredOverlays, DeferredScrollProgress, DeferredDonateChoice, DeferredDonateItemsChoice, DeferredMemberDocks,
 } from "@/components/DeferredOverlays";
 import { HiddenOnStaffPage, HiddenOnVolunteerPage } from "@/components/HiddenOnVolunteerPage";
 
@@ -245,10 +244,8 @@ export default async function RootLayout({
                   {/* Guests' and donors' next step after "Donate items". */}
                   <HiddenOnVolunteerPage><DeferredDonateItemsChoice /></HiddenOnVolunteerPage>
                   {/* Donor-only: a waiting match, once, until answered or closed. */}
-                  <HiddenOnVolunteerPage><DeferredMatchActionDock /></HiddenOnVolunteerPage>
-                  {/* NGO and donor drive notices: unread ones, one at a time. */}
-                  <HiddenOnVolunteerPage><DeferredDriveNotificationDock /></HiddenOnVolunteerPage>
-                  <HiddenOnVolunteerPage><DeferredCompletionCelebration /></HiddenOnVolunteerPage>
+                  {/* Match, drive-notice and completion docks: signed-in members only. */}
+                  <HiddenOnVolunteerPage><DeferredMemberDocks /></HiddenOnVolunteerPage>
                 </RoleClickSpark>
                 </NeedProfileGateProvider>
               </NotificationsProvider>

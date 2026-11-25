@@ -389,6 +389,13 @@
       transparent 100%);
 }
 
+@media (pointer: coarse), (prefers-reduced-motion: reduce) {
+  .ck-cat-divider {
+    animation: none;
+    background-position: 50% 0, 0 0;
+  }
+}
+
 /* ── View All Toggle Button ──────────────────────────────────────────── */
 
 .ck-needs-view-toggle {

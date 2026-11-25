@@ -9,6 +9,7 @@ import { ApiError, sahasCampaigns, type SahasCampaignDetail } from "@/lib/api";
 import { UiText, useUiText } from "@/components/UiText";
 import { PageSkeleton } from "@/components/skeletons";
 import { SAHAS_NAME, formatDate, serif } from "@/features/sahas/sahasUi";
+import { loadRazorpayCheckout } from "@/lib/razorpayLoader";
 
 const MIN = 1;
 const PRESETS = [101, 251, 501, 1001, 2001, 5001];
@@ -40,16 +41,7 @@ const TIPS = [0, 30, 50, 100];
 const FEE_PERCENT = 5;
 const field = "min-h-[42px] w-full rounded-lg border border-[#D9C9B8] bg-white px-3 text-[15px] font-normal focus:border-[#b04a15] focus:outline-none dark:border-zinc-700 dark:bg-zinc-950";
 
-function loadCheckout(): Promise<boolean> {
-  return new Promise((resolve) => {
-    if (window.Razorpay) return resolve(true);
-    const s = document.createElement("script");
-    s.src = "https://checkout.razorpay.com/v1/checkout.js";
-    s.onload = () => resolve(true);
-    s.onerror = () => resolve(false);
-    document.body.appendChild(s);
-  });
-}
+const loadCheckout = loadRazorpayCheckout;
 
 type Result = "pending" | "success" | "failed";
 

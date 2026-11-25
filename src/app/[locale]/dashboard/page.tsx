@@ -328,14 +328,23 @@ function DonorListingRow({
             className="text-base sm:text-lg font-bold text-stone-900 dark:text-stone-100 leading-snug group-hover:text-[var(--ck-role-accent)] transition-colors truncate"
             style={{ fontFamily: "var(--font-source-serif-4), serif" }}
           >
-            <TranslatedText text={l.title} />
+            {l.title?.trim()
+              ? <TranslatedText text={l.title} />
+              : <span className="text-stone-500 dark:text-stone-400">{isDraft ? ui("Untitled draft") : ui("Untitled item")}</span>}
           </p>
-          <div className="text-xs text-stone-400 mt-1 flex flex-wrap gap-2 items-center">
-            {l.category && <span><TranslatedText text={l.category} /></span>}
-            {l.city && <><span><UiText>&middot;</UiText></span><span><TranslatedText text={l.city} /></span></>}
-            <span><UiText>&middot;</UiText></span>
-            <span>{dt("qtyIs", { qty: l.quantity })}</span>
-            {l.condition && <><span><UiText>&middot;</UiText></span><span>{l.condition}</span></>}
+          {/* Only the parts that exist, joined by dots — no leading "·" when the category is blank. */}
+          <div className="text-xs text-stone-500 dark:text-stone-400 mt-1 flex flex-wrap gap-x-1.5 gap-y-0.5 items-center">
+            {[
+              l.category ? <TranslatedText key="c" text={l.category} /> : null,
+              l.city ? <TranslatedText key="t" text={l.city} /> : null,
+              <span key="q">{dt("qtyIs", { qty: l.quantity })}</span>,
+              l.condition ? <span key="k">{l.condition}</span> : null,
+            ].filter(Boolean).map((part, idx) => (
+              <span key={idx} className="inline-flex items-center gap-1.5">
+                {idx > 0 && <span aria-hidden="true">&middot;</span>}
+                {part}
+              </span>
+            ))}
           </div>
         </button>
 
@@ -347,7 +356,7 @@ function DonorListingRow({
           {/* Listing action buttons per spec §7.4 */}
           {isDraft && (
             <Link href={`/items/new?draft=${l.id}`}>
-              <span className="text-xs text-[var(--ck-role-accent)] font-bold hover:underline"><UiText>Continue →</UiText></span>
+              <span className="inline-flex min-h-8 items-center rounded-full bg-[var(--ck-role-accent)] px-3 text-xs font-bold text-white hover:opacity-90"><UiText>Continue →</UiText></span>
             </Link>
           )}
           {needsInfo && (
@@ -388,9 +397,9 @@ function DonorListingRow({
             <button
               onClick={() => onDelete(l.id)}
               disabled={listingActionLoading === l.id}
-              className="text-xs text-red-600 border border-red-300 rounded-full px-2.5 py-0.5 hover:bg-red-50 dark:hover:bg-red-950/20 disabled:opacity-50 font-semibold"
+              className="inline-flex min-h-8 items-center text-xs text-red-700 border border-red-200 rounded-full px-3 hover:bg-red-50 dark:hover:bg-red-950/20 disabled:opacity-50 font-semibold"
             >
-              {listingActionLoading === l.id ? "…" : isDraft ? ui("Discard draft") : ui("Delete")}
+              {listingActionLoading === l.id ? "…" : isDraft ? ui("Discard") : ui("Delete")}
             </button>
           )}
         </div>
@@ -4139,21 +4148,31 @@ export default function DashboardPage() {
        shorter than the dock and clipped the empty-state CTA. */
     <div className="min-h-screen bg-[#f7f4f0] dark:bg-zinc-950 text-stone-900 dark:text-stone-100 pb-[calc(var(--ck-bottom-chrome)+1.5rem)]">
       {/* ── Hero: greeting + live giving ledger ── */}
-      <div className="relative overflow-hidden text-white px-4 pt-6 sm:pt-12 shadow-md"
+      <div className="relative overflow-hidden rounded-b-3xl text-white px-4 pt-5 sm:rounded-none sm:pt-12 shadow-md"
         style={{ background: "linear-gradient(140deg, #1c0905 0%, #3a1d0e 55%, #241206 100%)" }}>
         <div className="pointer-events-none absolute -top-20 right-0 w-96 h-96 rounded-full bg-[var(--ck-role-secondary)]/10 blur-3xl" />
         <div className="pointer-events-none absolute bottom-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-[var(--ck-role-highlight)]/25 to-transparent" />
 
         <div className="mx-auto max-w-7xl relative z-10">
-          <div className="flex flex-col md:flex-row md:items-end md:justify-between gap-4 sm:gap-6">
-            <motion.div initial={{ opacity: 0, y: 14 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.55 }} className="min-w-0 space-y-3">
-              <div className="inline-flex items-center gap-1.5 bg-[var(--ck-role-accent)]/20 border border-[var(--ck-role-accent)]/30 rounded-full px-2.5 py-0.5 text-2xs sm:px-3 sm:py-1 sm:text-xs text-[var(--ck-role-highlight)] font-semibold">
+          <div className="flex flex-row flex-wrap items-center justify-between gap-3 sm:flex-col sm:flex-nowrap sm:items-stretch sm:gap-6 md:flex-row md:items-end">
+            <motion.div initial={{ opacity: 0, y: 14 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.55 }} className="min-w-0 flex-1 space-y-3">
+              {/* Phone (design idea 10): the identity line moves up into the dark header. */}
+              <div className="flex min-w-0 items-center gap-2.5 sm:hidden">
+                <div className="flex size-10 shrink-0 items-center justify-center rounded-full bg-white/15 text-sm font-black">
+                  {myProfile ? getInitials(myProfile.fullName) : "U"}
+                </div>
+                <div className="min-w-0">
+                  <p className="truncate text-sm font-bold">{myProfile?.fullName || user.email?.split("@")[0]}</p>
+                  <Link href="/profile" className="text-xs font-semibold text-[var(--ck-role-highlight)] hover:underline"><UiText>Edit profile</UiText></Link>
+                </div>
+              </div>
+              <div className="hidden sm:inline-flex items-center gap-1.5 bg-[var(--ck-role-accent)]/20 border border-[var(--ck-role-accent)]/30 rounded-full px-2.5 py-0.5 text-2xs sm:px-3 sm:py-1 sm:text-xs text-[var(--ck-role-highlight)] font-semibold">
                 <ShieldCheck className="w-3.5 h-3.5" /> <UiText>Verified Donor</UiText>
               </div>
-              <h1 className="text-xl sm:text-5xl tracking-tight leading-[1.05] font-bold" style={{ fontFamily: "var(--font-source-serif-4), serif" }}>
+              <h1 className="sr-only sm:not-sr-only sm:block text-xl sm:text-5xl tracking-tight leading-[1.05] font-bold" style={{ fontFamily: "var(--font-source-serif-4), serif" }}>
                 {dt("greeting", { name: myProfile?.fullName?.split(" ")[0] || user.email.split("@")[0] })}
               </h1>
-              <p className="text-white/55 text-sm max-w-md">
+              <p className="hidden sm:block text-white/55 text-sm max-w-md">
                 {itemListings.length > 0
                   ? (itemListings.some(l => ["ELIGIBLE_FOR_MATCHING", "AVAILABLE"].includes(l.status)) ? ui("Your inventory is live — we match it against verified needs as they arrive.") : ui("Your inventory is with us — list something new or resume a paused item."))
                   : ui("List an item privately and we'll match it with a verified need near you.")}
@@ -4191,7 +4210,7 @@ export default function DashboardPage() {
           </div>
 
           {/* Giving ledger — live numbers over hairline rules, no stat cards */}
-          <div data-tour="ledger" className="mt-6 sm:mt-10 grid grid-cols-3 border-t border-white/10">
+          <div data-tour="ledger" className="mt-4 sm:mt-10 grid grid-cols-3 border-t border-white/10">
             {[
               { n: itemListings.length, label: ui("items listed") },
               // Same list the Matches tab calls live, so the headline number and
@@ -4221,7 +4240,7 @@ export default function DashboardPage() {
           <MyTasksCard />
 
           {/* ── Identity line ── */}
-          <div className="flex items-center gap-3 text-xs text-stone-500 dark:text-stone-400 border-b border-stone-200/80 dark:border-zinc-800 pb-3 sm:pb-4">
+          <div className="hidden sm:flex items-center gap-3 text-xs text-stone-500 dark:text-stone-400 border-b border-stone-200/80 dark:border-zinc-800 pb-3 sm:pb-4">
             <div className="w-9 h-9 rounded-full bg-[var(--ck-role-accent)]/10 dark:bg-zinc-800 flex items-center justify-center font-black text-sm text-[var(--ck-role-accent)] shrink-0">
               {myProfile ? getInitials(myProfile.fullName) : "U"}
             </div>

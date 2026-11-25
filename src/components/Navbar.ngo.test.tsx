@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import { render, screen, waitFor, act, configure } from "@testing-library/react";
+import { render, screen, waitFor, act, configure, fireEvent } from "@testing-library/react";
 
 configure({ asyncUtilTimeout: 5000 });
 import { SiteHeader } from "./Navbar";
@@ -54,7 +54,7 @@ vi.mock("@/components/SpecularButton", () => ({
 }));
 
 vi.mock("@/components/StaggeredMenu", () => ({
-  default: () => null,
+  default: ({ open }: { open: boolean }) => <div data-testid="mobile-menu" data-open={String(open)} />,
 }));
 
 vi.mock("next-intl", () => ({
@@ -67,6 +67,21 @@ describe("Navbar - NGO Profile Button States", () => {
     vi.clearAllMocks();
     localStorage.clear();
     mockPath.current = "/";
+  });
+
+  it("has the menu ready for the first tap without waiting for a module load", () => {
+    vi.mocked(useAuth).mockReturnValue({ user: null, isLoading: false, isRestoring: false, setUser: vi.fn(), logout: vi.fn(), setAuth: vi.fn() } as never);
+    render(<SiteHeader />);
+    expect(screen.getByTestId("mobile-menu")).toHaveAttribute("data-open", "false");
+    fireEvent.click(screen.getByRole("button", { name: "nav.openMenu" }));
+    expect(screen.getByTestId("mobile-menu")).toHaveAttribute("data-open", "true");
+  });
+
+  it.each(["/contact", "/en/contact", "/hi/contact"])("keeps the active About pill on rewritten routes (%s)", (path) => {
+    mockPath.current = path;
+    vi.mocked(useAuth).mockReturnValue({ user: null, isLoading: false, isRestoring: false, setUser: vi.fn(), logout: vi.fn(), setAuth: vi.fn() } as never);
+    const { container } = render(<SiteHeader />);
+    expect(container.querySelectorAll("nav .glass-pill.absolute.inset-0")).toHaveLength(1);
   });
 
   it.each(["/ngos/hope-trust", "/drives/5", "/ngo-drive-offers/5/handover", "/ngo/drives/new", "/"])("a donor never sees the NGO status pill (%s)", async (path) => {
