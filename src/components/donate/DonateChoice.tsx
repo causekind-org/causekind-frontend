@@ -189,6 +189,8 @@ export function useTrayPhysics(sheet: HTMLElement | null, tilt?: TrayTiltInput) 
   useEffect(() => {
     if (!sheet || window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
     let frame = 0;
+    let kickoffFrame = 0;
+    let opening = true;
     let running = false;
     let last = 0;
     let sheetY = 0;
@@ -274,7 +276,7 @@ export function useTrayPhysics(sheet: HTMLElement | null, tilt?: TrayTiltInput) 
     };
 
     const start = () => {
-      if (running || document.hidden) return;
+      if (opening || running || document.hidden) return;
       running = true;
       last = performance.now();
       activeAt = last;
@@ -283,20 +285,31 @@ export function useTrayPhysics(sheet: HTMLElement | null, tilt?: TrayTiltInput) 
       accel = 0;
       frame = requestAnimationFrame(tick);
     };
+    const startFromInteraction = () => {
+      opening = false;
+      cancelAnimationFrame(kickoffFrame);
+      start();
+    };
     // Boxes change with the viewport; remeasure from rest on the next frame.
     const remeasure = () => { if (trays) { clear(); trays = null; } };
     const onVisibility = () => { if (document.hidden) stop(); else start(); };
     const wakeFromTilt = () => { activeAt = performance.now(); start(); };
     if (tilt) tilt.wake = wakeFromTilt;
 
-    sheet.addEventListener("pointerdown", start, { passive: true });
+    sheet.addEventListener("pointerdown", startFromInteraction, { passive: true });
     sheet.addEventListener("animationstart", start);
     sheet.addEventListener("transitionrun", start);
     window.addEventListener("resize", remeasure);
     document.addEventListener("visibilitychange", onVisibility);
-    start();
+    // Paint the sheet first; measuring/promoting all bodies must not block its
+    // first frame. The simulation still catches the opening slide, and a drag
+    // bypasses this short handoff immediately.
+    kickoffFrame = requestAnimationFrame(() => {
+      kickoffFrame = requestAnimationFrame(() => { opening = false; start(); });
+    });
     return () => {
-      sheet.removeEventListener("pointerdown", start);
+      cancelAnimationFrame(kickoffFrame);
+      sheet.removeEventListener("pointerdown", startFromInteraction);
       sheet.removeEventListener("animationstart", start);
       sheet.removeEventListener("transitionrun", start);
       window.removeEventListener("resize", remeasure);
