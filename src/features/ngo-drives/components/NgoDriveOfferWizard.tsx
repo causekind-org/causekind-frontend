@@ -721,8 +721,8 @@ export function NgoDriveOfferWizard({
 
   return (
     <MotionConfig reducedMotion={reduced ? "always" : "never"}>
-      <div data-ck-role-theme="ngo" data-testid="drive-give-wizard" className="flex min-h-[calc(100svh-3.5rem)] flex-col justify-between bg-[#faf8f5] -mb-[calc(var(--ck-bottom-chrome)+0.5rem)] lg:mb-0 dark:bg-zinc-950 lg:min-h-[100dvh] lg:flex-row">
-        <aside className="hidden w-[300px] shrink-0 flex-col justify-between bg-gradient-to-b from-[#0b2e22] via-[#123d2e] to-[#0f3326] p-7 text-white lg:flex">
+      <div data-ck-role-theme="ngo" data-testid="drive-give-wizard" className="flex min-h-[calc(100svh-3.5rem)] flex-col justify-between bg-[#faf8f5] -mb-[calc(var(--ck-bottom-chrome)+0.5rem)] lg:mb-0 dark:bg-zinc-950 lg:min-h-0 lg:h-[calc(100dvh-var(--ck-nav-h,0px))] lg:flex-row">
+        <aside className="hidden w-[300px] shrink-0 overflow-y-auto flex-col justify-between bg-gradient-to-b from-[#0b2e22] via-[#123d2e] to-[#0f3326] p-7 text-white lg:flex">
           <div>
             <button
               type="button"
@@ -753,7 +753,7 @@ export function NgoDriveOfferWizard({
         </aside>
 
         <form
-          className="flex min-w-0 flex-1 flex-col justify-between h-[calc(100svh-var(--ck-bottom-chrome))] lg:h-[100dvh] overflow-y-auto"
+          className="flex min-w-0 flex-1 flex-col justify-between h-[calc(100svh-var(--ck-bottom-chrome))] lg:h-[calc(100dvh-var(--ck-nav-h,0px))] overflow-y-auto"
           onSubmit={e => {
             e.preventDefault();
             if (!advancing && !submitting && !submitted) {

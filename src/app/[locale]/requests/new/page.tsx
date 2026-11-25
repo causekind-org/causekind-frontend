@@ -1634,7 +1634,7 @@ function NewRequestForm() {
           />
         </div>
 
-        <div className={`relative z-10 w-full mx-auto ${isDetailsLayout ? "max-w-[1040px] px-4 sm:px-8 lg:px-10 py-6 sm:py-8 lg:py-10" : "max-w-[860px] px-4 sm:px-10 lg:px-16 py-6 sm:py-10 lg:py-14"}`}>
+        <div className={`relative z-10 flex-1 w-full mx-auto ${isDetailsLayout ? "max-w-[1040px] px-4 sm:px-8 lg:px-10 py-6 sm:py-8 lg:py-10" : "max-w-[860px] px-4 sm:px-10 lg:px-16 py-6 sm:py-10 lg:py-14"}`}>
 
           <div className="mb-4 hidden items-center justify-between lg:flex">
             <p className="text-2xs font-bold uppercase tracking-wider text-stone-400">

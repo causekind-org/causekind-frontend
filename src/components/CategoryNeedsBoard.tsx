@@ -17,16 +17,44 @@ import {
   LayoutGrid,
   X,
   Search,
+  CalendarDays,
 } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
 import { useEntityUpdates } from "@/hooks/useEntityUpdates";
-import { getItemRequests, getPublicItemRequests, type ItemRequest, type PublicItemRequest } from "@/lib/api";
+import { getItemRequests, getPublicItemRequests, getNgoDrives, type ItemRequest, type PublicItemRequest, type PublicNgoDrive } from "@/lib/api";
+import { mapNgoCategoryToRequestCategory } from "@/features/ngo-drives/ngoDriveFilters";
 import { loginUrlFor } from "@/lib/safeRedirect";
 import { CATEGORY_VISUALS } from "@/lib/categoryVisuals";
 import AnimatedCategoryIcon from "./AnimatedCategoryIcon";
 import { useTranslations } from "next-intl";
 import { UiText, useUiText } from "@/components/UiText";
 import { useCategoryLabel } from "@/lib/categoryLabel";
+
+/** Live NGO drives in this category, as board items (same category mapping as /requests). */
+async function loadCategoryDrives(categoryName: string): Promise<NeedItem[]> {
+  const drives: PublicNgoDrive[] = await getNgoDrives().catch(() => []);
+  return drives
+    .filter((d) => d.status === "LIVE" && mapNgoCategoryToRequestCategory(d.category) === categoryName)
+    .map((d) => {
+      const urgency = (d.urgency ?? "").toUpperCase();
+      return {
+        id: `drive-${d.id}`,
+        title: d.title,
+        category: categoryName,
+        city: d.locationCity || d.locationArea || "",
+        quantity: d.stillNeeded ?? Math.max(0, d.quantityNeeded - d.quantityReceived),
+        urgent: urgency === "CRITICAL" || urgency === "URGENT",
+        detailHref: `/drives/${d.id}`,
+        offerHref: `/drives/${d.id}/give`,
+        kind: "ngo" as const,
+        who: d.ngoOrganizationName,
+        itemName: d.itemName,
+        needed: d.quantityNeeded,
+        received: d.quantityReceived,
+        neededBy: d.neededBy,
+      };
+    });
+}
 
 /**
  * Live needs for one category, GPS-scoped, presented with interactive 3D cards
@@ -39,6 +67,7 @@ export default function CategoryNeedsBoard({ categoryName }: { categoryName: str
   const category = useCategoryLabel()(categoryName);
   const { user, isLoading: authLoading } = useAuth();
   const [requests, setRequests] = useState<ItemRequest[]>([]);
+  const [drives, setDrives] = useState<NeedItem[]>([]);
   const [loading, setLoading] = useState(false);
   const [failed, setFailed] = useState(false);
   const [coords, setCoords] = useState<{ lat: number; lng: number } | null>(null);
@@ -75,10 +104,11 @@ export default function CategoryNeedsBoard({ categoryName }: { categoryName: str
     if (!isDonor) return;
     setLoading(true);
     setFailed(false);
-    getItemRequests(undefined, coords?.lat, coords?.lng)
-      .then((all) => {
+    Promise.all([getItemRequests(undefined, coords?.lat, coords?.lng), loadCategoryDrives(categoryName)])
+      .then(([all, driveItems]) => {
         const filtered = all.filter((r) => r.category === categoryName);
         setRequests(filtered);
+        setDrives(driveItems);
       })
       .catch(() => {
         setFailed(true);
@@ -151,7 +181,7 @@ export default function CategoryNeedsBoard({ categoryName }: { categoryName: str
       );
     }
 
-    if (requests.length === 0) {
+    if (requests.length === 0 && drives.length === 0) {
       return (
         <BoardShell>
           <Empty
@@ -171,10 +201,14 @@ export default function CategoryNeedsBoard({ categoryName }: { categoryName: str
       city: r.city,
       quantity: r.quantity,
       urgent: r.urgency === "CRITICAL",
-    }));
+      kind: r.requesterType === "NGO" ? "ngo" : "person",
+      who: r.requesterType === "NGO" ? r.organizationName : r.doneeName?.split(" ")[0],
+      needed: r.quantity,
+      received: r.fulfilledQuantity,
+    } as NeedItem)).concat(drives);
 
     return (
-      <BoardShell count={requests.length} near={scopedToDistance} onToggleExpand={() => setExpanded(true)}>
+      <BoardShell count={needItems.length} near={scopedToDistance} onToggleExpand={() => setExpanded(true)}>
         <NeedsDisplay
           items={needItems}
           isDonor={true}
@@ -195,6 +229,7 @@ function GuestCategoryNeeds({ categoryName }: { categoryName: string }) {
   const t = useTranslations("categoryBoard");
   const category = useCategoryLabel()(categoryName);
   const [requests, setRequests] = useState<PublicItemRequest[]>([]);
+  const [drives, setDrives] = useState<NeedItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [failed, setFailed] = useState(false);
   const [expanded, setExpanded] = useState(false);
@@ -202,10 +237,11 @@ function GuestCategoryNeeds({ categoryName }: { categoryName: string }) {
   const load = useCallback(() => {
     setLoading(true);
     setFailed(false);
-    getPublicItemRequests()
-      .then((all) => {
+    Promise.all([getPublicItemRequests(), loadCategoryDrives(categoryName)])
+      .then(([all, driveItems]) => {
         const filtered = all.filter((r) => r.category === categoryName);
         setRequests(filtered);
+        setDrives(driveItems);
       })
       .catch(() => {
         setFailed(true);
@@ -230,7 +266,7 @@ function GuestCategoryNeeds({ categoryName }: { categoryName: string }) {
     );
   }
 
-  if (requests.length === 0) {
+  if (requests.length === 0 && drives.length === 0) {
     return (
       <BoardShell>
         <Empty
@@ -244,7 +280,7 @@ function GuestCategoryNeeds({ categoryName }: { categoryName: string }) {
   }
 
   return (
-    <BoardShell count={requests.length} onToggleExpand={() => setExpanded(true)}>
+    <BoardShell count={requests.length + drives.length} onToggleExpand={() => setExpanded(true)}>
       <NeedsDisplay
         items={requests.map((r) => ({
           id: r.id,
@@ -253,7 +289,9 @@ function GuestCategoryNeeds({ categoryName }: { categoryName: string }) {
           city: r.city,
           quantity: r.quantity,
           urgent: r.urgency === "CRITICAL" || r.emergency,
-        }))}
+          kind: r.requesterType === "NGO" ? "ngo" : "person",
+          who: r.requesterType === "NGO" ? r.organizationName : r.doneeFirstName,
+        } as NeedItem)).concat(drives)}
         isDonor={false}
         expanded={expanded}
         onClose={() => setExpanded(false)}
@@ -272,6 +310,17 @@ type NeedItem = {
   city: string;
   quantity: number;
   urgent: boolean;
+  /** Set for NGO drives; donee requests use /requests/{id}. */
+  detailHref?: string;
+  offerHref?: string;
+  /** Who asked: an NGO (drive or NGO request) or an individual donee. */
+  kind?: "ngo" | "person";
+  /** NGO name, or the donee's first name. */
+  who?: string | null;
+  itemName?: string | null;
+  needed?: number;
+  received?: number;
+  neededBy?: string | null;
 };
 
 function NeedsDisplay({
@@ -425,8 +474,10 @@ function NeedsModal({
                     city={r.city}
                     quantity={r.quantity}
                     urgent={r.urgent}
-                    href={isDonor ? `/requests/${r.id}/offer` : loginUrlFor(`/requests/${r.id}/offer`)}
-                    ctaText={isDonor ? ui("Offer Item") : ui("Log in to Offer")}
+                    detailHref={r.detailHref}
+                    need={r}
+                    href={(o => isDonor ? o : loginUrlFor(o))(r.offerHref ?? `/requests/${r.id}/offer`)}
+                    ctaText={r.offerHref ? (isDonor ? ui("Give to this drive") : ui("Log in to give")) : (isDonor ? ui("Offer Item") : ui("Log in to Offer"))}
                   />
                 </motion.div>
               ))}
@@ -527,8 +578,10 @@ function NeedsSlider({
                 city={r.city}
                 quantity={r.quantity}
                 urgent={r.urgent}
-                href={isDonor ? `/requests/${r.id}/offer` : loginUrlFor(`/requests/${r.id}/offer`)}
-                ctaText={isDonor ? ui("Offer Item") : ui("Log in to Offer")}
+                detailHref={r.detailHref}
+                need={r}
+                href={(o => isDonor ? o : loginUrlFor(o))(r.offerHref ?? `/requests/${r.id}/offer`)}
+                ctaText={r.offerHref ? (isDonor ? ui("Give to this drive") : ui("Log in to give")) : (isDonor ? ui("Offer Item") : ui("Log in to Offer"))}
               />
             </motion.div>
           ))}
@@ -547,8 +600,12 @@ function NeedCardCompact({
   urgent,
   href,
   ctaText,
+  detailHref,
+  need,
 }: {
   id?: string | number;
+  detailHref?: string;
+  need?: NeedItem;
   title: string;
   category: string;
   city: string;
@@ -600,6 +657,39 @@ function NeedCardCompact({
           {title}
         </p>
 
+        {need?.kind && (
+          <div className="mb-2 flex flex-wrap items-center gap-2 text-xs">
+            <span className={need.kind === "ngo"
+              ? "rounded-full border border-emerald-200 bg-emerald-50 px-2 py-0.5 font-bold text-emerald-700 dark:border-emerald-500/30 dark:bg-emerald-500/15 dark:text-emerald-300"
+              : "rounded-full border border-blue-200 bg-blue-50 px-2 py-0.5 font-bold text-blue-700 dark:border-blue-500/30 dark:bg-blue-500/15 dark:text-blue-300"}>
+              {need.kind === "ngo" ? <UiText>NGO</UiText> : <UiText>Individual</UiText>}
+            </span>
+            {need.who && <span className="truncate text-stone-600 dark:text-stone-300">{need.who}</span>}
+          </div>
+        )}
+        {need?.itemName && (
+          <p className="mb-1 text-xs text-stone-500 dark:text-stone-400">
+            <UiText>Item:</UiText> <span className="font-semibold text-stone-700 dark:text-stone-200">{need.itemName}</span>
+          </p>
+        )}
+        {need?.needed != null && need.needed > 0 && need.received != null && (
+          <div className="mb-2">
+            <div className="h-1.5 w-full overflow-hidden rounded-full bg-stone-200 dark:bg-stone-700">
+              <div className={`h-full rounded-full ${need.kind === "ngo" ? "bg-emerald-600" : "bg-blue-600"}`}
+                style={{ width: `${Math.min(100, (need.received / need.needed) * 100)}%` }} />
+            </div>
+            <p className="mt-1 text-xs text-stone-500 dark:text-stone-400">
+              {need.received} / {need.needed} <UiText>received</UiText>
+            </p>
+          </div>
+        )}
+        {need?.neededBy && (
+          <p className="mb-2 flex items-center gap-1 text-xs text-stone-500 dark:text-stone-400">
+            <CalendarDays className="h-3 w-3" aria-hidden="true" />
+            <UiText>Needed by</UiText> {new Date(need.neededBy).toLocaleDateString("en-IN")}
+          </p>
+        )}
+
         {/* Meta row: city + qty */}
         <div className="flex items-center gap-2 mt-auto pb-4">
           <span className="ck-need-card__chip">
@@ -621,7 +711,7 @@ function NeedCardCompact({
       </div>
       {/* The card body opens the request's own page (a real, crawlable link);
           the CTA button above still goes straight to the offer flow. */}
-      <Link href={id != null ? `/requests/${id}` : href} className="absolute inset-0 z-0" aria-label={id != null ? title : t("offerFor", { title })} />
+      <Link href={detailHref ?? (id != null ? `/requests/${id}` : href)} className="absolute inset-0 z-0" aria-label={id != null ? title : t("offerFor", { title })} />
     </div>
   );
 }

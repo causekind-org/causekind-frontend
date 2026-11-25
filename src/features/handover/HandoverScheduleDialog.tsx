@@ -1,5 +1,6 @@
 "use client";
 
+import { DateTimePicker } from "@/components/ui/date-time-picker";
 import { useEffect, useState } from "react";
 import { Loader2 } from "lucide-react";
 import {
@@ -14,6 +15,7 @@ import {
 import { HandoverLocationField } from "./HandoverLocationField";
 import { formatISTDate } from "@/lib/formatIST";
 import { handoverScope, type HandoverViewModel } from "./model";
+import { formatTime12 } from "@/components/ui/time-picker";
 import {
   handoverPrimary, handoverSecondary, handoverInput, handoverLabel,
   handoverSelectTrigger, handoverSelectItem,
@@ -60,7 +62,7 @@ const hhmm = (t?: string | null) => (t ? t.slice(0, 5) : "");
 /** "on Mon, Wed between 18:11 and 19:11". */
 export function driveWindowText(d: DriveWindow): string {
   const days = dayCodes(d).map(c => DAY_WORDS[c] ?? c).join(", ");
-  const hours = d.availableFrom && d.availableTo ? `between ${hhmm(d.availableFrom)} and ${hhmm(d.availableTo)}` : "";
+  const hours = d.availableFrom && d.availableTo ? `between ${formatTime12(d.availableFrom)} and ${formatTime12(d.availableTo)}` : "";
   return [days ? `on ${days}` : "", hours].filter(Boolean).join(" ") || "at a time you agree";
 }
 
@@ -85,7 +87,7 @@ export function driveSlotProblem(d: DriveWindow, when: string, now = new Date())
   const codes = dayCodes(d);
   if (codes.length && !codes.includes(DAY_CODES[weekday])) return `The NGO receives items on ${codes.map(c => DAY_WORDS[c] ?? c).join(", ")} only.`;
   if (d.availableFrom && d.availableTo && (t < hhmm(d.availableFrom) || t > hhmm(d.availableTo))) {
-    return `Pick a time between ${hhmm(d.availableFrom)} and ${hhmm(d.availableTo)}.`;
+    return `Pick a time between ${formatTime12(d.availableFrom)} and ${formatTime12(d.availableTo)}.`;
   }
   return null;
 }
@@ -256,11 +258,10 @@ export function HandoverScheduleDialog({
             </label>
           )}
           <Field label={isCourier ? "When will you dispatch?" : "When?"} htmlFor="ho-when" required>
-            <Input
+            <DateTimePicker
               id="ho-when"
-              type="datetime-local"
               value={when}
-              onChange={(e) => setWhen(e.target.value)}
+              onChange={setWhen}
               disabled={busy}
               className={handoverInput}
               min={vm.flow === "NGO_OFFER" ? istWallTime() : undefined}

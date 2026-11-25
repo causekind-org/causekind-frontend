@@ -13,6 +13,7 @@ import { type DriveHandoverRole } from "./DriveHandover";
 import { DriveHandoverHub } from "./DriveHandoverHub";
 import { DriveLoadError, HandoverNotFound } from "./DriveLoadState";
 import { errorMessage, isForbidden, isNotFound } from "../driveGiveState";
+import { toast } from "sonner";
 import HandoverCelebration from "@/components/handover/HandoverCelebration";
 import { claimCelebration, NGO_DRIVE_OFFER_DONE } from "@/lib/celebration";
 
@@ -47,12 +48,28 @@ export function DriveHandoverPage({ role, offerId, driveId }: { role: DriveHando
   }, [authLoading, user, router, load]);
   useEntityUpdates(["NGO_DRIVE_OFFER", "NGO_DRIVE"], () => { invalidateRequestCache(); void load(); });
 
+  // The thank-you celebration is for the donor who gave; the NGO only received.
+  // The NGO gets a quiet "received" note instead, once per handover.
   useEffect(() => {
     if (!offer || !NGO_DRIVE_OFFER_DONE.has(offer.status) || !offerId) return;
-    if (claimCelebration("NGO_DRIVE_OFFER", offerId, user?.email)) {
-      setCelebrate(true);
-    }
-  }, [offer, offerId, user?.email]);
+    if (!claimCelebration("NGO_DRIVE_OFFER", offerId, user?.email)) return;
+    if (role !== "NGO") { setCelebrate(true); return; }
+    const qty = handover?.confirmation?.ngoConfirmedQty ?? offer.quantity ?? 0;
+    // "1 set" / "20 sets": lower-case unit, singular for one.
+    const base = offer.driveUnit ? offer.driveUnit.replaceAll("_", " ").toLowerCase() : "items";
+    const unit = qty === 1 ? base.replace(/(?<![se])s$/, "") : base;
+    toast.success("Items received", {
+      description: `${qty} ${unit} added to ${offer.driveTitle || "your drive"}.`,
+      action: offer.driveId ? { label: "View drive", onClick: () => router.push(`/ngo/drives/${offer.driveId}`) } : undefined,
+      classNames: {
+        toast: "!rounded-2xl !border-emerald-200 !bg-white !text-stone-900 !shadow-lg dark:!border-emerald-900 dark:!bg-zinc-900 dark:!text-stone-100",
+        title: "!font-semibold !text-emerald-800 dark:!text-emerald-300",
+        description: "!text-stone-600 dark:!text-stone-300",
+        icon: "!text-emerald-600",
+        actionButton: "!rounded-full !bg-emerald-700 !px-4 !font-semibold !text-white hover:!bg-emerald-800",
+      },
+    });
+  }, [role, offer, handover, offerId, user?.email, router]);
 
   if (authLoading || !user || state === "loading") return <PageSkeleton><div className="h-96" /></PageSkeleton>;
   if (state === "not-found") {

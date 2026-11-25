@@ -52,6 +52,8 @@ function Shell({ children }: { children: React.ReactNode }) {
 export function VolunteerHandoverPage() {
   const tokenRef = useRef<string | null>(null);
   const ngoNameRef = useRef<string | null>(null);
+  /** Opened from the email's "Get directions" link: forward to Maps only once the token checks out. */
+  const directionsRef = useRef(false);
   const [view, setView] = useState<VolunteerHandoverView | null>(null);
   const [dead, setDead] = useState<string | null>(null);
   const [loadError, setLoadError] = useState(false);
@@ -70,6 +72,10 @@ export function VolunteerHandoverPage() {
     try {
       const next = await volunteerHandover.details(token);
       ngoNameRef.current = next.ngoName;
+      if (directionsRef.current) {
+        directionsRef.current = false;
+        if (next.directionsUrl && !next.completed) { window.location.replace(next.directionsUrl); return; }
+      }
       setView(next);
       setLoadError(false);
     } catch (e) {
@@ -79,6 +85,7 @@ export function VolunteerHandoverPage() {
   }, [fail]);
 
   useEffect(() => {
+    if (new URLSearchParams(window.location.search).get("go") === "directions") directionsRef.current = true;
     if (!tokenRef.current) tokenRef.current = readToken();
     if (!tokenRef.current) { fail(null); return; }
     void load();

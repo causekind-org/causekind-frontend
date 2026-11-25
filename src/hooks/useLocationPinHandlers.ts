@@ -26,8 +26,12 @@ type LatLng = { lat: number; lng: number };
  * `commit` stores a new model (state + autosave), `clearPinError` drops the
  * pin's error once a pin is placed.
  */
-export function useLocationPinHandlers<M extends LocationFields>({ modelRef, commit, clearPinError, profileCenter }: {
+export function useLocationPinHandlers<M extends LocationFields>({ modelRef, commit, clearPinError, profileCenter, onlyCountry, onOutsideCountry }: {
   modelRef: MutableRefObject<M>;
+  /** ISO code a pin must fall in; a pin elsewhere is undone. */
+  onlyCountry?: string;
+  /** Called when a pin is undone for falling outside `onlyCountry`. */
+  onOutsideCountry?: (countryIso: string) => void;
   commit: (next: M) => void;
   clearPinError: () => void;
   profileCenter: LatLng | null;
@@ -37,11 +41,19 @@ export function useLocationPinHandlers<M extends LocationFields>({ modelRef, com
   const lookup = { running: pinAddress.running, error: pinAddress.error, whenIdle: pinAddress.whenIdle };
 
   const handlePin = useCallback((lat: number, lng: number, opts?: { onlyEmpty?: boolean }) => {
-    const placed = { ...modelRef.current, latitude: lat, longitude: lng };
+    const before = modelRef.current;
+    const placed = { ...before, latitude: lat, longitude: lng };
     modelRef.current = placed;
     commit(placed);
     clearPinError();
     lookupPin(lat, lng, found => {
+      if (onlyCountry && found.countryIso && found.countryIso !== onlyCountry) {
+        // Outside the allowed country (e.g. a VPN location): put the pin back.
+        modelRef.current = before;
+        commit(before);
+        onOutsideCountry?.(found.countryIso);
+        return;
+      }
       const prev = modelRef.current;
       const next = { ...prev };
       const fields = {
@@ -65,7 +77,7 @@ export function useLocationPinHandlers<M extends LocationFields>({ modelRef, com
       modelRef.current = next;
       commit(next);
     });
-  }, [modelRef, commit, clearPinError, lookupPin]);
+  }, [modelRef, commit, clearPinError, lookupPin, onlyCountry, onOutsideCountry]);
 
   /**
    * The person typed an address: move the pin to it. Only with no map does an
