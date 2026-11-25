@@ -87,6 +87,7 @@ export default function NgoDashboardPage() {
     documents,
     myProfile,
     error: statusError,
+    isLoading: statusLoading,
   } = useNgoDashboardData();
 
   useEffect(() => {
@@ -95,7 +96,9 @@ export default function NgoDashboardPage() {
     }
   }, [isVerified]);
 
-  if (authLoading || status === "loading" || !user || (!isNgoRole(user.role))) {
+  // statusLoading is only true when there's no last-known status to show (first visit in this tab):
+  // a skeleton instead of "Profile incomplete / Your Organization / 0" before the real data.
+  if (authLoading || statusLoading || status === "loading" || !user || (!isNgoRole(user.role))) {
     return (
       <PageSkeleton>
         <DashboardSkeleton tiles={3} label="Loading your dashboard" />
@@ -105,7 +108,9 @@ export default function NgoDashboardPage() {
 
   const resolvedFulfilledCount = requests.filter(r => ["FULFILLED", "FULLY_FULFILLED"].includes(r.status)).length;
   const resolvedActiveMatches = matches.filter(m => !["FULFILLED", "CANCELLED", "REJECTED", "FAILED"].includes(m.status)).length;
-  const resolvedRequestsCount = requests.length;
+  // "Drives started" = drives an admin approved (went live). Drafts never reach this list, and
+  // drives still in review, sent back or rejected were never started.
+  const resolvedRequestsCount = requests.filter(r => !["PENDING_REVIEW", "CHANGES_REQUESTED", "REJECTED"].includes(r.status)).length;
 
 
   const showSections = isVerified;

@@ -43,7 +43,7 @@ describe("NGO success stories", () => {
     expect(cards[0]).toHaveTextContent("40 people reached");
     expect(cards[0]).toHaveTextContent("35 blankets distributed");
     expect(cards[0]).toHaveTextContent("12 Oct 2026");
-    expect(cards[0]).toHaveAttribute("href", "/drives/1/proof");
+    expect(cards[0]).toHaveAttribute("href", "/drives/1/proof?from=home");
     expect(cards[0]).toHaveTextContent("Pune");
     expect(cards[0]).toHaveTextContent("Handed out at the village hall.");
     expect(screen.getByRole("img", { name: "Distribution proof for Winter blankets" })).toHaveAttribute("src", "https://s3.example/a.jpg?sig=1");

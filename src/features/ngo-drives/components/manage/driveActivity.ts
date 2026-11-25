@@ -74,3 +74,14 @@ export function driveSummaryParts(drive: NgoDrive, offers: NgoDriveOfferResponse
   if (isProofDue(drive)) parts.push({ filter: "proof", label: "proof pending", href: activityHref("proof", drive.id), count: 1 });
   return parts;
 }
+
+/**
+ * Changes the dashboard's ?tab= / ?filter= / ?drive= on the spot. Next.js syncs native
+ * history calls into useSearchParams, so the tab switches on the first click with no
+ * server request (router.replace refetched the page and felt dead on slow networks).
+ */
+export function setDashboardQuery(q: URLSearchParams) {
+  if (typeof window === "undefined") return;
+  const qs = q.toString();
+  window.history.replaceState(window.history.state, "", `${window.location.pathname}${qs ? `?${qs}` : ""}`);
+}

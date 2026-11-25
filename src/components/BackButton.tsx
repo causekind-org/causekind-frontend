@@ -2,6 +2,7 @@
 
 import { useRouter } from "next/navigation";
 import { ArrowLeft } from "lucide-react";
+import { useAuth } from "@/hooks/useAuth";
 
 /** The home page's NGO drives section: where a visitor without history goes back to. */
 export const DRIVES_SECTION_HREF = "/#ngo-drives-section";
@@ -16,10 +17,15 @@ export function BackButton({ fallbackHref = DRIVES_SECTION_HREF, label = "Back",
   onDark?: boolean;
 }) {
   const router = useRouter();
+  const { user } = useAuth();
+  // An NGO's home is its own landing, which has no drives section: "/#ngo-drives-section" just
+  // left a stray hash in the URL. Send NGOs to "/" instead.
+  const isNgo = user?.role === "NGO" || user?.role === "NGO_PARTNER";
+  const fallback = isNgo && fallbackHref === DRIVES_SECTION_HREF ? "/" : fallbackHref;
   function goBack() {
     const fromSite = typeof document !== "undefined" && document.referrer.startsWith(window.location.origin);
     if (fromSite && window.history.length > 1) router.back();
-    else router.push(fallbackHref);
+    else router.push(fallback);
   }
   return (
     <button type="button" onClick={goBack} data-testid="back-button"

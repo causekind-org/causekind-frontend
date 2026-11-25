@@ -1,11 +1,11 @@
 "use client";
 
 import Link from "next/link";
-import { useRouter, useSearchParams } from "next/navigation";
+import { useSearchParams } from "next/navigation";
 import { Loader2 } from "lucide-react";
 import type { NgoDrive } from "@/lib/api";
 import { Chip } from "./YourDrivesTab";
-import { isHandover, isOfferToReview, isProofDue, type ActivityFilter } from "./driveActivity";
+import { isHandover, isOfferToReview, isProofDue, type ActivityFilter, setDashboardQuery } from "./driveActivity";
 import { OffersPanel } from "./OffersPanel";
 import { HandoversPanel } from "./HandoversPanel";
 import { useDriveCopy } from "@/features/ngo-drives/driveCopy";
@@ -21,7 +21,6 @@ export function ActivityTab({ drives, offers, loading, error, reload, onDrivesCh
 }) {
   const ui = useUiText();
   const dc = useDriveCopy();
-  const router = useRouter();
   const params = useSearchParams();
   const filterParam = params.get("filter");
   // No ?filter=: all three rows. A chip (or an old ?filter= link) shows only its row.
@@ -41,7 +40,7 @@ export function ActivityTab({ drives, offers, loading, error, reload, onDrivesCh
     if (next.filter) q.set("filter", next.filter);
     if (next.filter === null) q.delete("filter");
     if (next.drive === null) q.delete("drive");
-    router.replace(`/dashboard/ngo?${q.toString()}`, { scroll: false });
+    setDashboardQuery(q);
   }
   const refresh = async () => { await reload(); onDrivesChanged(); };
 

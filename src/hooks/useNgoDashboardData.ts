@@ -1,15 +1,24 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useLayoutEffect } from "react";
+import { useAuth } from "@/hooks/useAuth";
+import { readNgoStatus, writeNgoStatus } from "@/lib/ngoStatusCache";
 import { useNgoStatus } from "@/components/ngo-landing/useNgoStatus";
 import { getMyNgoDrives, getMyProfile, type NgoDrive, type UserProfile } from "@/lib/api";
 import { useEntityUpdates } from "@/hooks/useEntityUpdates";
 
 export function useNgoDashboardData() {
   const ngoStatus = useNgoStatus();
-  
-  const [requests, setRequests] = useState<NgoDrive[]>([]);
-  const [loadingRequests, setLoadingRequests] = useState(true);
+  const { user } = useAuth();
+  const accountKey = user ? String(user.id ?? user.email ?? "") : "";
+
+  // Start from the last-known drive list (this tab) so counts don't read 0 on every refresh.
+  const [requests, setRequests] = useState<NgoDrive[]>(() => (readNgoStatus(accountKey)?.drives as NgoDrive[] | undefined) ?? []);
+  const [loadingRequests, setLoadingRequests] = useState(() => !readNgoStatus(accountKey)?.drives);
+  useLayoutEffect(() => {
+    const cached = readNgoStatus(accountKey)?.drives as NgoDrive[] | undefined;
+    if (cached) { setRequests((prev) => (prev.length ? prev : cached)); setLoadingRequests(false); }
+  }, [accountKey]);
   const [errorRequests, setErrorRequests] = useState(false);
   const [myProfile, setMyProfile] = useState<UserProfile | null>(null);
 
@@ -22,19 +31,21 @@ export function useNgoDashboardData() {
       return;
     }
 
-    if (!silent) setLoadingRequests(true);
+    const cachedDrives = readNgoStatus(accountKey)?.drives;
+    if (!silent && !cachedDrives) setLoadingRequests(true);
     setErrorRequests(false);
     try {
       const res = await getMyNgoDrives();
       setRequests(res);
+      writeNgoStatus(accountKey, { drives: res });
       setErrorRequests(false);
     } catch (e) {
       // A failed background refresh keeps what's on screen; only a first load shows the error.
-      if (!silent) { setRequests([]); setErrorRequests(true); }
+      if (!silent && !cachedDrives) { setRequests([]); setErrorRequests(true); }
     } finally {
       setLoadingRequests(false);
     }
-  }, []);
+  }, [accountKey]);
 
   const fetchProfile = useCallback(async () => {
     try {

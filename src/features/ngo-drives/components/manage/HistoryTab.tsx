@@ -24,6 +24,7 @@ export function HistoryTab({ drives, offers }: { drives: NgoDrive[]; offers: Dri
   const needle = q.trim().toLowerCase();
   const hit = (...parts: (string | null | undefined)[]) => !needle || parts.some((p) => (p ?? "").toLowerCase().includes(needle));
   const shownDrives = drives.filter((d) => hit(d.title, d.itemName, d.category, d.beneficiaryGroup));
+  const shownProofs = shownDrives.filter((d) => d.status === "FULFILLED");
   const shownOffers = offers.filter(isDeclinedOffer).filter((o) => hit(o.drive.title, o.ngoDeclineReason, OFFER_ENDING[o.status]));
 
   return (
@@ -35,6 +36,27 @@ export function HistoryTab({ drives, offers }: { drives: NgoDrive[]; offers: Dri
           className="min-h-11 w-full rounded-xl border border-stone-200 bg-white pl-9 pr-3 text-sm dark:border-zinc-700 dark:bg-zinc-900" />
       </label>
 
+      {/* Proof reports of fulfilled drives: what was distributed, with photos. */}
+      <section aria-labelledby="history-proofs" className="space-y-3">
+        <h3 id="history-proofs" className="text-3xs font-black uppercase tracking-[0.24em] text-ngo-700 dark:text-ngo-400"><UiText>Distribution proofs</UiText></h3>
+        {shownProofs.length === 0 ? <p className="text-sm text-stone-500">{needle ? ui("No proofs match.") : ui("No approved proofs yet.")}</p> : (
+          <ul className="space-y-3">
+            {shownProofs.map((d) => (
+              <li key={d.id} data-testid="history-proof" className="flex flex-col justify-between gap-3 rounded-xl border border-stone-200 bg-white p-4 dark:border-zinc-800 dark:bg-zinc-900 sm:flex-row sm:items-center">
+                <div className="min-w-0">
+                  <h4 className="font-bold text-stone-900 dark:text-stone-100 ck-user-text">{d.title}</h4>
+                  <p className="text-sm text-stone-600 dark:text-stone-400">
+                    {df("qtyUnitOfItem", { qty: d.quantityReceived, unit: humanize(d.unit), item: d.itemName ?? "" })}{d.beneficiariesReached ? ` · ${df("peopleReached", { count: d.beneficiariesReached })}` : ""}
+                  </p>
+                </div>
+                <Link href={`/ngo/drives/${d.id}/report`} className="inline-flex min-h-10 shrink-0 items-center justify-center rounded-lg bg-ngo-700 px-4 text-sm font-bold text-white hover:bg-ngo-800"><UiText>View proof</UiText></Link>
+              </li>
+            ))}
+          </ul>
+        )}
+      </section>
+
+      {/* The whole drive as it was asked for: need, story, beneficiaries, handover details, donors. */}
       <section aria-labelledby="history-drives" className="space-y-3">
         <h3 id="history-drives" className="text-3xs font-black uppercase tracking-[0.24em] text-ngo-700 dark:text-ngo-400"><UiText>Completed and ended drives</UiText></h3>
         {shownDrives.length === 0 ? <p className="text-sm text-stone-500">{needle ? ui("No drives match.") : ui("No completed drives yet.")}</p> : (
@@ -42,14 +64,17 @@ export function HistoryTab({ drives, offers }: { drives: NgoDrive[]; offers: Dri
             {shownDrives.map((d) => (
               <li key={d.id} data-testid="history-drive" className="flex flex-col justify-between gap-3 rounded-xl border border-stone-200 bg-white p-4 dark:border-zinc-800 dark:bg-zinc-900 sm:flex-row sm:items-center">
                 <div className="min-w-0">
-                  <h4 className="font-bold text-stone-900 dark:text-stone-100 ck-user-text">{d.title}</h4>
+                  <div className="flex flex-wrap items-center gap-2">
+                    <h4 className="font-bold text-stone-900 dark:text-stone-100 ck-user-text">{d.title}</h4>
+                    <span data-testid="history-drive-status" className="shrink-0 rounded-full bg-stone-100 px-2.5 py-0.5 text-xs font-bold text-stone-700 dark:bg-zinc-800 dark:text-stone-200">{DRIVE_STATUS_LABEL[d.status] ? dc(DRIVE_STATUS_LABEL[d.status]) : d.status}</span>
+                  </div>
                   <p className="text-sm text-stone-600 dark:text-stone-400">
-                    {df("qtyUnitOfItem", { qty: d.quantityReceived, unit: humanize(d.unit), item: d.itemName ?? "" })}{d.beneficiariesReached ? ` · ${df("peopleReached", { count: d.beneficiariesReached })}` : ""}
+                    {df("qtyUnitOfItem", { qty: d.quantityNeeded, unit: humanize(d.unit), item: d.itemName ?? "" })}{d.category ? ` · ${dc(d.category) || d.category}` : ""}
                   </p>
                 </div>
-                {d.status === "FULFILLED"
-                  ? <Link href={`/ngo/drives/${d.id}/report`} className="inline-flex min-h-10 shrink-0 items-center justify-center rounded-lg bg-ngo-700 px-4 text-sm font-bold text-white hover:bg-ngo-800"><UiText>View proof</UiText></Link>
-                  : <span data-testid="history-drive-status" className="shrink-0 rounded-full bg-stone-100 px-2.5 py-1 text-xs font-bold text-stone-700 dark:bg-zinc-800 dark:text-stone-200">{DRIVE_STATUS_LABEL[d.status] ? dc(DRIVE_STATUS_LABEL[d.status]) : d.status}</span>}
+                {/* Fulfilled drives keep their public page (what donors saw); others open the NGO's own drive page. */}
+                <Link href={d.status === "FULFILLED" ? `/drives/${d.id}` : `/ngo/drives/${d.id}`} data-testid="history-drive-link"
+                  className="inline-flex min-h-10 shrink-0 items-center justify-center rounded-lg border border-ngo-700 px-4 text-sm font-bold text-ngo-800 hover:bg-ngo-50 dark:border-ngo-500 dark:text-ngo-200 dark:hover:bg-ngo-900/30"><UiText>View drive</UiText></Link>
               </li>
             ))}
           </ul>

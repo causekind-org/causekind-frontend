@@ -1,11 +1,11 @@
 "use client";
 
 import type { ComponentType, ReactNode } from "react";
-import { useRouter, useSearchParams } from "next/navigation";
+import { useSearchParams } from "next/navigation";
 import { ClipboardList, History, LayoutGrid, Lock } from "lucide-react";
 import type { NgoDrive } from "@/lib/api";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { isOfferToReview, isHandover, isProofDue, isHistoryDrive, isHistoryOffer, HANDOVER_GROUPS } from "./driveActivity";
+import { isOfferToReview, isHandover, isProofDue, isHistoryDrive, isHistoryOffer, HANDOVER_GROUPS, setDashboardQuery } from "./driveActivity";
 import { useNgoOffers } from "./useNgoOffers";
 import { YourDrivesTab } from "./YourDrivesTab";
 import { ActivityTab } from "./ActivityTab";
@@ -46,7 +46,6 @@ export function NgoDashboardSections({ drives, verified, loading, error, onRetry
   startDrive: ReactNode;
 }) {
   const ui = useUiText();
-  const router = useRouter();
   const params = useSearchParams();
   const tabParam = params.get("tab");
   const section: NgoSection = tabParam && SECTIONS.includes(tabParam) ? (tabParam as NgoSection) : "drives";
@@ -66,7 +65,9 @@ export function NgoDashboardSections({ drives, verified, loading, error, onRetry
     const q = new URLSearchParams(params.toString());
     q.set("tab", next);
     if (next !== "activity") { q.delete("filter"); q.delete("drive"); }
-    router.replace(`/dashboard/ngo?${q.toString()}`, { scroll: false });
+    // Instant: the native history API updates useSearchParams without a server round-trip.
+    // router.replace waited on the server, so on a slow connection a tab took several clicks.
+    setDashboardQuery(q);
   }
 
   if (!verified) {

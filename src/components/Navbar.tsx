@@ -18,6 +18,7 @@ import { LanguageSwitcher } from "@/components/LanguageSwitcher";
 import { Menu, X, LogIn, UserPlus, Shield, Sun, Moon, User, LayoutGrid, LogOut, Globe, ChevronRight, ChevronDown, Heart, HandHeart, Compass, HeartHandshake, HelpCircle, Mail, Phone, MessageCircle, ArrowRight, Sparkles, ShieldCheck } from "lucide-react";
 import { useAuth, type AuthUser } from "@/hooks/useAuth";
 import { useRoleColors } from "@/hooks/useRoleColors";
+import { readNgoStatus, writeNgoStatus } from "@/lib/ngoStatusCache";
 import { getMyProfile, getMyMatches, getMyNgoApplication, getMyNgoDriveOffers, getNgoOverview, type UserProfile, type ItemMatch } from "@/lib/api";
 import { FEATURES } from "@/lib/features";
 import { Button } from "@/components/ui/button";
@@ -547,6 +548,18 @@ export function SiteHeader() {
     roRef.current = ro;
   }, []);
 
+  // NGO accounts: warm up the pages their buttons open (dashboard, Start a Drive, profile, handovers),
+  // so a click opens them at once instead of waiting for the page to load after the click.
+  useEffect(() => {
+    if (!user || !(user.role === "NGO" || user.role === "NGO_PARTNER")) return;
+    const id = window.setTimeout(() => {
+      for (const href of ["/dashboard/ngo", "/ngo/drives/new", "/profile/ngo-details", "/profile", "/ngo/handovers"]) {
+        try { router.prefetch(href); } catch { /* prefetch is best effort */ }
+      }
+    }, 1500);
+    return () => window.clearTimeout(id);
+  }, [user, router]);
+
   // The name is needed before the menu opens (it showed the email prefix, e.g. "asha.kiran.audit").
   useEffect(() => {
     if (!user) { setProfile(null); return; }
@@ -714,6 +727,7 @@ export function SiteHeader() {
   const isNgoDashboard = isNgo;
 
   const [ngoApplicationState, setNgoApplicationState] = useState("CHECKING");
+  const ngoSnapshotKey = isNgo && user ? String(user.id ?? user.email ?? "") : "";
   useEffect(() => {
     if (!isNgo || !user) return;
     let active = true;
@@ -722,17 +736,24 @@ export function SiteHeader() {
       const current = ++sequence;
       try {
         const app = await getMyNgoApplication();
-        if (active && current === sequence) setNgoApplicationState(app?.status || "INCOMPLETE");
+        if (active && current === sequence) {
+          setNgoApplicationState(app?.status || "INCOMPLETE");
+          writeNgoStatus(ngoSnapshotKey, { applicationStatus: app?.status || "INCOMPLETE" });
+        }
       } catch {
-        if (active && current === sequence) setNgoApplicationState("UNAVAILABLE");
+        if (active && current === sequence) setNgoApplicationState((prev) => (prev === "CHECKING" ? "UNAVAILABLE" : prev));
       }
     };
-    setNgoApplicationState("CHECKING");
+    // Show the last-known pill at once (it flashed "Checking Application…" on every page change).
+    setNgoApplicationState((prev) => {
+      const known = readNgoStatus(ngoSnapshotKey)?.applicationStatus;
+      return known ?? (prev !== "CHECKING" && prev !== "UNAVAILABLE" ? prev : "CHECKING");
+    });
     void refresh();
     window.addEventListener("ngo-application-submitted", refresh);
     window.addEventListener("focus", refresh);
     return () => { active = false; window.removeEventListener("ngo-application-submitted", refresh); window.removeEventListener("focus", refresh); };
-  }, [isNgo, user, pathname]);
+  }, [isNgo, user, pathname, ngoSnapshotKey]);
   // NGO only: the "NGO Approved" pill shows for two minutes after the NGO first sees its
   // approval (first-seen time kept per account in localStorage), then never again.
   const [ngoApprovedPillExpired, setNgoApprovedPillExpired] = useState(false);

@@ -1,8 +1,9 @@
 "use client";
 
+import { readNgoStatus, writeNgoStatus } from "@/lib/ngoStatusCache";
 import { NGO_TOAST_STYLE } from "./ngoToastStyle";
 import { SLOW_REQUEST_MESSAGE, isSlowRequestError } from "@/lib/api";
-import { useState, useEffect, useCallback, useRef } from "react";
+import { useState, useEffect, useCallback, useRef, useLayoutEffect } from "react";
 import { toast } from "sonner";
 import { errorIdOf } from "@/lib/errorId";
 import { useAuth } from "@/hooks/useAuth";
@@ -173,26 +174,47 @@ export const FOCUS_REFRESH_MIN_MS = 30_000;
 export function useNgoStatus(): NgoStatusData {
   const { user, isLoading: authLoading } = useAuth();
   const userIdentifier = String(user?.id ?? user?.userId ?? user?.email ?? "anonymous");
-  const [status, setStatus] = useState<NgoStatusType>("incomplete");
-  const [ngoName, setNgoName] = useState("Your Organization");
+  // Last-known state for this account (this tab): pages show it at once instead of flashing
+  // "Profile incomplete / Your Organization / 0" on every refresh and page change.
+  const accountKey = user && NGO_ROLES.includes(user.role?.toUpperCase() || "") ? String(user.id ?? user.email ?? "") : "";
+  const cached = readNgoStatus(accountKey);
+  const [status, setStatus] = useState<NgoStatusType>(() => (cached?.status as NgoStatusType) ?? "incomplete");
+  const [ngoName, setNgoName] = useState(() => cached?.ngoName || "Your Organization");
   const [progress, setProgress] = useState(() => calculateNgoProgress(INITIAL_NGO_FORM));
-  const [overview, setOverview] = useState<NgoOverview | null>(null);
+  const [overview, setOverview] = useState<NgoOverview | null>(() => (cached?.overview as NgoOverview | null) ?? null);
   const [statsUnavailable, setStatsUnavailable] = useState(false);
-  const [verifiedAt, setVerifiedAt] = useState<string | null>(null);
-  const [rejectionReason, setRejectionReason] = useState<string | null>(null);
-  const [isLoading, setLoading] = useState(true);
+  const [verifiedAt, setVerifiedAt] = useState<string | null>(() => cached?.verifiedAt ?? null);
+  const [rejectionReason, setRejectionReason] = useState<string | null>(() => cached?.rejectionReason ?? null);
+  const [isLoading, setLoading] = useState(() => !cached);
   const [error, setError] = useState<string | null>(null);
   const [errorId, setErrorId] = useState<string | null>(null);
   const [documents, setDocuments] = useState<Record<string, any>>({});
   const sequence = useRef(0);
   /** Whose status is on screen: later refreshes for the same NGO keep it instead of blanking it. */
-  const loadedFor = useRef<string | null>(null);
+  const loadedFor = useRef<string | null>(cached ? accountKey : null);
+  /** Whose status this page loaded from the server (not only from the snapshot). */
+  const freshFor = useRef<string | null>(null);
   // Depend on who the user is, not on the object: a new user object with the same
   // identity (each re-render, e.g. the hero gallery's slideshow) must not restart the load.
   const lastLoad = useRef(0);
   const userRef = useRef(user);
   userRef.current = user;
   const userKey = user ? `${user.id}|${user.role}|${user.fullName ?? ""}` : "";
+
+  // The account can arrive after the first render (auth restores on refresh): apply its
+  // snapshot then, before paint, so the defaults never flash.
+  useLayoutEffect(() => {
+    if (!accountKey || loadedFor.current === accountKey) return;
+    const snap = readNgoStatus(accountKey);
+    if (!snap) return;
+    setStatus(snap.status as NgoStatusType);
+    setNgoName(snap.ngoName || "Your Organization");
+    setVerifiedAt(snap.verifiedAt);
+    setRejectionReason(snap.rejectionReason);
+    setOverview((snap.overview as NgoOverview | null) ?? null);
+    setLoading(false);
+    loadedFor.current = accountKey;
+  }, [accountKey]);
 
   const refresh = useCallback(async () => {
     const user = userRef.current;
@@ -201,6 +223,9 @@ export function useNgoStatus(): NgoStatusData {
     if (!user || !NGO_ROLES.includes(user.role?.toUpperCase() || "")) {
       setStatus("incomplete"); setOverview(null); setLoading(false); setError(null); return;
     }
+    // A snapshot for another account (or none) must never show: start this one from the defaults.
+    const snapId = String(user.id ?? user.email ?? "");
+    if (loadedFor.current !== snapId && !readNgoStatus(snapId)) loadedFor.current = null;
     // Only the first load for this account shows "loading". A background refresh (focus,
     // live update, the profile name arriving) kept flipping isVerified off for ~2s, so every
     // NGO page dropped to its locked/blank state and came back.
@@ -229,13 +254,22 @@ export function useNgoStatus(): NgoStatusData {
       setError(null);
       setErrorId(null);
       loadedFor.current = id;
+      freshFor.current = id;
+      writeNgoStatus(id, {
+        status: toNgoStatus(application?.status), applicationStatus: application?.status || "INCOMPLETE",
+        ngoName: application?.organizationName || draft?.organizationName || user?.fullName || "Your Organization",
+        verifiedAt: application?.verifiedAt ?? null,
+        rejectionReason: application?.status === "REJECTED" ? application.rejectionReason ?? null : null,
+        overview: totals,
+      });
     } catch (e) {
       if (request === sequence.current) {
         setErrorId(errorIdOf(e));
         setError(isSlowRequestError(e) ? SLOW_REQUEST_MESSAGE
           : e instanceof Error && e.message ? e.message : "We could not load your NGO activity. Please retry.");
         // A failed background refresh keeps what is on screen; only a first load has nothing to keep.
-        if (loadedFor.current !== id) {
+        // A snapshot alone is not enough: until this page has loaded it fresh, a failure falls back.
+        if (loadedFor.current !== id || freshFor.current !== id) {
           setOverview(null);
           setStatus("incomplete"); // Cached approval is never a permission fallback.
         }

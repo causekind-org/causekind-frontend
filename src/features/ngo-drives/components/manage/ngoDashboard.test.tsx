@@ -80,8 +80,12 @@ describe("NGO dashboard: 3 tabs", () => {
     nav.params = new URLSearchParams("tab=activity&filter=offers&drive=1");
     renderSections([drive(1, "LIVE")]);
     expect(screen.getByTestId("ngo-tab-activity")).toHaveAttribute("data-state", "active");
+    const replaceState = vi.spyOn(window.history, "replaceState");
     fireEvent.mouseDown(screen.getByTestId("ngo-tab-history"));
-    expect(nav.replace).toHaveBeenCalledWith("/dashboard/ngo?tab=history", { scroll: false });
+    // Native history, not router.replace: the tab switches at once, with no server round-trip.
+    expect(String(replaceState.mock.calls.at(-1)?.[2])).toMatch(/\?tab=history$/);
+    expect(nav.replace).not.toHaveBeenCalled();
+    replaceState.mockRestore();
   });
 
   it("no drives: the existing Start a Drive control shows", async () => {
@@ -245,9 +249,13 @@ describe("History", { timeout: 20000 }, () => {
     // Declined and ended offers only; the completed one is in the drive report (and never in Activity).
     await waitFor(() => expect(screen.getAllByTestId("history-offer")).toHaveLength(2));
     expect(screen.getByTestId("ngo-tab-activity")).toHaveTextContent(/Activity\s*0/);
-    const fulfilled = screen.getByTestId("history-drive");
-    expect(fulfilled).toHaveTextContent("50 people reached");
-    expect(within(fulfilled).getByRole("link", { name: "View proof" })).toHaveAttribute("href", "/ngo/drives/1/report");
+    // "Distribution proofs": the proof report.
+    const proof = screen.getByTestId("history-proof");
+    expect(proof).toHaveTextContent("50 people reached");
+    expect(within(proof).getByRole("link", { name: "View proof" })).toHaveAttribute("href", "/ngo/drives/1/report");
+    // "Completed and ended drives": the whole drive page.
+    const record = screen.getByTestId("history-drive");
+    expect(within(record).getByRole("link", { name: "View drive" })).toHaveAttribute("href", "/drives/1");
     fireEvent.change(screen.getByTestId("history-search"), { target: { value: "torn" } });
     expect(screen.getAllByTestId("history-offer")).toHaveLength(1);
     expect(screen.getByTestId("history-offer")).toHaveTextContent(/Declined.*Reason: Torn/);
@@ -313,7 +321,9 @@ describe("rows: each item sits in exactly one row", { timeout: 20000 }, () => {
     renderSections([drive(1, "LIVE")]);
     await waitFor(() => expect(screen.getByTestId("activity-row-proof")).toBeInTheDocument());
     expect(screen.queryByTestId("activity-row-offers")).toBeNull();
+    const replaceState = vi.spyOn(window.history, "replaceState");
     fireEvent.click(screen.getByTestId("activity-chip-proof"));
-    expect(nav.replace).toHaveBeenLastCalledWith("/dashboard/ngo?tab=activity", { scroll: false });
+    expect(String(replaceState.mock.calls.at(-1)?.[2])).toMatch(/\?tab=activity$/);
+    replaceState.mockRestore();
   });
 });

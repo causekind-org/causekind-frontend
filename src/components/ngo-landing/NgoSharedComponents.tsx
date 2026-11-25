@@ -388,17 +388,19 @@ export function NgoFinalCtaBand({
         >
           <Image src={photo.src} alt={photo.alt} fill sizes="100vw" className="object-cover object-[center_35%]" loading="lazy" />
         </motion.div>
-        <div className="absolute inset-0 -z-10 bg-gradient-to-t from-black/90 via-black/45 to-black/5" />
+        <div className="absolute inset-0 -z-10 bg-gradient-to-t from-black/90 via-black/45 to-black/5 md:from-black/70 md:via-black/20" />
+        {/* md+: shade the right side, where the text now sits, and keep the photo's subject (left) clear. */}
+        <div className="absolute inset-0 -z-10 hidden bg-gradient-to-l from-black/75 via-black/35 to-transparent md:block" />
 
         <motion.div
-          className="ngo-container py-14 md:py-24"
+          className="ngo-container flex py-14 md:justify-end md:py-24"
           initial={reduce ? false : { opacity: 0, y: 28 }}
           whileInView={{ opacity: 1, y: 0 }}
           viewport={{ once: true, amount: 0.4 }}
           transition={{ duration: 0.8, ease: [0.22, 1, 0.36, 1], delay: 0.2 }}
         >
-          <div className="max-w-[760px]">
-            <h2 className="ngo-heading text-[clamp(40px,6.4vw,96px)] mb-8 md:mb-10 leading-[1] tracking-[-0.04em]">
+          <div className="max-w-[760px] md:max-w-[min(560px,48%)]">
+            <h2 className="ngo-heading text-[clamp(40px,6.4vw,96px)] md:text-[clamp(40px,4.6vw,76px)] mb-8 md:mb-10 leading-[1] tracking-[-0.04em]">
               {headline}
             </h2>
             <div className="ngo-cta-actions flex w-full flex-wrap items-center gap-3 md:gap-4">
