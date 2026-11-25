@@ -29,7 +29,7 @@ import { LandingText } from "@/components/LandingTranslation";
 import { useCallback, useEffect, useLayoutEffect, useRef, useState, type RefObject } from "react";
 import dynamic from "next/dynamic";
 import { createPortal } from "react-dom";
-import { loadGsap, refreshScrollTrigger } from "@/lib/gsapLoader";
+import { refreshScrollTrigger } from "@/lib/gsapLoader";
 import { getLenis } from "@/components/SmoothScroll";
 import { SkipFilmButton } from "@/components/cinematic/SkipFilmButton";
 import styles from "@/sections/landing/cinematic/cinematic.module.css";
@@ -209,20 +209,6 @@ export function CinematicOrchestrator({
     const root = rootRef.current;
     if (!root || window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
     const lead = leadInRef?.current;
-    // The film's last frame has fully scrolled off the top of the screen.
-    // ScrollTrigger loads after the browser is idle (lib/gsapLoader); the nav
-    // and film state stay at their defaults until then.
-    let cancelled = false;
-    let kill: (() => void) | null = null;
-    void loadGsap().then(({ ScrollTrigger }) => {
-    if (cancelled) return;
-    const gone = ScrollTrigger.create({
-      trigger: root,
-      start: "bottom top",
-      onEnter: () => { if (!collapsed.current) requestAnimationFrame(collapse); },
-    });
-    kill = () => { gone.kill(); };
-    });
     // Nav hide/show reads live positions on every scroll frame instead of a
     // ScrollTrigger: its cached start/end went stale whenever the hero or the
     // lazy chapters changed height, and the header then stayed stuck (or never
@@ -233,6 +219,9 @@ export function CinematicOrchestrator({
       frame = 0;
       if (collapsed.current) return;
       const r = root.getBoundingClientRect();
+      // The same live measurement can retire a completed film. Do not load
+      // GSAP at startup just to watch this one edge; chapters load it on demand.
+      if (r.height > 0 && r.bottom <= 0) { collapse(); return; }
       const started = lead ? lead.getBoundingClientRect().bottom <= 24 : r.top <= 0;
       const on = started && r.bottom > window.innerHeight;
       setNav(on);
@@ -243,8 +232,6 @@ export function CinematicOrchestrator({
     window.addEventListener("resize", schedule);
     check();
     return () => {
-      cancelled = true;
-      kill?.();
       cancelAnimationFrame(frame);
       window.removeEventListener("scroll", schedule);
       window.removeEventListener("resize", schedule);
