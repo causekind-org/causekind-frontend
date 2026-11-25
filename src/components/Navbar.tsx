@@ -1184,7 +1184,8 @@ export function SiteHeader() {
 
             {/* Auth action — login/logout, top-right. Hidden on the auth pages
                 themselves since the page already is the login/register form. */}
-            {!(pathname === "/login" || pathname === "/register") && (
+            {/* Signed in: no top-bar Sign out; it lives in the menu (the three lines). */}
+            {!user && !(pathname === "/login" || pathname === "/register") && (
             <div className="relative">
               <button
                 type="button"

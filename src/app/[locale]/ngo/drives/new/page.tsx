@@ -13,6 +13,7 @@ import React, { useEffect, useRef, useState, useCallback, Suspense } from "react
 import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { toast } from "@/lib/toast";
+import { TimePicker } from "@/components/ui/time-picker";
 import { useAuth } from "@/hooks/useAuth";
 import {
   getMyNgoApplication,
@@ -340,8 +341,12 @@ function NewNgoDriveForm() {
   const clearDrivePinError = useCallback(() => {
     setFieldErrors(e => (e.latitude || e.longitude ? { ...e, latitude: "", longitude: "" } : e));
   }, []);
+  const warnDriveOutsideIndia = useCallback(() => {
+    toast.error(ui("NGO drives are only available in India for now. Please pick a location in India."));
+  }, [ui]);
   const { lookup: driveLookup, handlePin: handleDrivePin, handleGeocodeTyped: handleDriveGeocodeTyped } = useLocationPinHandlers({
     modelRef: driveLocRef, commit: commitDriveLoc, clearPinError: clearDrivePinError, profileCenter: null,
+    onlyCountry: "IN", onOutsideCountry: warnDriveOutsideIndia,
   });
   const setDriveLocField = useCallback(<K extends keyof LocationFields>(key: K, value: LocationFields[K]) => {
     commitDriveLoc({ ...driveLocRef.current, [key]: value });
@@ -896,6 +901,7 @@ const [altContact, setAltContact] = useState("");
     const e: Record<string, string> = {};
     if (s === "drive-location") {
       if (!driveLoc.countryIso) e.countryIso = ui("Choose the country");
+      else if (driveLoc.countryIso !== "IN") e.countryIso = ui("NGO drives are only available in India for now.");
       if (!driveLoc.stateIso) e.stateIso = ui("Choose the state");
       if (!driveLoc.city.trim() || driveLoc.city.length > 100) e.city = ui("Enter the city");
       if (driveLoc.locality.length > 100) e.locality = ui("Locality cannot exceed 100 characters");
@@ -953,12 +959,22 @@ const [altContact, setAltContact] = useState("");
         if (!/^[6-9]\d{9}$/.test(c.phone.trim())) e[`extraContacts.${i}.phone`] = "Enter a 10-digit mobile number starting with 6, 7, 8 or 9";
         const emailProblem = contactEmailError(c.email, c.phone);
         if (emailProblem) e[`extraContacts.${i}.email`] = emailProblem;
+        // Repeats of someone already listed: say so, rather than a vague count error.
+        const earlier = [{ phone: contactPhone, email: contactEmail }, ...extraContacts.slice(0, i)];
+        const who = (j: number) => (j === 0 ? "the first contact" : `Contact ${j + 1}`);
+        const samePhone = earlier.findIndex((p) => p.phone.trim() && p.phone.trim() === c.phone.trim());
+        if (samePhone >= 0 && !e[`extraContacts.${i}.phone`]) e[`extraContacts.${i}.phone`] = `Same number as ${who(samePhone)}. Each contact must be a different person with their own number.`;
+        const sameEmail = earlier.findIndex((p) => p.email.trim() && p.email.trim().toLowerCase() === c.email.trim().toLowerCase());
+        if (sameEmail >= 0 && !e[`extraContacts.${i}.email`]) e[`extraContacts.${i}.email`] = `Same email as ${who(sameEmail)}. Each contact needs their own email.`;
       });
       { const emailProblem = contactEmailError(contactEmail, contactPhone);
         if (emailProblem) e.contactEmail = emailProblem; }
       { const required = editId === null ? MIN_HANDOVER_CONTACTS : Math.min(MIN_HANDOVER_CONTACTS, storedPhones.length);
         const people = new Set([contactPhone, ...extraContacts.map((c) => c.phone)].map((p) => p.trim()).filter(Boolean)).size;
-        if (people < required) e.handoverContacts = `Add at least ${required} different people`; }
+        const listed = [contactPhone, ...extraContacts.map((c) => c.phone)].map((p) => p.trim()).filter(Boolean).length;
+        if (people < required) e.handoverContacts = listed > people
+          ? `You've added the same details more than once. Add at least ${required} different people.`
+          : `Add at least ${required} different people`; }
       if (altContact.trim()) {
         const isEmail = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(altContact.trim());
         const isPhone = /^\d{10}$/.test(altContact.trim());
@@ -1782,12 +1798,12 @@ const [altContact, setAltContact] = useState("");
           <div className="grid grid-cols-2 gap-4">
             <WizardField label={ui("From (time)")} required error={fieldErrors.availableFrom}>
               {({ id, describedBy, invalid }) => (
-                <Input id={id} name="availableFrom" type="time" value={availableFrom} onChange={e => setAvailableFrom(e.target.value)} aria-describedby={describedBy} aria-invalid={invalid} className={`w-full box-border h-11 ${invalid ? "border-red-500" : ""}`} />
+                <TimePicker id={id} name="availableFrom" value={availableFrom} onChange={setAvailableFrom} aria-describedby={describedBy} aria-invalid={invalid} invalid={invalid} />
               )}
             </WizardField>
             <WizardField label={ui("To (time)")} required error={hoursProblem || fieldErrors.availableTo}>
               {({ id, describedBy, invalid }) => (
-                <Input id={id} name="availableTo" type="time" value={availableTo} onChange={e => setAvailableTo(e.target.value)} aria-describedby={describedBy} aria-invalid={invalid} className={`w-full box-border h-11 ${invalid ? "border-red-500" : ""}`} />
+                <TimePicker id={id} name="availableTo" value={availableTo} onChange={setAvailableTo} aria-describedby={describedBy} aria-invalid={invalid} invalid={invalid} />
               )}
             </WizardField>
           </div>

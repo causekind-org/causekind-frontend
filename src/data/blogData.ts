@@ -169,7 +169,7 @@ export const blogPosts: BlogPost[] = [
     title: "Decoding Section 80G: How to Save Tax While Supporting a Cause",
     description: "If you've heard of Section 80G but never quite understood what it means for you as a salaried professional, this blog is written for you. No jargon. Just a clear explanation of how charitable giving and smart tax planning work together.",
     category: "Giving Smarter",
-    image: "/80G.avif",
+    image: "/80G.webp",
     author: "CauseKind",
     authorImage: "https://lh3.googleusercontent.com/aida-public/AB6AXuABI5YAyEovE5yILtURhCjGmz70ZuJqw9kfN-8nHKa8zURaO7lpuqGNObVYVt3RgTrWsJ-m5xXjj-smC7fnViISgB6_JDgE9nLFaES7yojtrsEJQMVdx1pIMbj8dKgQhwicZZTgLAG7Pigs6qwUyecmaxz-zqzhspdTu6rlOuwDWBNIPBp5DFK_sF_jQfpzqtMCMP8cZFsIyWjWySFeFUXllOu5UjIq-PwOS4LvFzmJ_DZYEnaJm406FB15rr9csPOr_RUN16gBOcTI",
     publishedDate: "June 2026",

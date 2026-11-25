@@ -43,7 +43,7 @@ describe("handover schedule: drop-off has no map", () => {
     // Old drive (no full drop-off address): locality + city + PIN.
     expect(box).toHaveTextContent("Shivajinagar, Pune");
     expect(box).toHaveTextContent("Prachi, 9999999999");
-    expect(box).toHaveTextContent("on Mon, Wed between 10:00 and 17:00");
+    expect(box).toHaveTextContent("on Mon, Wed between 10:00 AM and 05:00 PM");
     expect(screen.queryByTestId("handover-map")).toBeNull();
   });
 

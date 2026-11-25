@@ -113,7 +113,7 @@ describe("outside the radius: handover", () => {
     render(<DriveDropOffPlanner offer={offer({ dropOffOnly: true })} onDone={vi.fn()} />);
     fireEvent.change(screen.getByTestId("drive-dropoff-date"), { target: { value: "2030-01-07" } }); // Monday
     fireEvent.change(screen.getByTestId("drive-dropoff-time"), { target: { value: "19:00" } });
-    expect(screen.getByTestId("drive-dropoff-problem")).toHaveTextContent("Pick a time between 10:00 and 17:00.");
+    expect(screen.getByTestId("drive-dropoff-problem")).toHaveTextContent("Pick a time between 10:00 AM and 05:00 PM.");
     expect(screen.getByTestId("drive-dropoff-time").className).toContain("border-red-600");
     expect(screen.getByRole("button", { name: /Save drop-off time/ })).toBeDisabled();
     fireEvent.change(screen.getByTestId("drive-dropoff-time"), { target: { value: "11:00" } });

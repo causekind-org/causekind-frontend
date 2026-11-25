@@ -60,7 +60,7 @@ describe("slot rule (mirrors the server)", () => {
     const { slotProblem } = await import("@/features/ngo-drives/components/DriveHandover");
     expect(slotProblem(offer("NGO_ACCEPTED"), "2020-01-06", "10:00")).toMatch(/future/);
     expect(slotProblem(offer("NGO_ACCEPTED"), "2030-01-05", "10:00")).toMatch(/Mon, Tue, Wed, Thu, Fri only/); // a Saturday
-    expect(slotProblem(offer("NGO_ACCEPTED"), "2030-01-07", "20:00")).toMatch(/between 09:00 and 18:00/);
+    expect(slotProblem(offer("NGO_ACCEPTED"), "2030-01-07", "20:00")).toMatch(/between 09:00 AM and 06:00 PM/);
     expect(slotProblem(offer("NGO_ACCEPTED"), "2030-01-07", "10:00")).toBeNull();
   });
 });

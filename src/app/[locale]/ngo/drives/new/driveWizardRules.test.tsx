@@ -305,8 +305,9 @@ describe("drive wizard", () => {
     mockSearch = "edit=42&step=beneficiaries";
     api.getNgoDriveDetail.mockResolvedValue(drive());
     render(<NgoDrivePage />);
-    const to = await screen.findByDisplayValue("17:00");
-    fireEvent.change(to, { target: { value: "09:00" } });
+    fireEvent.click(await screen.findByRole("button", { name: /To \(time\)/ }));
+    fireEvent.click(screen.getByRole("option", { name: "AM" }));
+    fireEvent.click(screen.getByRole("button", { name: "Save" }));
     expect(screen.getByText("End time must be after start time")).toBeInTheDocument();
     expect(screen.getByRole("button", { name: /Save & Continue/ })).toHaveAttribute("aria-disabled", "true");
   });

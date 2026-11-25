@@ -12,11 +12,11 @@ const now = new Date(2026, 9, 18, 10, 0); // Sun 18 Oct 2026, 10:00 local
 
 describe("drive handover window (dialog)", () => {
   it("shows the NGO's days and hours", () => {
-    expect(driveWindowText(drive)).toBe("on Mon, Wed between 18:11 and 19:11");
+    expect(driveWindowText(drive)).toBe("on Mon, Wed between 06:11 PM and 07:11 PM");
   });
   it("blocks days and times outside the window, checked on the picked local time", () => {
     expect(driveSlotProblem(drive, "2026-10-19T18:30", now)).toBeNull();                       // Mon 18:30 IST
-    expect(driveSlotProblem(drive, "2026-10-19T13:00", now)).toBe("Pick a time between 18:11 and 19:11.");
+    expect(driveSlotProblem(drive, "2026-10-19T13:00", now)).toBe("Pick a time between 06:11 PM and 07:11 PM.");
     expect(driveSlotProblem(drive, "2026-10-20T18:30", now)).toBe("The NGO receives items on Mon, Wed only.");
     expect(driveSlotProblem(drive, "2026-10-17T18:30", now)).toBe("Pick a date and time in the future.");
   });
