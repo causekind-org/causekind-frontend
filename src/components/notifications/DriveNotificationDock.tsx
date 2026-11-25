@@ -3,7 +3,7 @@
 import { useTranslations } from "next-intl";
 import { UiText, useUiText } from "@/components/UiText";
 
-import { useCallback, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { X } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
@@ -13,13 +13,18 @@ import { useNotifications, type AppNotification } from "@/hooks/useNotifications
 const DRIVE_LINK = /^\/(dashboard\/ngo|ngo\/drives\/|ngo-drive-offers\/|drives\/\d+\/proof|dashboard\?segment=ngo|dashboard\/history\?type=drive)/;
 export const isDriveNotice = (n: Pick<AppNotification, "id" | "link">) => n.id.startsWith("n-") && DRIVE_LINK.test(n.link ?? "");
 
-const DISMISSED_KEY = "ck_drive_dock_dismissed_v1";
-const dismissKey = (n: AppNotification) => `${n.id}@${n.timestamp}`;
-function loadDismissed(): Set<string> {
-  try { return new Set(JSON.parse(localStorage.getItem(DISMISSED_KEY) ?? "[]")); } catch { return new Set(); }
+/**
+ * Notices this browser has already shown in the dock, by id. Each notice pops up once:
+ * it stays until the NGO acts on it, closes it or leaves the page, and never comes back
+ * (it was keyed by id@timestamp before, so a refreshed timestamp showed it again).
+ * It always stays in the bell.
+ */
+const SHOWN_KEY = "ck_drive_dock_shown_v2";
+function loadShown(): Set<string> {
+  try { return new Set(JSON.parse(localStorage.getItem(SHOWN_KEY) ?? "[]")); } catch { return new Set(); }
 }
-function saveDismissed(keys: Set<string>) {
-  try { localStorage.setItem(DISMISSED_KEY, JSON.stringify([...keys].slice(-200))); } catch { /* private mode */ }
+function saveShown(keys: Set<string>) {
+  try { localStorage.setItem(SHOWN_KEY, JSON.stringify([...keys].slice(-300))); } catch { /* private mode */ }
 }
 
 /** The one action for a notice, from where it leads (see NgoDriveLinks). */
@@ -55,16 +60,27 @@ export function DriveNotificationDock() {
   const { user } = useAuth();
   const router = useRouter();
   const { notifications, isUnread, markRead } = useNotifications();
-  const [dismissed, setDismissed] = useState<Set<string>>(() => loadDismissed());
+  const [shown] = useState<Set<string>>(() => loadShown());
+  // The notice on screen now. Picked once from the unread drive notices never shown before,
+  // then remembered as shown so it can't pop up a second time.
+  const [currentId, setCurrentId] = useState<string | null>(null);
 
-  const waiting = notifications.filter((n) => isDriveNotice(n) && isUnread(n) && !dismissed.has(dismissKey(n)));
-  const current = waiting[0];
+  const fresh = notifications.filter((n) => isDriveNotice(n) && isUnread(n) && !shown.has(n.id));
+  const nextId = fresh[0]?.id ?? null;
+  useEffect(() => {
+    if (currentId || !nextId) return;
+    shown.add(nextId);
+    saveShown(shown);
+    setCurrentId(nextId);
+  }, [currentId, nextId, shown]);
 
-  const dismiss = useCallback((n: AppNotification) => {
-    setDismissed((prev) => { const next = new Set(prev).add(dismissKey(n)); saveDismissed(next); return next; });
-  }, []);
+  const current = currentId ? notifications.find((n) => n.id === currentId && isUnread(n)) : undefined;
+  const remaining = 1 + notifications.filter((n) => isDriveNotice(n) && isUnread(n) && !shown.has(n.id) && n.id !== currentId).length;
+
+  const dismiss = useCallback(() => { setCurrentId(null); }, []);
   const open = useCallback((n: AppNotification) => {
     markRead(n.id);
+    setCurrentId(null);
     router.push(n.link);
   }, [markRead, router]);
 
@@ -73,29 +89,32 @@ export function DriveNotificationDock() {
 
   return (
     <div role="status" aria-live="polite" data-testid="drive-notification-dock"
-      className="fixed inset-x-3 bottom-4 z-[60] mx-auto flex max-w-3xl flex-col gap-3 rounded-3xl bg-stone-900 p-3 pl-4 text-white shadow-[0_24px_50px_-18px_rgba(28,20,16,0.6)] sm:bottom-6 sm:flex-row sm:items-center sm:rounded-full sm:pl-5">
-      <div className="flex min-w-0 flex-1 items-center gap-3">
-        <span className="flex h-8 min-w-8 items-center justify-center rounded-full bg-[var(--ck-role-accent,#c4561c)] px-2 text-sm font-black" aria-label={t("unread", { count: waiting.length })}>{waiting.length}</span>
-        <div className="min-w-0">
-          <p className="truncate text-sm font-black">{current.title}</p>
-          <p className="truncate text-xs text-stone-300">{current.body}</p>
+      className="fixed inset-x-3 bottom-[calc(var(--ck-bottom-chrome,0px)+0.75rem)] z-[60] mx-auto max-w-3xl rounded-3xl bg-stone-900 p-4 pr-12 text-white shadow-[0_24px_50px_-18px_rgba(28,20,16,0.6)] sm:bottom-6 sm:p-5 sm:pr-14">
+      {/* Close: top-right corner. The notice stays in the bell. */}
+      <button type="button" aria-label={ui("Close (it stays in your notifications)")} onClick={dismiss} data-testid="drive-dock-close"
+        className="absolute right-2 top-2 flex h-9 w-9 items-center justify-center rounded-full text-stone-300 hover:bg-white/10 hover:text-white">
+        <X className="h-5 w-5" aria-hidden />
+      </button>
+      <div className="flex flex-col gap-4 sm:flex-row sm:items-center">
+        <div className="flex min-w-0 flex-1 items-start gap-3">
+          <span className="flex h-8 min-w-8 shrink-0 items-center justify-center rounded-full bg-[var(--ck-role-accent,#c4561c)] px-2 text-sm font-black" aria-label={t("unread", { count: remaining })}>{remaining}</span>
+          <div className="min-w-0">
+            <p className="text-sm font-black leading-snug sm:truncate">{current.title}</p>
+            <p className="mt-0.5 line-clamp-2 text-xs leading-relaxed text-stone-300 sm:truncate">{current.body}</p>
+          </div>
         </div>
-      </div>
-      <div className="flex shrink-0 items-center gap-2">
-        {label !== "View details" && (
+        <div className="flex shrink-0 items-center gap-2">
+          {label !== "View details" && (
+            <button type="button" onClick={() => open(current)}
+              className="inline-flex h-11 flex-1 items-center justify-center rounded-full border border-white/30 px-4 text-sm font-extrabold text-white hover:bg-white/10 sm:flex-none">
+              <UiText>View details</UiText>
+            </button>
+          )}
           <button type="button" onClick={() => open(current)}
-            className="inline-flex h-11 items-center rounded-full border border-white/30 px-4 text-sm font-extrabold text-white hover:bg-white/10">
-            <UiText>View details</UiText>
+            className="inline-flex h-11 flex-1 items-center justify-center gap-2 rounded-full bg-[var(--ck-role-accent,#c4561c)] px-5 text-sm font-black text-white hover:brightness-110 sm:flex-none">
+            {actionLabels[label] ?? label}
           </button>
-        )}
-        <button type="button" onClick={() => open(current)}
-          className="inline-flex h-11 items-center gap-2 rounded-full bg-[var(--ck-role-accent,#c4561c)] px-5 text-sm font-black text-white hover:brightness-110">
-          {actionLabels[label] ?? label}
-        </button>
-        <button type="button" aria-label={ui("Close (it stays in your notifications)")} onClick={() => dismiss(current)}
-          className="flex h-11 w-11 items-center justify-center rounded-full text-stone-300 hover:bg-white/10 hover:text-white">
-          <X className="h-5 w-5" aria-hidden />
-        </button>
+        </div>
       </div>
     </div>
   );

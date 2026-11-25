@@ -204,9 +204,10 @@ export function UploadedFilePreview({
         </div>
 
         {/* Right: Action Buttons */}
-        <div className="flex items-center gap-1.5 shrink-0 self-end sm:self-center flex-wrap pt-1 sm:pt-0">
+        {/* Mobile: a full-width row under the photo. sm+: beside it, on the right. */}
+        <div className="flex w-full items-center gap-2 shrink-0 sm:w-auto sm:self-center sm:gap-1.5 flex-wrap border-t border-stone-200/70 pt-3 sm:border-0 sm:pt-0 dark:border-zinc-700/60">
           {confirmRemove ? (
-            <div className="flex items-center gap-1.5 bg-red-50 dark:bg-red-950/40 border border-red-200 dark:border-red-900/50 rounded-lg p-1 text-2xs">
+            <div className="flex w-full sm:w-auto items-center gap-1.5 bg-red-50 dark:bg-red-950/40 border border-red-200 dark:border-red-900/50 rounded-lg p-1 text-2xs">
               <span className="text-red-700 dark:text-red-300 font-medium px-1">Remove file?</span>
               <button
                 type="button"
@@ -234,7 +235,7 @@ export function UploadedFilePreview({
                 type="button"
                 onClick={onReplace}
                 disabled={disabled}
-                className="inline-flex min-h-[44px] items-center gap-1 rounded-lg border border-stone-200 dark:border-zinc-700 bg-white dark:bg-zinc-800/80 px-2.5 py-1.5 text-2xs font-semibold text-stone-700 dark:text-stone-200 hover:bg-stone-50 dark:hover:bg-zinc-700 transition-colors"
+                className="inline-flex min-h-[44px] flex-1 sm:flex-none items-center justify-center gap-1.5 rounded-lg border border-stone-200 dark:border-zinc-700 bg-white dark:bg-zinc-800/80 px-3 py-1.5 text-xs sm:text-2xs font-semibold text-stone-700 dark:text-stone-200 hover:bg-stone-50 dark:hover:bg-zinc-700 transition-colors disabled:opacity-50"
                 title={`Replace ${label}`}
               >
                 <RefreshCw className="h-3.5 w-3.5 text-stone-500" />
@@ -245,7 +246,7 @@ export function UploadedFilePreview({
                 type="button"
                 onClick={() => setConfirmRemove(true)}
                 disabled={disabled}
-                className="inline-flex min-h-[44px] items-center gap-1 rounded-lg px-2.5 py-1.5 text-2xs font-semibold text-stone-400 hover:text-red-600 dark:hover:text-red-400 transition-colors"
+                className="inline-flex min-h-[44px] flex-1 sm:flex-none items-center justify-center gap-1.5 rounded-lg border border-red-200 bg-white px-3 py-1.5 text-xs sm:text-2xs font-semibold text-red-600 hover:bg-red-50 dark:border-red-900/50 dark:bg-zinc-800/80 dark:text-red-400 dark:hover:bg-red-950/40 transition-colors disabled:opacity-50"
                 title={`Remove ${label}`}
                 aria-label={`Remove ${label}`}
               >

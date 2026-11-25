@@ -110,7 +110,7 @@ export function YourDrivesTab({ drives, offers, loading, error, onRetry, startDr
 
   return (
     <div className="space-y-6">
-      <div className="flex gap-2 overflow-x-auto pb-1" role="group" aria-label={ui("Filter drives")}>
+      <div className="flex flex-wrap gap-2 pb-1" role="group" aria-label={ui("Filter drives")}>
         {CHIPS.map(([key, label]) => (
           <Chip key={key} active={chip === key} onClick={() => setChip(key)} testId={`drive-chip-${key}`}>
             {dc(label)} <span className="tabular-nums opacity-70">{count(key)}</span>
