@@ -3,13 +3,14 @@ import { UiText, useUiText } from "@/components/UiText";
 
 
 import { useCallback, useEffect, useRef, useState } from "react";
-import { useRouter } from "next/navigation";
+import { useRouter } from "@/hooks/useAppRouter";
 import { ArrowLeft, HandHeart, PackagePlus, XIcon } from "lucide-react";
 import { Dialog, DialogContent, DialogDescription, DialogTitle } from "@/components/ui/dialog";
 import { Drawer, DrawerClose, DrawerContent, DrawerDescription, DrawerTitle } from "@/components/ui/drawer";
-import { DesktopOption, PhoneOption, POPUP, openDonateChoice, useIsPhone } from "@/components/donate/DonateChoice";
+import { DesktopOption, PhoneOption, POPUP, openDonateChoice, useIsPhone, useTrayPhysics } from "@/components/donate/DonateChoice";
 import { useAuth } from "@/hooks/useAuth";
 import { registerUrlPreserving } from "@/lib/postAuthDestination";
+import { useDeviceTilt } from "@/hooks/useDeviceTilt";
 
 /**
  * "How would you like to donate?" — what "Donate items" opens for guests and
@@ -58,6 +59,9 @@ export function DonateItemsChoiceModal() {
   const ui = useUiText();
   const [open, setOpen] = useState(false);
   const isPhone = useIsPhone();
+  const [sheet, setSheet] = useState<HTMLDivElement | null>(null);
+  const tilt = useDeviceTilt(open && isPhone && sheet !== null);
+  useTrayPhysics(sheet, tilt);
   const router = useRouter();
   const opener = useRef<HTMLElement | null>(null);
   const afterClose = useRef<(() => void) | null>(null);
@@ -129,8 +133,10 @@ export function DonateItemsChoiceModal() {
     return (
       <Drawer open={open} onOpenChange={setOpen} autoFocus>
         <DrawerContent
+          ref={setSheet}
+          overlayClassName="ck-donate-sheet-overlay"
           onCloseAutoFocus={onCloseAutoFocus}
-          className="max-h-[92dvh] rounded-t-[26px] bg-white pb-7 pt-1 dark:bg-zinc-900"
+          className="ck-donate-sheet max-h-[92dvh] rounded-t-[26px] bg-white pb-7 pt-1 dark:bg-zinc-900"
           // Same sheet as DonateChoice's phone view, plus Back and ×.
         >
           {/* Back and × stay put while the rest scrolls. */}

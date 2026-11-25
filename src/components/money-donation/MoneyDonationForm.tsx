@@ -3,7 +3,7 @@
 import React, { useEffect, useState } from 'react';
 import { motion } from 'framer-motion';
 import Image from 'next/image';
-import { useRouter } from 'next/navigation';
+import { useRouter } from '@/hooks/useAppRouter';
 import { toast } from 'sonner';
 import { trackDonate } from '@/lib/metaEvents';
 import {
@@ -11,7 +11,7 @@ import {
   trackDonationPaymentSubmitted,
   trackDonationCompleted,
 } from '@/lib/clarityEvents';
-import { Lock, ShieldCheck, Heart, Check, Receipt, ArrowRight } from 'lucide-react';
+import { Lock, ShieldCheck, Check, Receipt, ArrowRight } from 'lucide-react';
 import { initiateTrustDonation } from '@/lib/api';
 
 import { SearchableSelect, type SelectOption } from '@/components/profile/SearchableSelect';
@@ -19,20 +19,12 @@ import { getDialCodes } from '@/app/[locale]/actions/locations';
 import { PHONE_LENGTHS, getDialCode } from '@/lib/phone';
 import { useAuth } from '@/hooks/useAuth';
 import styles from './MoneyDonationForm.module.css';
+import { loadRazorpayCheckout } from '@/lib/razorpayLoader';
 
 /**
  * Loads Razorpay's checkout script on demand.
  */
-function loadRazorpayScript(): Promise<boolean> {
-  return new Promise((resolve) => {
-    if (window.Razorpay) return resolve(true);
-    const script = document.createElement('script');
-    script.src = 'https://checkout.razorpay.com/v1/checkout.js';
-    script.onload = () => resolve(true);
-    script.onerror = () => resolve(false);
-    document.body.appendChild(script);
-  });
-}
+const loadRazorpayScript = loadRazorpayCheckout;
 
 const PRESET_AMOUNTS = [500, 1000, 2500, 5000];
 const MAX_DONATION = 9999999;
@@ -351,12 +343,6 @@ export function MoneyDonationForm() {
                 <ShieldCheck className="size-4 shrink-0 text-amber-700 dark:text-amber-400" />
                 <span className="text-[0.8125rem] font-bold text-foreground">
                   Registered non-profit &middot; 80G eligible
-                </span>
-              </div>
-              <div className={trustPill}>
-                <Heart className="size-4 shrink-0 text-amber-700 dark:text-amber-400" />
-                <span className="text-[0.8125rem] font-bold text-foreground">
-                  Zero platform fees &middot; funded by supporters
                 </span>
               </div>
             </div>

@@ -241,6 +241,10 @@ export function NgoDriveOfferWizard({
   );
 
   const [model, setModel] = useState<OfferModel>(() => offer ? driveOfferModelFrom(offer) : emptyOfferModel);
+  const latestModelRef = useRef(model);
+  latestModelRef.current = model;
+  // Synchronous guard: disabled UI alone loses the race on a double tap.
+  const submitLockRef = useRef(false);
   const [step, setStep] = useState<OfferStep>(() =>
     offer ? firstIncompleteDriveStep(driveOfferModelFrom(offer), offer.donorLatitude != null) : "location");
   // Step 1: where the items are, saved through its own endpoint.
@@ -475,7 +479,10 @@ export function NgoDriveOfferWizard({
 
     const timer = setTimeout(() => {
       void (async () => {
-        const saved = await flush(model);
+        // Other fields can change during this compatibility debounce. Saving
+        // its captured model would overwrite newer Review confirmations.
+        if (submitLockRef.current) return;
+        const saved = await flush(latestModelRef.current);
         if (token !== compatTokenRef.current) return;
         if (!saved) { setCompatState({ kind: "unavailable" }); return; }
 
@@ -631,9 +638,6 @@ export function NgoDriveOfferWizard({
     toast.error(message);
     return message;
   }
-
-  /** Synchronous guard. Disabled UI alone loses the race on a double tap. */
-  const submitLockRef = useRef(false);
 
   const handleSubmit = useCallback(async () => {
     if (submitLockRef.current || submitted) return;
@@ -981,7 +985,6 @@ export function NgoDriveOfferWizard({
             submitted={submitted}
             savingExit={savingExit}
             advancing={advancing}
-            avoidBottomChrome
           />
         </form>
       </div>

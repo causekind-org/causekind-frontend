@@ -72,7 +72,7 @@ export function HandoversPanel({ offers, reload }: { offers: DriveOffer[]; reloa
 
   return (
     <div className="space-y-4">
-      <div className="flex gap-2 overflow-x-auto pb-1" role="group" aria-label={ui("Filter handovers")}>
+      <div className="flex flex-wrap gap-2 pb-1" role="group" aria-label={ui("Filter handovers")}>
         {CHIPS.map(([key, label]) => (
           <Chip key={key} active={chip === key} onClick={() => setChip(key)} testId={`handover-chip-${key}`}>
             {dc(label)} <span className="tabular-nums opacity-70">{offers.filter((o) => handoverChipOf(o.status) === key).length}</span>

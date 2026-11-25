@@ -1,6 +1,6 @@
 "use client";
 
-import type { ComponentType, ReactNode } from "react";
+import { useEffect, useState, type ComponentType, type ReactNode } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { ClipboardList, History, LayoutGrid, Lock } from "lucide-react";
 import type { NgoDrive } from "@/lib/api";
@@ -49,7 +49,12 @@ export function NgoDashboardSections({ drives, verified, loading, error, onRetry
   const router = useRouter();
   const params = useSearchParams();
   const tabParam = params.get("tab");
-  const section: NgoSection = tabParam && SECTIONS.includes(tabParam) ? (tabParam as NgoSection) : "drives";
+  const urlSection: NgoSection = tabParam && SECTIONS.includes(tabParam) ? (tabParam as NgoSection) : "drives";
+  // The tab lives in local state so it switches on the click itself. Waiting for the URL to
+  // round-trip through the router (a low-priority render) made tabs need several clicks.
+  // A link that changes ?tab= (a notification, a deep link) still moves it.
+  const [section, setSection] = useState<NgoSection>(urlSection);
+  useEffect(() => { setSection(urlSection); }, [urlSection]);
   const { offers, loading: offersLoading, error: offersError, reload } = useNgoOffers(drives, verified);
 
   const toReview = offers.filter(isOfferToReview);
@@ -63,7 +68,9 @@ export function NgoDashboardSections({ drives, verified, loading, error, onRetry
   const activityNeedsYou = toReview.length > 0 || proofDue.some((d) => d.status === "COLLECTION_COMPLETE") || handovers.some((o) => ISSUE_STATUSES.has(o.status));
 
   function select(next: string) {
-    const q = new URLSearchParams(params.toString());
+    if (!SECTIONS.includes(next)) return;
+    setSection(next as NgoSection);
+    const q = new URLSearchParams(window.location.search);
     q.set("tab", next);
     if (next !== "activity") { q.delete("filter"); q.delete("drive"); }
     router.replace(`/dashboard/ngo?${q.toString()}`, { scroll: false });

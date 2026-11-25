@@ -2,22 +2,40 @@
 import { LandingText, LandingAttributes } from "@/components/LandingTranslation";
 
 
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import { Star, ExternalLink } from "lucide-react";
 import { getReviews, GoogleReviewsData, GoogleReview } from "@/data/googleReviews";
 
 export function GoogleReviewsSection({ initial = null }: { initial?: GoogleReviewsData | null }) {
   const [data, setData] = useState<GoogleReviewsData | null>(initial);
+  const [finished, setFinished] = useState(Boolean(initial));
   const [prefersReducedMotion, setPrefersReducedMotion] = useState(false);
   const [expandedCount, setExpandedCount] = useState(0);
+  const loadTarget = useRef<HTMLDivElement>(null);
   
   useEffect(() => {
     let mounted = true;
     const controller = new AbortController();
-    // Already in the page when the home page render fetched them.
-    if (!initial) getReviews(controller.signal).then((res) => {
-      if (mounted) setData(res);
-    });
+    // Reviews are well below the hero. Their provider must not delay homepage
+    // HTML, and the browser should fetch only when the section is approaching.
+    let observer: IntersectionObserver | undefined;
+    const load = () => {
+      observer?.disconnect();
+      void getReviews(controller.signal).then((res) => {
+        if (mounted) {
+          setData(res);
+          setFinished(true);
+        }
+      });
+    };
+    if (!initial) {
+      if (loadTarget.current && typeof IntersectionObserver !== "undefined") {
+        observer = new IntersectionObserver((entries) => {
+          if (entries.some(entry => entry.isIntersecting)) load();
+        }, { rootMargin: "600px 0px" });
+        observer.observe(loadTarget.current);
+      } else load();
+    }
 
     const mql = window.matchMedia('(prefers-reduced-motion: reduce)');
     setPrefersReducedMotion(mql.matches);
@@ -30,11 +48,12 @@ export function GoogleReviewsSection({ initial = null }: { initial?: GoogleRevie
     return () => {
       mounted = false;
       controller.abort();
+      observer?.disconnect();
       mql.removeEventListener('change', handler);
     };
   }, [initial]);
 
-  if (!data) return null;
+  if (!data) return finished ? null : <div ref={loadTarget} className="min-h-60" aria-hidden="true" />;
 
   const isPaused = expandedCount > 0;
 

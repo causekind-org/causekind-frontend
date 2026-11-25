@@ -25,6 +25,7 @@ import { LandingText, LandingAttributes, useLandingTranslation } from "@/compone
  */
 
 import React, { useEffect, useState, useMemo, useRef } from "react";
+import dynamic from "next/dynamic";
 import { isNgoRole } from "@/lib/isNgoRole";
 import Image from "next/image";
 import Link from "next/link";
@@ -57,7 +58,6 @@ import { isRakshaBandhanCampaignActive, longestWaiting } from "@/lib/raksha-band
 import { UnclaimedSection } from "@/components/home/UnclaimedSection";
 import {
   getMyProfile,
-  getItemRequests,
   type UserProfile,
 } from "@/lib/api";
 import { toast } from "@/lib/toast";
@@ -70,20 +70,23 @@ import { AboutTwoWays } from "@/components/home/AboutTwoWays";
 import { HeroFilm } from "@/components/cinematic/HeroFilm";
 import { SupportGallery } from "@/components/home/supportGallery/SupportGallery";
 import { HowItWorksSection } from "@/components/home/HowItWorksSection";
-import { TrustSafetySection } from "@/components/home/TrustSafetySection";
-import { FoundersNoteSection } from "@/components/home/FoundersNoteSection";
-import { GoogleReviewsSection } from "@/components/home/GoogleReviewsSection";
 import type { GoogleReviewsData } from "@/data/googleReviews";
 import { FinalCtaSection } from "@/components/home/FinalCtaSection";
 import { CreditsSection } from "@/components/home/CreditsSection";
-import { HowItWorksDesktop } from "@/components/home/desktop/HowItWorksDesktop";
-import { RoleHome } from "@/components/home/RoleHome";
-import { NgoLandingView } from "@/components/ngo-landing/NgoLandingView";
 import { SmoothScroll } from "@/components/SmoothScroll";
 import { DesktopStatsBar, LiveTicker } from "@/components/home/StatsBars";
 import { LiveNeedsSection } from "@/components/home/LiveNeedsSection";
 import { NgoDrivesSection } from "@/features/ngo-drives/components/NgoDrivesSection";
 import { refreshScrollTrigger } from "@/lib/gsapLoader";
+
+// Width/role-gated sections do not need to compile/download in every visitor's
+// initial homepage chunk. Their existing viewport/auth guards select the chunk.
+const HowItWorksDesktop = dynamic(() => import("@/components/home/desktop/HowItWorksDesktop").then(m => m.HowItWorksDesktop));
+const TrustSafetySection = dynamic(() => import("@/components/home/TrustSafetySection").then(m => m.TrustSafetySection));
+const FoundersNoteSection = dynamic(() => import("@/components/home/FoundersNoteSection").then(m => m.FoundersNoteSection));
+const GoogleReviewsSection = dynamic(() => import("@/components/home/GoogleReviewsSection").then(m => m.GoogleReviewsSection));
+const RoleHome = dynamic(() => import("@/components/home/RoleHome").then(m => m.RoleHome));
+const NgoLandingView = dynamic(() => import("@/components/ngo-landing/NgoLandingView").then(m => m.NgoLandingView));
 
 
 
@@ -142,7 +145,7 @@ export default function HomeClient({
   const { user, isRestoring } = useAuth();
 
   const [campaigns, setCampaigns] = useState<Campaign[]>(initialCampaigns);
-  const [itemRequests, setItemRequests] = useState<ItemRequest[]>(initialItemRequests);
+  const [itemRequests] = useState<ItemRequest[]>(initialItemRequests);
   const [stats, setStats] = useState<PlatformStats | null>(initialStats);
   const [activity, setActivity] = useState<RecentActivity[]>(initialActivity);
   const [loading, setLoading] = useState(false);
@@ -158,20 +161,8 @@ export default function HomeClient({
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
   const [myProfile, setMyProfile] = useState<UserProfile | null>(null);
 
-  // Item requests are private inventory (auth required) — the server-side render
-  // above can't attach the httpOnly cookie, so `initialItemRequests` is always
-  // empty. Re-fetch client-side once a logged-in user's cookie is available.
-  useEffect(() => {
-    if (!user) return;
-    getItemRequests()
-      .then((data) => {
-        setItemRequests(data);
-        refreshScrollTrigger();
-      })
-      .catch(() => {
-        refreshScrollTrigger();
-      });
-  }, [user]);
+  // The private requests section below is disabled. Do not fetch its inventory
+  // on the landing page; the live needs board uses initialPublicRequests.
 
   useEffect(() => {
     // Refresh ScrollTrigger after initial mount and layout settling
@@ -250,7 +241,11 @@ export default function HomeClient({
   // see the guest's signup CTA flash during hydration.
   const isGuest = !isRestoring && !user;
   
-  const [isDesktop, setIsDesktop] = useState(true);
+  // Resolve before mounting width-specific sections, so a phone never mounts
+  // the desktop versions just to hide them with CSS after hydration.
+  const [isDesktop, setIsDesktop] = useState<boolean | null>(null);
+  const mobileTailRef = useRef<HTMLDivElement>(null);
+  const [mobileTailReady, setMobileTailReady] = useState(false);
   useEffect(() => {
     const mql = window.matchMedia("(min-width: 1024px)");
     setIsDesktop(mql.matches);
@@ -259,8 +254,22 @@ export default function HomeClient({
     return () => mql.removeEventListener("change", handler);
   }, []);
 
+  useEffect(() => {
+    if (isDesktop !== false || mobileTailReady) return;
+    const section = mobileTailRef.current;
+    if (!section) return;
+    if (typeof IntersectionObserver === "undefined") { setMobileTailReady(true); return; }
+    const observer = new IntersectionObserver((entries) => {
+      if (!entries.some(entry => entry.isIntersecting)) return;
+      setMobileTailReady(true);
+      observer.disconnect();
+    }, { rootMargin: "1000px" });
+    observer.observe(section);
+    return () => observer.disconnect();
+  }, [isDesktop, mobileTailReady]);
+
   // Show the guest tree if we are restoring, OR if they are not a donor/donee, OR if it is mobile (where the shared components are needed).
-  const showGuestDesktopTree = isRestoring || !isDonorOrDonee || !isDesktop;
+  const showGuestDesktopTree = isRestoring || !isDonorOrDonee || isDesktop === false;
   // Signed-in donors and donees: on desktop they get RoleHome instead of the
   // guest page; on mobile they share the guest sections, minus the two that
   // pitch signing up ("How it works" and the "Start in 60 seconds" CTA).
@@ -325,28 +334,28 @@ export default function HomeClient({
       <SupportGallery />
 
       {/* SECTION 3 — HOW DO WE WORK */}
-      <div className="hidden lg:block">
+      {isDesktop === true && <div className="hidden lg:block">
         <HowItWorksDesktop />
-      </div>
-      {!isRoleHome && (
+      </div>}
+      {!isRoleHome && isDesktop === false && (
         <div className="lg:hidden">
           <HowItWorksSection />
         </div>
       )}
 
       {/* SECTION 5 — CAN I TRUST YOU (Desktop) */}
-      <div className="hidden lg:block">
+      {isDesktop === true && <div className="hidden lg:block">
         <TrustSafetySection variant="desktop" />
-      </div>
+      </div>}
 
       {/* FOUNDER'S NOTE (Desktop) */}
-      <div className="hidden lg:block">
+      {isDesktop === true && <div className="hidden lg:block">
         <FoundersNoteSection variant="desktop" />
-      </div>
+      </div>}
 
-      <div className="hidden lg:block" data-dw-panel>
+      {isDesktop === true && <div className="hidden lg:block" data-dw-panel>
         <GoogleReviewsSection initial={initialReviews} />
-      </div>
+      </div>}
 
       <div className="ck-home-paper hidden lg:block relative z-10">
         {/* Latest campaigns carousel */}
@@ -511,7 +520,8 @@ export default function HomeClient({
       {/* Below 768px every section pads itself (`.ck-m-section`, with room for
           the bottom dock), so the column's own 44px gap and top pad drop out
           there rather than stacking on top of it. */}
-      <div className="lg:hidden relative min-h-screen px-5 flex flex-col gap-11 max-md:gap-0 overflow-x-clip pt-11 max-md:pt-0 bg-[#fbf9f4] dark:bg-zinc-950">
+      {isDesktop === false && <div ref={mobileTailRef} data-mobile-tail-ready={mobileTailReady} className="lg:hidden relative min-h-screen px-5 flex flex-col gap-11 max-md:gap-0 overflow-x-clip pt-11 max-md:pt-0 bg-[#fbf9f4] dark:bg-zinc-950">
+        {mobileTailReady && <>
 
         {/* Mobile stats ticker — Dark mode fix: bg stays terracotta, text white.
 
@@ -637,7 +647,8 @@ export default function HomeClient({
           </div>
         )}
 
-      </div>
+        </>}
+      </div>}
     </div>
   );
 }

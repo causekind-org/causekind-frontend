@@ -6,7 +6,7 @@ import Link from "next/link";
 import {
   AlertTriangle, ArrowRight, ArrowUpRight, Building2, ChevronLeft, ChevronRight,
   LayoutGrid, Loader2, LocateFixed, MapPin, Package, RefreshCw, Search, SearchX,
-  SlidersHorizontal, UserRound,
+  SlidersHorizontal, UserRound, X,
 } from "lucide-react";
 import type { ItemRequest } from "@/lib/api";
 import { ALL_REQUEST_CATEGORIES, CATEGORY_VISUALS } from "@/lib/categoryVisuals";
@@ -18,6 +18,7 @@ import { NgoDriveCard } from "@/features/ngo-drives/components/NgoDriveCard";
 import type { UnifiedNeedItem } from "@/features/ngo-drives/ngoDriveFilters";
 
 import { UiText, useUiText } from "@/components/UiText";
+import { Drawer, DrawerClose, DrawerContent, DrawerFooter, DrawerHeader, DrawerTitle } from "@/components/ui/drawer";
 import { useTranslations } from "next-intl";
 /**
  * The signed-in Category Directory: category rail (desktop) / chip row (phone)
@@ -86,6 +87,8 @@ export function RequestDirectory(props: Props) {
   const rt = useTranslations("requestsArea");
   const ui = useUiText();
   const [filtersOpen, setFiltersOpen] = useState(false);
+  // Phone/tablet: every filter control sits behind one "Filters" button (design idea 2).
+  const [sheetOpen, setSheetOpen] = useState(false);
   const {
     items, requests = [], total, counts, typeCounts, categories, toggleCategory, clearCategories,
     audience, setAudience, urgencies, toggleUrgency,
@@ -97,7 +100,9 @@ export function RequestDirectory(props: Props) {
     items ?? requests.map(r => ({ kind: "request" as const, data: r }));
 
   const allCount = categories.length === 0 ? total : Object.values(counts).reduce((a, b) => a + b, 0);
-  const narrowing = categories.length > 0 || urgencies.length > 0 || search.trim().length > 0 || audience !== "all";
+  const activeCount = (audience !== "all" ? 1 : 0) + urgencies.length + categories.length + (sort !== "newest" ? 1 : 0);
+  const tag = "inline-flex min-h-9 items-center gap-1.5 rounded-full bg-[var(--ck-role-accent)]/10 ps-3 pe-2.5 text-[13px] font-semibold text-[var(--ck-role-accent)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--ck-role-accent)]";
+  const narrowing =categories.length > 0 || urgencies.length > 0 || search.trim().length > 0 || audience !== "all";
   const tabCount: Record<AudienceUrlType, number> = {
     all: typeCounts.PERSON + typeCounts.NGO,
     people: typeCounts.PERSON,
@@ -107,6 +112,20 @@ export function RequestDirectory(props: Props) {
 
   const pill = (on: boolean) =>
     `inline-flex min-h-11 shrink-0 items-center gap-1.5 rounded-lg border px-3 text-sm font-semibold transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--ck-role-accent)] focus-visible:ring-offset-2 dark:focus-visible:ring-offset-zinc-950 ${
+      on
+        ? "border-[var(--ck-role-accent)] bg-[var(--ck-role-accent)] text-white"
+        : "border-stone-200 bg-white text-stone-700 hover:border-stone-400 dark:border-zinc-700 dark:bg-zinc-900 dark:text-stone-200"
+    }`;
+  // Phone: segmented-control segment. sm+: falls back to the regular pill look.
+  const seg = (on: boolean) =>
+    `inline-flex min-h-10 min-w-0 items-center justify-center gap-1.5 rounded-lg px-2 text-sm font-semibold transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--ck-role-accent)] sm:min-h-11 sm:shrink-0 sm:border sm:px-3 ${
+      on
+        ? "bg-[var(--ck-role-accent)] text-white shadow-sm sm:border-[var(--ck-role-accent)]"
+        : "text-stone-600 hover:text-stone-900 dark:text-stone-300 sm:border-stone-200 sm:bg-white sm:text-stone-700 dark:sm:border-zinc-700 dark:sm:bg-zinc-900"
+    }`;
+  // Phone/tablet category chips: lighter rounded pills.
+  const chip = (on: boolean) =>
+    `inline-flex min-h-9 shrink-0 items-center gap-1.5 rounded-full border px-3 text-[13px] font-semibold transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--ck-role-accent)] ${
       on
         ? "border-[var(--ck-role-accent)] bg-[var(--ck-role-accent)] text-white"
         : "border-stone-200 bg-white text-stone-700 hover:border-stone-400 dark:border-zinc-700 dark:bg-zinc-900 dark:text-stone-200"
@@ -121,8 +140,9 @@ export function RequestDirectory(props: Props) {
   return (
     <section aria-label={ui("Request directory")} className="w-full px-3 py-5 sm:px-6 sm:py-8 lg:px-8 xl:px-10">
       {/* ── Toolbar ── */}
-      <div className="flex flex-col gap-2.5 lg:flex-row lg:flex-wrap lg:items-center">
-        <div className="relative min-w-0 lg:min-w-[240px] lg:flex-1">
+      <div className="flex flex-col gap-2 sm:gap-2.5 lg:flex-row lg:flex-wrap lg:items-center">
+        <div className="flex gap-2 lg:min-w-[240px] lg:flex-1">
+        <div className="relative min-w-0 flex-1">
           <Search className="pointer-events-none absolute start-3 top-1/2 size-4 -translate-y-1/2 text-stone-400" aria-hidden />
           <input
             type="search"
@@ -134,13 +154,55 @@ export function RequestDirectory(props: Props) {
             className="min-h-11 w-full rounded-lg border border-stone-200 bg-white py-2 ps-9 pe-3 text-base placeholder:text-stone-400 focus:border-[var(--ck-role-accent)] focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--ck-role-accent)]/30 dark:border-zinc-700 dark:bg-zinc-900"
           />
         </div>
+        <button
+          type="button"
+          onClick={() => setSheetOpen(true)}
+          aria-haspopup="dialog"
+          className="inline-flex min-h-11 shrink-0 items-center gap-2 rounded-lg bg-stone-900 px-4 text-sm font-semibold text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--ck-role-accent)] focus-visible:ring-offset-2 dark:bg-stone-100 dark:text-stone-900 lg:hidden"
+        >
+          <SlidersHorizontal className="size-4" aria-hidden />
+          <UiText>Filters</UiText>
+          {activeCount > 0 && (
+            <span className="grid size-5 place-items-center rounded-full bg-[var(--ck-role-accent)] text-[11px] tabular-nums text-white">{activeCount}</span>
+          )}
+        </button>
+        </div>
 
-        <div role="group" aria-label={ui("Who posted the request")} className="-mx-3 flex gap-2 overflow-x-auto px-3 pb-0.5 sm:mx-0 sm:px-0">
+        {activeCount > 0 && (
+          <div className="flex flex-wrap items-center gap-1.5 lg:hidden">
+            {audience !== "all" && (
+              <button type="button" onClick={() => setAudience("all")} className={tag}>
+                {AUDIENCE_OPTIONS.find(o => o.urlType === audience)?.label}<X className="size-3.5" aria-hidden /><span className="sr-only">{ui("Remove filter")}</span>
+              </button>
+            )}
+            {urgencies.map(u => (
+              <button key={u} type="button" onClick={() => toggleUrgency(u)} className={tag}>
+                {URGENCIES.find(x => x.value === u)?.label ?? u}<X className="size-3.5" aria-hidden /><span className="sr-only">{ui("Remove filter")}</span>
+              </button>
+            ))}
+            {categories.map(c => (
+              <button key={c} type="button" onClick={() => toggleCategory(c)} className={tag}>
+                <TranslatedText text={c} /><X className="size-3.5" aria-hidden /><span className="sr-only">{ui("Remove filter")}</span>
+              </button>
+            ))}
+            {sort !== "newest" && (
+              <button type="button" onClick={() => setSort("newest")} className={tag}>
+                {sort === "nearest" ? ui("Nearest first") : sort === "urgent" ? ui("Most urgent") : ui("Highest quantity")}<X className="size-3.5" aria-hidden /><span className="sr-only">{ui("Remove filter")}</span>
+              </button>
+            )}
+            <button type="button" onClick={reset} className="min-h-9 px-1 text-[13px] font-semibold text-[var(--ck-role-accent)] underline underline-offset-2">
+              <UiText>Clear all</UiText>
+            </button>
+          </div>
+        )}
+
+        <div id="request-directory-sheet" className="hidden lg:contents">
+        <div role="group" aria-label={ui("Who posted the request")} className="grid grid-cols-3 gap-1 rounded-xl bg-stone-200/60 p-1 dark:bg-zinc-800 sm:flex sm:gap-2 sm:bg-transparent sm:p-0 dark:sm:bg-transparent">
           {AUDIENCE_OPTIONS.map(o => {
             const Icon = tabIcon[o.urlType];
             const on = audience === o.urlType;
             return (
-              <button key={o.value} id={`directory-audience-${o.value}`} type="button" aria-pressed={on} title={o.description} onClick={() => setAudience(o.urlType)} className={pill(on)}>
+              <button key={o.value} id={`directory-audience-${o.value}`} type="button" aria-pressed={on} title={o.description} onClick={() => setAudience(o.urlType)} className={seg(on)}>
                 <Icon className="size-4" aria-hidden />
                 {o.label}
                 <span className="sr-only">: {o.description}, </span>
@@ -150,7 +212,7 @@ export function RequestDirectory(props: Props) {
           })}
         </div>
 
-        <div className="flex flex-wrap items-center gap-2">
+        <div className="flex items-center gap-2 sm:flex-wrap">
           <button
             type="button"
             onClick={() => setFiltersOpen(o => !o)}
@@ -183,11 +245,86 @@ export function RequestDirectory(props: Props) {
               {location === "locating"
                 ? <Loader2 className="size-4 animate-spin motion-reduce:animate-none" aria-hidden />
                 : <LocateFixed className="size-4" aria-hidden />}
-              {location === "locating" ? ui("Locating…") : ui("Use my location")}
+              <span className="sr-only sm:not-sr-only">{location === "locating" ? ui("Locating…") : ui("Use my location")}</span>
             </button>
           )}
         </div>
+        </div>
       </div>
+
+      {/* Phone/tablet filter tray. */}
+      <Drawer open={sheetOpen} onOpenChange={setSheetOpen}>
+        <DrawerContent className="max-h-[85dvh] rounded-t-3xl lg:hidden">
+          <DrawerHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <DrawerTitle className="text-lg"><UiText>Filters</UiText></DrawerTitle>
+            <button type="button" onClick={reset} className="min-h-10 px-1 text-sm font-semibold text-[var(--ck-role-accent)]">
+              <UiText>Reset</UiText>
+            </button>
+          </DrawerHeader>
+          <div className="min-h-0 flex-1 space-y-5 overflow-y-auto px-5 pb-2">
+            <section>
+              <p className="mb-2 text-xs font-bold uppercase tracking-wider text-stone-500"><UiText>Posted by</UiText></p>
+              <div className="flex flex-wrap gap-2">
+                {AUDIENCE_OPTIONS.map(o => (
+                  <button key={o.value} type="button" aria-pressed={audience === o.urlType} onClick={() => setAudience(o.urlType)} className={chip(audience === o.urlType)}>
+                    {o.label}
+                  </button>
+                ))}
+              </div>
+            </section>
+            <section>
+              <p className="mb-2 text-xs font-bold uppercase tracking-wider text-stone-500"><UiText>Urgency</UiText></p>
+              <div className="flex flex-wrap gap-2">
+                {URGENCIES.map(u => (
+                  <button key={u.value} type="button" aria-pressed={urgencies.includes(u.value)} onClick={() => toggleUrgency(u.value)} className={chip(urgencies.includes(u.value))}>
+                    {u.label}
+                  </button>
+                ))}
+              </div>
+            </section>
+            <section>
+              <p className="mb-2 text-xs font-bold uppercase tracking-wider text-stone-500"><UiText>Category</UiText></p>
+              <div className="flex flex-wrap gap-2">
+                <button type="button" onClick={clearCategories} aria-pressed={!categories.length} className={chip(!categories.length)}>
+                  <UiText>All</UiText>
+                </button>
+                {ALL_REQUEST_CATEGORIES.map(category => (
+                  <button key={category} type="button" onClick={() => toggleCategory(category)} aria-pressed={categories.includes(category)} className={chip(categories.includes(category))}>
+                    <TranslatedText text={category} />
+                  </button>
+                ))}
+              </div>
+            </section>
+            <section>
+              <p className="mb-2 text-xs font-bold uppercase tracking-wider text-stone-500"><UiText>Sort</UiText></p>
+              <div className="flex flex-wrap gap-2">
+                <button type="button" aria-pressed={sort === "newest"} onClick={() => setSort("newest")} className={chip(sort === "newest")}><UiText>Just added</UiText></button>
+                <button type="button" aria-pressed={sort === "urgent"} onClick={() => setSort("urgent")} className={chip(sort === "urgent")}><UiText>Most urgent</UiText></button>
+                <button type="button" aria-pressed={sort === "qty"} onClick={() => setSort("qty")} className={chip(sort === "qty")}><UiText>Highest quantity</UiText></button>
+                <button
+                  type="button"
+                  aria-pressed={sort === "nearest"}
+                  disabled={location === "locating" || location === "denied"}
+                  onClick={() => (location === "on" ? setSort("nearest") : onUseLocation())}
+                  className={`${chip(sort === "nearest")} disabled:opacity-50`}
+                >
+                  {location === "locating"
+                    ? <Loader2 className="size-3.5 animate-spin motion-reduce:animate-none" aria-hidden />
+                    : <LocateFixed className="size-3.5" aria-hidden />}
+                  <UiText>Nearest</UiText>
+                </button>
+              </div>
+            </section>
+          </div>
+          <DrawerFooter>
+            <DrawerClose asChild>
+              <button type="button" className="min-h-12 w-full rounded-xl bg-[var(--ck-role-accent)] text-[15px] font-bold text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--ck-role-accent)] focus-visible:ring-offset-2">
+                {ui("Show results")} ({total})
+              </button>
+            </DrawerClose>
+          </DrawerFooter>
+        </DrawerContent>
+      </Drawer>
 
       {location === "denied" && (
         <p role="status" className="mt-2 text-xs text-stone-500 dark:text-stone-400">
@@ -206,20 +343,20 @@ export function RequestDirectory(props: Props) {
       </div>
 
       {/* ── Category navigation + results ── */}
-      <div className="mt-4 grid items-start gap-4 lg:mt-6 lg:grid-cols-[220px_minmax(0,1fr)] lg:gap-8">
+      <div className="mt-3 grid items-start gap-4 sm:mt-4 lg:mt-6 lg:grid-cols-[220px_minmax(0,1fr)] lg:gap-8">
         <nav aria-label={ui("Request categories")} className="min-w-0 lg:sticky lg:top-24">
           <p className="mb-2 hidden text-xs font-bold uppercase tracking-wider text-stone-500 lg:block"><UiText>Categories</UiText></p>
 
           {/* Phone/tablet: one horizontally scrolling chip row. */}
-          <div className="-mx-3 flex gap-2 overflow-x-auto px-3 pb-1 sm:mx-0 sm:px-0 lg:hidden">
-            <button type="button" onClick={clearCategories} aria-pressed={!categories.length} className={pill(!categories.length)}>
+          <div className={`-mx-3 hidden gap-2 overflow-x-auto px-3 pb-1 [mask-image:linear-gradient(to_right,black_85%,transparent)] [scrollbar-width:none] sm:mx-0 sm:px-0 lg:hidden [&::-webkit-scrollbar]:hidden`}>
+            <button type="button" onClick={clearCategories} aria-pressed={!categories.length} className={chip(!categories.length)}>
               <UiText>All categories</UiText>
             </button>
             {ALL_REQUEST_CATEGORIES.map(category => {
               const visual = CATEGORY_VISUALS[category];
               const on = categories.includes(category);
               return (
-                <button key={category} type="button" onClick={() => toggleCategory(category)} aria-pressed={on} className={pill(on)}>
+                <button key={category} type="button" onClick={() => toggleCategory(category)} aria-pressed={on} className={chip(on)}>
                   {visual && <visual.Icon className="size-4" aria-hidden />}
                   <TranslatedText text={category} />
                   <span className={`tabular-nums ${on ? "text-white/80" : "text-stone-600"}`}>{counts[category] ?? 0}</span>

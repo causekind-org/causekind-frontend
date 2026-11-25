@@ -4,8 +4,11 @@ import { useEffect, useState } from "react";
 import { usePathname } from "next/navigation";
 import { useAuth } from "@/hooks/useAuth";
 import { overlayGatesClear } from "@/lib/overlayGates";
-import GuidedTour from "./GuidedTour";
+import dynamic from "next/dynamic";
 import { DASHBOARD_TOUR, GUEST_HOME_TOUR, HOME_TOUR, PROFILE_TOUR, type TourRole, type TourStep } from "./tourSteps";
+
+// The controller can wait for anchors without downloading the spotlight UI.
+const GuidedTour = dynamic(() => import("./GuidedTour"), { ssr: false });
 
 // Orchestrates WHEN the first-time tour shows. Show-once state follows the
 // A per-user localStorage flag, set on finish OR skip.

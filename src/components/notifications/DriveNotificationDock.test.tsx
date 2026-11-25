@@ -56,12 +56,20 @@ describe("drive notification dock", () => {
     expect(screen.getByRole("button", { name: "View handover" })).toBeInTheDocument();
   });
 
-  it("a grouped notice merged again (fresh timestamp) shows again after X", () => {
-    const { rerender } = render(<DriveNotificationDock />);
+  it("each notice pops up only once: not again after X, a fresh timestamp, or a page reload", () => {
+    const first = render(<DriveNotificationDock />);
     fireEvent.click(screen.getByRole("button", { name: /Close/ }));
     state.notifications = [n("n-1", "4 new offers on \"School bags\"", "/dashboard/ngo?tab=activity&filter=offers&drive=8", 2)];
-    rerender(<DriveNotificationDock />);
-    expect(screen.getByTestId("drive-notification-dock")).toHaveTextContent("4 new offers");
+    first.rerender(<DriveNotificationDock />);
+    expect(screen.queryByText(/4 new offers/)).toBeNull();
+    first.unmount();
+    render(<DriveNotificationDock />); // a new page / refresh
+    expect(screen.queryByTestId("drive-notification-dock")).toBeNull();
+  });
+
+  it("the close button sits in the top-right corner", () => {
+    render(<DriveNotificationDock />);
+    expect(screen.getByTestId("drive-dock-close").className).toMatch(/absolute right-2 top-2/);
   });
 
   it("primary labels follow the agreed actions", () => {

@@ -6,3 +6,8 @@
 export function isDriveGiveFlowPath(pathname: string | null | undefined): boolean {
   return /^\/drives\/\d+(\/give)?\/?$/.test(pathname ?? "");
 }
+
+/** Only the give form itself (/drives/7/give), not the drive page. */
+export function isDriveGiveFormPath(pathname: string | null | undefined): boolean {
+  return /^(\/[a-z]{2})?\/drives\/\d+\/give\/?$/.test(pathname ?? "");
+}

@@ -18,6 +18,7 @@
  */
 
 export type BodyKind = "icon" | "title" | "desc" | "cta";
+export type TrayTiltInput = { x: number; y: number; wake: (() => void) | null };
 
 type BodySpec = {
   /** Heavier bodies answer the spring and drag more slowly. */
@@ -76,6 +77,8 @@ export type Box = { left: number; top: number; right: number; bottom: number };
 
 export type Body = {
   kind: BodyKind;
+  free: boolean;
+  trayWidth: number; trayHeight: number;
   /** Home box, relative to the tray's top-left corner. */
   home: Box;
   x: number; y: number; r: number;
@@ -87,11 +90,11 @@ export type Body = {
 };
 
 /** `rand` returns 0..1; pass a seeded one to make a run repeatable. */
-export function createBody(kind: BodyKind, home: Box, tray: { width: number; height: number }, rand: () => number): Body {
+export function createBody(kind: BodyKind, home: Box, tray: { width: number; height: number }, rand: () => number, free = false): Body {
   const inset = TUNING.wallInset;
   const span = (lo: number, hi: number) => lo + (hi - lo) * rand();
   return {
-    kind, home,
+    kind, home, free, trayWidth: tray.width, trayHeight: tray.height,
     x: 0, y: 0, r: 0, vx: 0, vy: 0, vr: 0,
     // Home itself is always inside the allowed range.
     minX: Math.min(0, inset - home.left),
@@ -111,6 +114,7 @@ export function stackedPairs(bodies: Body[]): [number, number][] {
   for (let i = 0; i < bodies.length; i++) {
     for (let j = 0; j < bodies.length; j++) {
       if (i === j) continue;
+      if (bodies[i].free || bodies[j].free) continue;
       const a = bodies[i].home, b = bodies[j].home;
       const sameColumn = a.left < b.right && b.left < a.right;
       if (sameColumn && a.bottom <= b.top + 0.5) pairs.push([i, j]);
@@ -129,10 +133,11 @@ export function calmness(secondsSinceActive: number): number {
  * Advances one tray by `h` seconds. `accel` is the sheet's vertical
  * acceleration in px/s^2 (negative while it speeds up the screen).
  */
-export function stepTray(bodies: Body[], pairs: [number, number][], accel: number, calm: number, h: number) {
+export function stepTray(bodies: Body[], pairs: [number, number][], accel: number, calm: number, h: number, forces?: number[], tiltX = 0, tiltY = 0) {
   const T = TUNING;
   const home = T.homeWhileThrown + (1 - T.homeWhileThrown) * calm;
-  const fy = new Array<number>(bodies.length).fill(0);
+  const fy = forces ?? new Array<number>(bodies.length);
+  fy.fill(0);
 
   for (const [i, j] of pairs) {
     const a = bodies[i], b = bodies[j];
@@ -148,6 +153,10 @@ export function stepTray(bodies: Body[], pairs: [number, number][], accel: numbe
 
   for (let i = 0; i < bodies.length; i++) {
     const b = bodies[i];
+    if (b.free) {
+      stepFreeBody(b, accel, calm, h, tiltX, tiltY);
+      continue;
+    }
     const s = BODY[b.kind];
     const grip = b.held ? T.heldPush : 1;
     const k = (s.spring / s.mass) * home * (b.held ? T.heldSpring : 1);
@@ -171,9 +180,58 @@ export function stepTray(bodies: Body[], pairs: [number, number][], accel: numbe
   }
 }
 
-export function isAtRest(bodies: Body[]): boolean {
+/** A loose icon tile: sheet inertia, gravity, spin and rigid card walls.
+ * Once the sheet is calm it gently returns home so the UI can settle and sleep.
+ */
+function stepFreeBody(b: Body, accel: number, calm: number, h: number, tiltX: number, tiltY: number) {
+  const homePull = calm * calm;
+  const shove = -accel * 0.85 * b.push;
+  const gravity = 700 * (1 - homePull);
+  const drag = 1.8 + 9 * homePull;
+  b.vx += (tiltX + shove * (0.4 + Math.abs(b.lean) * 0.35) * Math.sign(b.twist) - 28 * homePull * b.x - drag * b.vx) * h;
+  b.vy += (tiltY + shove + gravity - 28 * homePull * b.y - drag * b.vy) * h;
+  b.vr += (-accel * 0.12 * b.twist - 32 * homePull * b.r - (2 + 9 * homePull) * b.vr) * h;
+  b.x += b.vx * h;
+  b.y += b.vy * h;
+  b.r += b.vr * h;
+
+  // Rotation-aware bounds keep the entire tile, including its corners, inside.
+  const w = b.home.right - b.home.left;
+  const height = b.home.bottom - b.home.top;
+  const radians = b.r * Math.PI / 180;
+  const cos = Math.abs(Math.cos(radians));
+  const sin = Math.abs(Math.sin(radians));
+  const halfW = (cos * w + sin * height) / 2;
+  const halfH = (sin * w + cos * height) / 2;
+  const cx = (b.home.left + b.home.right) / 2;
+  const cy = (b.home.top + b.home.bottom) / 2;
+  const inset = TUNING.wallInset;
+  const minX = inset + halfW - cx;
+  const maxX = b.trayWidth - inset - halfW - cx;
+  const minY = inset + halfH - cy;
+  const maxY = b.trayHeight - inset - halfH - cy;
+  // A very short card may not fit the rotated tile: keep it upright there.
+  if (minX > maxX || minY > maxY) {
+    b.r = 0; b.vr = 0;
+    b.x = Math.max(b.minX, Math.min(b.maxX, b.x));
+    b.y = Math.max(b.minY, Math.min(b.maxY, b.y));
+    return;
+  }
+  if (b.x < minX || b.x > maxX) {
+    b.x = Math.max(minX, Math.min(maxX, b.x));
+    b.vx = b.x === minX ? Math.abs(b.vx) * 0.65 : -Math.abs(b.vx) * 0.65;
+    b.vr += b.vy * 0.18;
+  }
+  if (b.y < minY || b.y > maxY) {
+    b.y = Math.max(minY, Math.min(maxY, b.y));
+    b.vy = b.y === minY ? Math.abs(b.vy) * 0.65 : -Math.abs(b.vy) * 0.65;
+    b.vr -= b.vx * 0.18;
+  }
+}
+
+export function isAtRest(bodies: Body[], allowFreeOffset = false): boolean {
   const T = TUNING;
   return bodies.every((b) =>
-    Math.abs(b.x) < T.restOffset && Math.abs(b.y) < T.restOffset && Math.abs(b.r) < T.restAngle &&
+    ((allowFreeOffset && b.free) || (Math.abs(b.x) < T.restOffset && Math.abs(b.y) < T.restOffset && Math.abs(b.r) < T.restAngle)) &&
     Math.abs(b.vx) < T.restSpeed && Math.abs(b.vy) < T.restSpeed && Math.abs(b.vr) < T.restSpin);
 }

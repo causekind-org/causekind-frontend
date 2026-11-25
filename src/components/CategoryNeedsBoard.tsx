@@ -613,7 +613,7 @@ function NeedCardCompact({
 
         {/* CTA Row */}
         <div className="flex items-center gap-2 mt-auto relative z-10">
-          <Link href={href} className="ck-need-card__cta flex-1 text-center justify-center">
+          <Link href={href} aria-label={`${ctaText}: ${title}`} className="ck-need-card__cta flex-1 text-center justify-center">
             {ctaText}
             <Sparkles className="w-3 h-3 opacity-0 group-hover:opacity-100 transition-opacity" />
           </Link>

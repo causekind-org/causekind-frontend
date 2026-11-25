@@ -32,7 +32,7 @@ export function DashboardFilterChips<K extends string>({
     : "border-[#1e3a60] bg-[#1e3a60] text-white dark:border-blue-400 dark:bg-blue-500/30";
 
   return (
-    <div role="group" aria-label={label} className="mt-3 flex flex-wrap gap-1.5">
+    <div role="group" aria-label={label} className="-mx-4 mt-3 flex gap-1.5 overflow-x-auto px-4 pb-1 [scrollbar-width:none] sm:mx-0 sm:flex-wrap sm:overflow-visible sm:px-0 [&::-webkit-scrollbar]:hidden">
       {options.map(o => {
         const selected = o.key === value;
         return (
@@ -44,7 +44,7 @@ export function DashboardFilterChips<K extends string>({
             // Without this the label and count run together as "Drafts2".
             aria-label={`${o.label} (${o.count})`}
             onClick={() => onChange(o.key)}
-            className={`inline-flex min-h-8 items-center gap-1.5 rounded-full border px-3 py-1 text-2xs font-bold transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--ck-role-accent)] ${
+            className={`inline-flex min-h-8 shrink-0 items-center gap-1.5 rounded-full border px-3 py-1 text-2xs font-bold transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--ck-role-accent)] ${
               selected
                 ? active
                 : o.count === 0

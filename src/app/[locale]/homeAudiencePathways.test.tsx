@@ -153,8 +153,23 @@ const donorCtas = () => screen.queryAllByText(/join as a donor/i);
 const doneeCtas = () => screen.queryAllByText(/join as a donee/i);
 const guestJoinAnchors = () => document.querySelectorAll('[data-tour="guest-join"]');
 const headings = () => screen.queryAllByText(/whichever side you're on/i);
+let intersectMobileTail = true;
+const tailObservers = new Map<Element, () => void>();
 
 beforeEach(() => {
+  intersectMobileTail = true;
+  tailObservers.clear();
+  vi.stubGlobal("IntersectionObserver", class {
+    constructor(private callback: IntersectionObserverCallback) {}
+    observe(target: Element) {
+      if (!target.hasAttribute("data-mobile-tail-ready")) return;
+      const enter = () => this.callback([{ isIntersecting: true, target } as IntersectionObserverEntry], this as unknown as IntersectionObserver);
+      tailObservers.set(target, enter);
+      if (intersectMobileTail) enter();
+    }
+    unobserve() {}
+    disconnect() {}
+  });
   authState.user = null;
   authState.isLoading = true;
   authState.isRestoring = true;
@@ -162,6 +177,19 @@ beforeEach(() => {
 
 afterEach(() => {
   vi.clearAllMocks();
+  vi.unstubAllGlobals();
+});
+
+it("leaves the distant mobile tail unmounted until it approaches the viewport", async () => {
+  intersectMobileTail = false;
+  authState.isRestoring = false;
+  await renderHome();
+  const tail = document.querySelector('[data-mobile-tail-ready="false"]');
+  expect(tail).not.toBeNull();
+  expect(tail!.children).toHaveLength(0);
+  await act(async () => tailObservers.get(tail!)!());
+  expect(tail).toHaveAttribute("data-mobile-tail-ready", "true");
+  expect(tail!.children.length).toBeGreaterThan(0);
 });
 
 describe("while auth is still resolving", () => {

@@ -3,8 +3,8 @@ import { useTranslations } from "next-intl";
 import { UiText, useUiText } from "@/components/UiText";
 
 
-import { useEffect, useRef, useState, useCallback } from "react";
-import { useRouter } from "next/navigation";
+import { useEffect, useRef, useState, useCallback, useMemo } from "react";
+import { useRouter } from "@/hooks/useAppRouter";
 import { Search, X, ClipboardList, Loader2, ArrowRight } from "lucide-react";
 import { getItemRequests, type ItemRequest } from "@/lib/api";
 import { useAuth } from "@/hooks/useAuth";
@@ -79,25 +79,32 @@ export function GlobalSearch() {
   const { user } = useAuth();
   const [open,    setOpen]    = useState(false);
   const [query,   setQuery]   = useState("");
-  const [results, setResults] = useState<ItemRequest[]>([]);
+  const [items, setItems] = useState<ItemRequest[]>([]);
   const [loading, setLoading] = useState(false);
   const [active,  setActive]  = useState(0);
   const inputRef = useRef<HTMLInputElement>(null);
 
   /* Data cache — fetched once per session */
   const cache = useRef<ItemRequest[] | null>(null);
+  const pending = useRef<Promise<ItemRequest[]> | null>(null);
 
   const fetchData = useCallback(async () => {
     if (cache.current) return cache.current;
+    if (pending.current) return pending.current;
     setLoading(true);
-    try {
-      // silent401: search is a background/optional fetch — a logged-out visitor
-      // opening search must not be redirected to login as "session expired".
-      cache.current = await getItemRequests(undefined, undefined, undefined, { silent401: true }).catch(() => []);
-      return cache.current;
-    } finally {
-      setLoading(false);
-    }
+    pending.current = (async () => {
+      try {
+        // Keep a successful session cache, but let a later open retry failures.
+        cache.current = await getItemRequests(undefined, undefined, undefined, { silent401: true });
+        return cache.current;
+      } catch {
+        return [];
+      } finally {
+        pending.current = null;
+        setLoading(false);
+      }
+    })();
+    return pending.current;
   }, []);
 
   /* Open on Ctrl+K / Cmd+K */
@@ -115,31 +122,29 @@ export function GlobalSearch() {
 
   /* Focus input when opened */
   useEffect(() => {
+    let cancelled = false;
+    let focusTimer: ReturnType<typeof setTimeout> | undefined;
     if (open) {
       fetchData().then(data => {
-        if (!query.trim()) {
-          setResults(data.slice(0, 5));
-        }
+        if (!cancelled) setItems(data);
       });
-      setTimeout(() => inputRef.current?.focus(), 60);
+      focusTimer = setTimeout(() => inputRef.current?.focus(), 60);
     } else {
       setQuery("");
       setActive(0);
     }
-  }, [open, fetchData, query]);
+    return () => { cancelled = true; clearTimeout(focusTimer); };
+  }, [open, fetchData]);
 
   /* Search filter */
-  useEffect(() => {
-    if (!cache.current) return;
+  const results = useMemo(() => {
     const q = query.toLowerCase().trim();
-    if (!q) {
-      setResults(cache.current.slice(0, 5));
-      return;
-    }
-    const reqs = cache.current
+    if (!q) return items.slice(0, 5);
+    return items
       .filter(r => r.title.toLowerCase().includes(q) || r.city.toLowerCase().includes(q) || r.category.toLowerCase().includes(q))
       .slice(0, 8);
-    setResults(reqs);
+  }, [query, items]);
+  useEffect(() => {
     setActive(0);
   }, [query]);
 
