@@ -1331,8 +1331,13 @@ section:focus-within {
   /* Every page with the footer after it (drive pages, NGO profiles, dashboards…):
      the dock clearance goes under the footer, so no cream/orange strip shows
      between the page's own background and the footer. */
-  .ck-main-bottom-pad:has(+ #footer) { padding-bottom: 0; }
-  .ck-main-bottom-pad + #footer { padding-bottom: calc(var(--ck-bottom-chrome) + 0.5rem); }
+  /* Pages that cancel the padding themselves (full-screen wizards, sign-in: data-ck-cancels-bottom-pad)
+     keep the old arrangement. */
+  .ck-main-bottom-pad:has(+ #footer):not(:has([data-ck-cancels-bottom-pad])) { padding-bottom: 0; }
+  .ck-main-bottom-pad:not(:has([data-ck-cancels-bottom-pad])) + #footer { padding-bottom: calc(var(--ck-bottom-chrome) + 0.5rem); }
+  /* The donor's give-to-a-drive form is a focused flow on phones: no footer under it, so its
+     sticky Continue bar never sits over the footer (steps 1 and 5 reach the bottom). */
+  .ck-main-bottom-pad:has([data-testid="drive-give-wizard"]) + #footer { display: none; }
   .ck-main-bottom-pad:has(.ck-home-page):has(+ #footer) {
     padding-bottom: 0;
   }

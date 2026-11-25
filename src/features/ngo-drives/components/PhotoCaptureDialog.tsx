@@ -127,8 +127,14 @@ export function PhotoCaptureDialog({
   function capture() {
     const video = videoRef.current;
     if (!video) return;
-    const width = video.videoWidth || 1280;
-    const height = video.videoHeight || 720;
+    const srcW = video.videoWidth || 1280;
+    const srcH = video.videoHeight || 720;
+    // At most 1600 px on the long side: plenty for a handover photo, and a much lighter upload
+    // for the server to check and re-encode (full-size frames could fail on a busy server).
+    const MAX_SIDE = 1600;
+    const scale = Math.min(1, MAX_SIDE / Math.max(srcW, srcH));
+    const width = Math.round(srcW * scale);
+    const height = Math.round(srcH * scale);
     const canvas = document.createElement("canvas");
     canvas.width = width;
     canvas.height = height;
@@ -138,7 +144,7 @@ export function PhotoCaptureDialog({
       blobRef.current = blob;
       setPreview(URL.createObjectURL(blob));
       setPhase("captured");
-    }, "image/jpeg", 0.92);
+    }, "image/jpeg", 0.85);
   }
 
   function retake() {
@@ -163,13 +169,14 @@ export function PhotoCaptureDialog({
 
   return (
     <Dialog open={open} onOpenChange={next => { if (!next) cancel(); }}>
-      <DialogContent className="sm:max-w-xl">
+      <DialogContent className="max-h-[96vh] overflow-y-auto sm:max-w-xl">
         <DialogHeader>
           <DialogTitle><UiText>Take a photo</UiText></DialogTitle>
           <DialogDescription><UiText>Hold the item in good light, with all of it in the frame.</UiText></DialogDescription>
         </DialogHeader>
 
-        <div className="relative aspect-video w-full overflow-hidden rounded-xl bg-stone-900">
+        {/* Phones: a tall portrait preview (how the phone is held). sm+: the usual 16:9. */}
+        <div className="relative aspect-[3/4] max-h-[62vh] w-full overflow-hidden rounded-xl bg-stone-900 sm:aspect-video sm:max-h-none">
           {/* Kept mounted so the stream can attach before it is shown. */}
           <video ref={videoRef} playsInline muted aria-label={ui("Camera preview")}
             className={`h-full w-full object-contain ${phase === "live" ? "" : "invisible"}`} />
@@ -189,9 +196,10 @@ export function PhotoCaptureDialog({
           )}
         </div>
 
-        <div className="flex flex-wrap justify-end gap-2">
+        {/* Phones: full-width buttons stacked, main action on top. sm+: one row on the right. */}
+        <div className="flex flex-col-reverse gap-2 sm:flex-row sm:flex-wrap sm:justify-end [&>button]:w-full [&>button]:justify-center sm:[&>button]:w-auto">
           <button type="button" onClick={cancel}
-            className="min-h-[44px] rounded-xl border border-stone-300 px-4 text-sm font-semibold text-stone-700 dark:border-zinc-700 dark:text-stone-200">
+            className="flex min-h-[44px] items-center rounded-xl border border-stone-300 px-4 text-sm font-semibold text-stone-700 dark:border-zinc-700 dark:text-stone-200">
             {phase === "error" ? ui("Close") : ui("Cancel")}
           </button>
           {phase === "error" && (

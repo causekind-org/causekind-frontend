@@ -732,7 +732,7 @@ export function NgoDriveOfferWizard({
 
   return (
     <MotionConfig reducedMotion={reduced ? "always" : "never"}>
-      <div data-ck-role-theme="ngo" data-testid="drive-give-wizard" className="flex min-h-[calc(100svh-3.5rem)] flex-col justify-between bg-[#faf8f5] -mb-[calc(var(--ck-bottom-chrome)+0.5rem)] lg:mb-0 dark:bg-zinc-950 lg:min-h-0 lg:h-[calc(100dvh-var(--ck-nav-h,0px))] lg:flex-row">
+      <div data-ck-role-theme="ngo" data-testid="drive-give-wizard" className="flex min-h-[calc(100svh-3.5rem)] flex-col justify-between bg-[#faf8f5] dark:bg-zinc-950 lg:min-h-0 lg:h-[calc(100dvh-var(--ck-nav-h,0px))] lg:flex-row">
         <aside className="hidden w-[300px] shrink-0 overflow-y-auto flex-col justify-between bg-gradient-to-b from-[#0b2e22] via-[#123d2e] to-[#0f3326] p-7 text-white lg:flex">
           <div>
             <button

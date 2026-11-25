@@ -6879,12 +6879,43 @@ export async function generateNgoDriveOfferHandoverOtp(offerId: number, renew = 
   });
 }
 
+/**
+ * Handover photo uploads: retried twice on a network error or a server error (5xx), never on a
+ * refusal (4xx: wrong state, too many photos). The first upload after a quiet spell could fail on
+ * a busy server and the photo had to be retaken; a short retry usually goes through.
+ */
+async function postHandoverPhotos(url: string, files: File[], headers: Record<string, string> = {}, credentials: RequestCredentials = "include"): Promise<Response> {
+  let lastError: unknown = null;
+  for (let attempt = 0; attempt < 3; attempt++) {
+    if (attempt > 0) await new Promise((r) => setTimeout(r, 900 * attempt));
+    const formData = new FormData();
+    files.forEach((f) => formData.append("files", f));
+    try {
+      const res = await fetch(url, { method: "POST", body: formData, credentials, headers });
+      if (res.ok || res.status < 500) return res;
+      lastError = new ApiError(res.status, "The server was busy. Please try again.");
+    } catch (e) {
+      lastError = e; // network drop / timeout
+    }
+  }
+  throw lastError instanceof ApiError ? lastError : new ApiError(0, "We couldn't reach the server. Check your connection and try again.");
+}
+
+/** A refusal's message from the server (JSON detail / field errors / plain text), or the fallback. */
+async function photoError(res: Response, fallback: string): Promise<ApiError> {
+  const raw = await res.text().catch(() => "");
+  let msg = "";
+  try {
+    const body = JSON.parse(raw) as { detail?: string; message?: string; fieldErrors?: { message?: string }[] };
+    msg = body.fieldErrors?.map((f) => f.message).filter(Boolean).join(" ") || body.detail || body.message || "";
+  } catch { msg = raw && raw.length < 300 && !raw.trimStart().startsWith("<") ? raw : ""; }
+  return new ApiError(res.status, msg || fallback);
+}
+
 /** The donor's handover photos (1 to 5), taken before showing the code. */
 export async function uploadNgoDriveHandoverPhotos(offerId: number, files: File[]): Promise<string[]> {
-  const formData = new FormData();
-  files.forEach((f) => formData.append("files", f));
-  const res = await fetch(`${BASE_URL}/api/v1/drive-offers/${offerId}/handover-photos`, { method: "POST", body: formData, credentials: "include" });
-  if (!res.ok) throw new Error((await res.text().catch(() => "")) || "Upload failed");
+  const res = await postHandoverPhotos(`${BASE_URL}/api/v1/drive-offers/${offerId}/handover-photos`, files);
+  if (!res.ok) throw await photoError(res, "We couldn't upload that photo.");
   return await res.json();
 }
 export async function confirmNgoDriveOfferHandoverDonor(offerId: number, data: any): Promise<NgoDriveOfferHandoverRecordResponse> {
@@ -6938,14 +6969,8 @@ export async function getNgoDriveOfferForNgo(driveId: number, offerId: number): 
 
 /** Photos the NGO takes of the items it received; needed before it confirms the handover. */
 export async function uploadNgoDriveReceiptPhotos(driveId: number, offerId: number, files: File[]): Promise<string[]> {
-  const formData = new FormData();
-  files.forEach((f) => formData.append("files", f));
-  const res = await fetch(`${BASE_URL}/api/v1/ngo-drives/${driveId}/offers/${offerId}/receipt-photos`, {
-    method: "POST",
-    body: formData,
-    credentials: "include",
-  });
-  if (!res.ok) throw new Error((await res.text().catch(() => "")) || "Upload failed");
+  const res = await postHandoverPhotos(`${BASE_URL}/api/v1/ngo-drives/${driveId}/offers/${offerId}/receipt-photos`, files);
+  if (!res.ok) throw await photoError(res, "We couldn't upload those photos.");
   return await res.json();
 }
 
@@ -7646,10 +7671,15 @@ export const volunteerHandover = {
   details: (token: string) => volunteerRequest<VolunteerHandoverView>(token, ""),
   confirmCode: (token: string, otp: string, quantity: number) =>
     volunteerRequest<VolunteerHandoverView>(token, "/confirm-code", { method: "POST", body: JSON.stringify({ otp, quantity }) }),
-  addPhoto: (token: string, file: File) => {
-    const form = new FormData();
-    form.append("files", file);
-    return volunteerRequest<void>(token, "/photo", { method: "POST", body: form });
+  addPhoto: async (token: string, file: File) => {
+    const res = await postHandoverPhotos(`${BASE_URL}/api/v1/volunteer-handover/photo`, [file], { "X-Handover-Token": token }, "omit");
+    if (!res.ok) {
+      const raw = await res.text().catch(() => "");
+      let body: Record<string, unknown> = {};
+      try { body = raw ? JSON.parse(raw) as Record<string, unknown> : {}; } catch { /* not JSON */ }
+      const fields = Array.isArray(body.fieldErrors) ? (body.fieldErrors as { message?: string }[]).map((e) => e?.message).filter(Boolean).join(" ") : "";
+      throw new ApiError(res.status, String(fields || body.detail || "We couldn't upload that photo."), body);
+    }
   },
   chat: async (token: string) => {
     const res = await fetch(`${BASE_URL}/api/v1/volunteer-handover/chat`, { credentials: "omit", cache: "no-store", headers: { "X-Handover-Token": token } });

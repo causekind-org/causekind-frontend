@@ -1807,6 +1807,11 @@ const [altContact, setAltContact] = useState("");
               )}
             </WizardField>
           </div>
+          {nightHours(availableFrom, availableTo) && (
+            <p role="status" data-testid="night-hours-warning" className="rounded-lg border border-amber-300 bg-amber-50 px-3 py-2 text-xs font-semibold text-amber-900 dark:border-amber-800 dark:bg-amber-950/30 dark:text-amber-200">
+              <UiText>These hours are at night (before 7 AM or after 9 PM). Did you mean PM? Donors and pickups will use exactly these times.</UiText>
+            </p>
+          )}
         </section>
   
         {/* 5. Contact Person */}
@@ -2403,6 +2408,14 @@ class ErrorBoundary extends React.Component<{children: React.ReactNode}, {hasErr
 }
 
 const MIN_HANDOVER_CONTACTS = 3;
+
+/** Handover hours that start before 7 AM or end after 9 PM: almost always an AM/PM slip. */
+function nightHours(from: string, to: string): boolean {
+  const h = (t: string) => { const m = /^(\d{1,2}):(\d{2})/.exec(t || ""); return m ? Number(m[1]) + Number(m[2]) / 60 : null; };
+  const f = h(from), t = h(to);
+  if (f == null || t == null) return false;
+  return f < 7 || t > 21 || f >= 21;
+}
 
 export default function NgoRequestCreationPage() {
   return (
