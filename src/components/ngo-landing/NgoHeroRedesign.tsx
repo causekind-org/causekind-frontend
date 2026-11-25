@@ -395,12 +395,14 @@ export function NgoHeroRedesign({ status }: { status: NgoStatusData }) {
 
             {/* Microcopy Line below buttons: Nothing overlaps or covers buttons */}
             <div className="ck-ngo-hero-trust flex items-center gap-2 text-xs text-[#EFEADB]/75 font-medium mt-2 lg:mt-4 lg:rounded-full lg:border lg:border-white/15 lg:bg-black/30 lg:px-4 lg:py-2 lg:backdrop-blur-md">
-              <ShieldCheck className="w-3.5 h-3.5 text-[#5BE49B] shrink-0" />
-              {/* Two lines on mobile so nothing is cut off under the chat bubble. */}
-              <span className="max-md:!whitespace-normal max-md:!overflow-visible max-md:leading-snug">
-                <span className="max-md:block">Direct handovers · Nearby donor pickups</span>
-                <span className="max-md:hidden"> · </span>
-                <span className="max-md:block">Verified impact certificates</span>
+              <ShieldCheck className="w-3.5 h-3.5 text-[#5BE49B] shrink-0 max-md:hidden" />
+              {/* Desktop: one line with dots. Mobile: three small chips that wrap cleanly. */}
+              <span className="ck-ngo-hero-trust-list">
+                <span className="ck-ngo-hero-trust-item">Direct handovers</span>
+                <span className="ck-ngo-hero-trust-sep max-md:hidden" aria-hidden="true">·</span>
+                <span className="ck-ngo-hero-trust-item">Nearby donor pickups</span>
+                <span className="ck-ngo-hero-trust-sep max-md:hidden" aria-hidden="true">·</span>
+                <span className="ck-ngo-hero-trust-item">Verified impact certificates</span>
               </span>
             </div>
           </div>
