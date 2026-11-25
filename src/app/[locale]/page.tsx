@@ -1,6 +1,5 @@
 import {
   getCampaigns,
-  getItemRequests,
   getPlatformStats,
   getPublicItemRequests,
   getRecentActivity
@@ -8,7 +7,7 @@ import {
 import type { Metadata } from "next";
 import HomeClient from "./HomeClient";
 import { SOCIAL_LINKS } from "@/config/social";
-import { loadGoogleReviews } from "@/lib/googleReviewsServer";
+import { FEATURES } from "@/lib/features";
 
 // Self-referencing canonical on the apex route. Resolves against metadataBase
 // in src/app/layout.tsx, so it emits https://www.causekind.com — the host the
@@ -63,13 +62,11 @@ export default async function HomePage() {
   // logged-out visitor and the campaign would silently render nothing. The
   // public endpoint is permitAll and its projection carries everything these
   // surfaces need: title, category, city, createdAt and the donee's first name.
-  const [campaigns, stats, activity, publicRequests, reviews] = await Promise.all([
-    getCampaigns().catch(emptyOnError("getCampaigns", [])),
+  const [campaigns, stats, activity, publicRequests] = await Promise.all([
+    FEATURES.money ? getCampaigns().catch(emptyOnError("getCampaigns", [])) : Promise.resolve([]),
     getPlatformStats().catch(emptyOnError("getPlatformStats", null)),
-    getRecentActivity().catch(emptyOnError("getRecentActivity", [])),
+    FEATURES.money ? getRecentActivity().catch(emptyOnError("getRecentActivity", [])) : Promise.resolve([]),
     getPublicItemRequests().catch(emptyOnError("getPublicItemRequests", [])),
-    // In the HTML, so browsers skip a separate /api/google-reviews request.
-    loadGoogleReviews().then((result) => ("data" in result ? result.data : null)),
   ]);
 
   const schemaData = {
@@ -140,16 +137,15 @@ export default async function HomePage() {
       {/* initialItemRequests is [] by construction. The server has no session
           cookie, so the authenticated /api/v1/item-requests always 401'd here
           and returned []; the call was removed rather than kept as a
-          guaranteed-wasted round trip on every ISR regeneration. HomeClient
-          refetches it on the client once auth resolves, which is the only
-          place it can succeed. */}
+          guaranteed-wasted round trip on every ISR regeneration. Its landing
+          display is disabled, so HomeClient does not fetch it either. */}
       <HomeClient
         initialCampaigns={campaigns}
         initialStats={stats}
         initialActivity={activity}
         initialItemRequests={[]}
         initialPublicRequests={publicRequests}
-        initialReviews={reviews}
+        initialReviews={null}
       />
     </>
   );

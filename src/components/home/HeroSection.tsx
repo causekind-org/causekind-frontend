@@ -323,6 +323,14 @@ export function HeroSection() {
     fetchPriority: "high",
     sizes: "100vw",
   });
+  const { props: mobilePhotoProps } = getImageProps({
+    src: "/images/causekind-mobile-hero-v1.webp",
+    alt: t("photoAlt"),
+    fill: true,
+    loading: "eager",
+    fetchPriority: "high",
+    sizes: "100vw",
+  });
 
   return (
     <MotionConfig reducedMotion="user">
@@ -394,7 +402,7 @@ export function HeroSection() {
                 <LandingText>{subtext}</LandingText>
               </p>
 
-              <div data-guest={!user && !isRestoring ? "true" : undefined} className="ck-hero-actions mt-6 flex w-full flex-col gap-3 lg:mt-[clamp(1rem,2.6vh,2.2rem)] lg:w-max lg:flex-row lg:flex-nowrap lg:gap-3">
+              <div data-guest={!user ? "true" : undefined} className="ck-hero-actions mt-6 flex w-full flex-col gap-3 lg:mt-[clamp(1rem,2.6vh,2.2rem)] lg:w-max lg:flex-row lg:flex-nowrap lg:gap-3">
                 {primaryAction.href ? (
                   <NewRequestLink
                     href={primaryAction.href}
@@ -408,7 +416,7 @@ export function HeroSection() {
                 ) : (
                   <span
                     aria-hidden
-                    className="ck-hero-auth-placeholder inline-flex min-h-12 min-w-0 w-full items-center justify-center gap-1.5 rounded-[0.8rem] bg-[var(--ck-home-accent,#b04a15)]/70 px-2 text-[0.58rem] font-extrabold uppercase leading-tight tracking-[0.035em] text-white/80 lg:min-h-14 lg:w-auto lg:shrink-0 lg:gap-3 lg:whitespace-nowrap lg:rounded-full lg:px-6 sm:text-xs sm:tracking-[0.045em]"
+                    className="ck-hero-auth-placeholder ck-hero-primary-cta inline-flex min-h-12 min-w-0 w-full items-center justify-center gap-1.5 rounded-[0.8rem] bg-[var(--ck-home-accent,#b04a15)]/70 px-2 text-[0.58rem] font-extrabold uppercase leading-tight tracking-[0.035em] text-white/80 lg:min-h-14 lg:w-auto lg:shrink-0 lg:gap-3 lg:whitespace-nowrap lg:rounded-full lg:px-6 sm:text-xs sm:tracking-[0.045em]"
                   >
                     <MapPin className="size-4 shrink-0 sm:size-5" />
                     <span className="min-w-0 text-center"><LandingText>{primaryAction.label}</LandingText></span>
@@ -442,7 +450,7 @@ export function HeroSection() {
             {navratri ? <><NavratriMobilePhoto /><NavratriArt /></> : <><div className="ck-hero-photo-shell absolute inset-0 z-0 min-w-0 lg:relative lg:inset-auto lg:min-h-[clamp(10.5rem,24vh,14rem)]">
               <div className="ck-hero-photo-clip absolute inset-0 overflow-hidden bg-[var(--ck-home-highlight,#e9c69d)]">
                 <picture>
-                <source media="(max-width: 1023px)" srcSet="/images/causekind-mobile-hero-v1.webp" />
+                <source media="(max-width: 1023px)" srcSet={mobilePhotoProps.srcSet} sizes={mobilePhotoProps.sizes} />
                 <LandingAttributes><img {...heroPhotoProps} className="ck-hero-photo-image object-cover object-center" /></LandingAttributes>
                 </picture>
                 <div className="pointer-events-none absolute inset-y-0 left-0 hidden w-[12%] bg-gradient-to-r from-[#fdf5ed]/65 to-transparent lg:block dark:from-[#1a1512]/78" aria-hidden />

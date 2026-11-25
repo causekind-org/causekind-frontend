@@ -245,6 +245,10 @@ describe("drive give form: review", { timeout: 20000 }, () => {
     clickLast(/^continue$/i);
     await waitFor(() => expect(heading()).toMatch(/Review your offer/));
     container.querySelectorAll<HTMLInputElement>('input[type="checkbox"]').forEach(c => { if (!c.checked) fireEvent.click(c); });
+    // Let the condition-check debounce fire after the Review confirmations.
+    // It must save the latest model, never its older captured snapshot.
+    await act(async () => { await new Promise(resolve => setTimeout(resolve, 750)); });
+    expect(api.updateNgoDriveOfferItem.mock.calls.at(-1)?.[1]).toMatchObject({ matchesRequirements: true });
     clickLast(/send|submit/i);
     await waitFor(() => expect(api.submitNgoDriveOffer).toHaveBeenCalledWith(9));
     expect(screen.queryByText(/Choose the item|Enter the size|how old the item is|washed and clean|matches what the drive/)).not.toBeInTheDocument();

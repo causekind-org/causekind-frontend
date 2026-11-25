@@ -4,7 +4,7 @@ import { getTranslations, setRequestLocale } from "next-intl/server";
 import { useTranslations } from "next-intl";
 import Link from "next/link";
 import { ArrowLeft, BadgeCheck, Building2, CalendarDays, Home, MapPin, Package, Siren, UserRound, Users, Wallet, type LucideIcon } from "lucide-react";
-import { ApiError, getPublicItemRequest, type PublicItemRequest } from "@/lib/api";
+import { ApiError, getPublicItemRequest, type PublicItemRequestDetail } from "@/lib/api";
 import { CATEGORY_VISUALS } from "@/lib/categoryVisuals";
 import { safeInternalPath } from "@/lib/safeRedirect";
 import HelpAction from "./HelpAction";
@@ -29,7 +29,7 @@ type Props = {
  */
 
 type Loaded =
-  | { kind: "ok"; req: PublicItemRequest }
+  | { kind: "ok"; req: PublicItemRequestDetail }
   | { kind: "gone" }
   | { kind: "error" };
 
@@ -112,7 +112,7 @@ export default async function RequestDetailPage({ params, searchParams }: Props)
   );
 }
 
-function RequestDetail({ req }: { req: PublicItemRequest }) {
+function RequestDetail({ req }: { req: PublicItemRequestDetail }) {
   const rt = useTranslations("requestsArea");
   const ui = useUiText();
   const isNgo = req.requesterType === "NGO";
@@ -207,7 +207,7 @@ function RequestDetail({ req }: { req: PublicItemRequest }) {
  * layout as the offer page's section, minus the donee photo (guests never get
  * it). Hidden entirely when the request has none of these facts.
  */
-function AboutThisNeed({ req }: { req: PublicItemRequest }) {
+function AboutThisNeed({ req }: { req: PublicItemRequestDetail }) {
   const rt = useTranslations("offerFlow");
   const ui = useUiText();
   const tierLabel: Record<string, string> = {

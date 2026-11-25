@@ -1,7 +1,8 @@
 "use client";
 
 import { Suspense, useEffect, useRef, useState } from "react";
-import { useRouter, useSearchParams } from "next/navigation";
+import { useSearchParams } from "next/navigation";
+import { useRouter } from "@/hooks/useAppRouter";
 import Link from "@/components/AppLink";
 import { toast } from "@/lib/toast";
 import { useTranslations } from "next-intl";

@@ -4,10 +4,10 @@ import { LandingText, LandingAttributes } from "@/components/LandingTranslation"
 
 
 import Link from "@/components/AppLink";
-import { useRouter } from "next/navigation";
+import { useRouter } from "@/hooks/useAppRouter";
 // Visitor path without the internal /en segment, so server and client agree (React #418).
 import { useSitePathname as usePathname } from "@/lib/useSitePathname";
-import { Home, Megaphone, ClipboardList, User, MessageCircle, X, Mail, Phone, Plus, type LucideIcon } from "lucide-react";
+import { Home, LayoutDashboard, Megaphone, ClipboardList, User, MessageCircle, X, Mail, Phone, Plus, type LucideIcon } from "lucide-react";
 import { useState, useEffect, useLayoutEffect, useRef } from "react";
 import { useAuth } from "@/hooks/useAuth";
 import { useLocale, useTranslations } from "next-intl";
@@ -28,6 +28,7 @@ type MobileNavItem = {
 };
 
 export function MobileBottomNav() {
+  const warmedRoutes = useRef(new Map<string, number>());
   const t = useTranslations("mobileNav");
   const navT = useTranslations("nav");
   const dashboardT = useTranslations("dashboard");
@@ -48,7 +49,11 @@ export function MobileBottomNav() {
   // The landing film owns the whole screen while it plays; the dock parks
   // exactly as it does near the footer.
   const immersive = useImmersiveNav();
-  const parked = nearFooter || immersive;
+  // Auth pages are short enough for the footer to be visible immediately.
+  // Keep their navigation available, including on locale-prefixed URLs.
+  const routeWithoutLocale = pathname.replace(new RegExp(`^/${locale}(?=/|$)`), "") || "/";
+  const isAuthPage = /^\/(login|register)\/?$/.test(routeWithoutLocale);
+  const parked = !isAuthPage && (nearFooter || immersive);
 
   // Centre + button — smart routing based on feature flag + role
   const centerHref = FEATURES.money
@@ -65,6 +70,24 @@ export function MobileBottomNav() {
       : user?.role === "DONEE"
         ? dashboardT("requestItem")
         : navT("signUp");
+
+  const role = user?.role?.replace(/^ROLE_/, "");
+  const dashboardHref = role === "SUPER_ADMIN" ? "/super-admin"
+    : role === "ADMIN" ? "/admin/dashboard"
+    : role === "NGO" || role === "NGO_PARTNER" ? "/dashboard/ngo"
+    : "/dashboard";
+
+  function warmDockRoute(href: string) {
+    // Deliberate intent only: never restore the old viewport-wide prefetch fanout.
+    if (href === routeWithoutLocale) return;
+    const connection = navigator as Navigator & { connection?: { saveData?: boolean } };
+    if (connection.connection?.saveData) return;
+    const key = `${user?.email ?? "guest"}:${href}`;
+    const now = performance.now();
+    if (now - (warmedRoutes.current.get(key) ?? -Infinity) < 30_000) return;
+    warmedRoutes.current.set(key, now);
+    router.prefetch(href);
+  }
 
   const items: MobileNavItem[] = [
     { href: "/", icon: Home, label: t("home") },
@@ -95,15 +118,14 @@ export function MobileBottomNav() {
     // the desktop navbar and simply missing on a phone, which is where most
     // guests arrive.
     { href: "/requests", icon: ClipboardList, label: t("requests") },
+    ...(user ? [{ href: dashboardHref, icon: LayoutDashboard, label: navT("dashboard") }] : []),
     { href: user ? "/profile" : "/login", icon: User, label: t("profile") },
   ];
 
   const isActive = (href: string) => {
-    if (href === "/") return pathname === "/";
-    if (href === "/profile" || href === "/dashboard" || href === "/admin/dashboard") {
-      return pathname.startsWith("/profile") || pathname.startsWith("/dashboard") || pathname.startsWith("/admin/dashboard");
-    }
-    return pathname === href || pathname.startsWith(`${href}/`);
+    if (href === "/") return routeWithoutLocale === "/";
+    // Dashboard and Profile are separate tabs; only the matching one lights up.
+    return routeWithoutLocale === href || routeWithoutLocale.startsWith(`${href}/`);
   };
 
   const routeActiveIndex = items.findIndex((item) => isActive(item.href));
@@ -138,7 +160,7 @@ export function MobileBottomNav() {
   function activateTab(index: number, navigate: boolean): boolean {
     const item = items[index];
     if (!item) return false;
-    if (pathname === item.href) {
+    if (routeWithoutLocale === item.href) {
       scrollToTop();
       return true;
     }
@@ -256,6 +278,8 @@ export function MobileBottomNav() {
               href={item.href}
               aria-current={index === routeActiveIndex ? "page" : undefined}
               aria-label={item.label}
+              onPointerDown={() => warmDockRoute(item.href)}
+              onFocus={() => warmDockRoute(item.href)}
               onClick={(event) => {
                 if (
                   event.defaultPrevented ||
@@ -308,6 +332,7 @@ export function MobileBottomNav() {
               if (dragPointerId.current !== event.pointerId) return;
               const point = pointOnTrack(event.clientX);
               if (!point) return;
+              warmDockRoute(items[point.index].href);
               setDragPosition(point.x);
               setDragIndex(point.index);
             }}

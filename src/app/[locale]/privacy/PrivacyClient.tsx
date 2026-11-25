@@ -104,7 +104,7 @@ function Section({
             <Icon className="h-5 w-5" />
           </span>
           <div>
-            <span className="block text-2xs font-black uppercase tracking-widest text-stone-500 dark:text-stone-400">
+            <span className="block text-2xs font-black uppercase tracking-widest text-stone-600 dark:text-stone-400">
               Section {num}
             </span>
             <h2 className="text-xl font-extrabold tracking-tight text-stone-900 dark:text-white sm:text-2xl">
@@ -179,6 +179,7 @@ export default function PrivacyClient() {
           background-clip: text;
           -webkit-background-clip: text;
           color: transparent;
+          /* Static gradient: no continuously repainting heading shimmer. */
         }
         @media (prefers-reduced-motion: reduce) {
           .pp-float,.pp-blob,.pp-shimmer-text,.pp-ring { animation: none !important; }
@@ -237,7 +238,7 @@ export default function PrivacyClient() {
           {/* TOC (desktop) */}
           <aside className="hidden lg:block">
             <div className="sticky top-24">
-              <p className="mb-4 text-2xs font-black uppercase tracking-widest text-stone-500 dark:text-stone-400">
+              <p className="mb-4 text-2xs font-black uppercase tracking-widest text-stone-600 dark:text-stone-400">
                 On this page
               </p>
               <div className="relative">

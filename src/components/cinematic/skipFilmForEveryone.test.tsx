@@ -8,22 +8,12 @@ import { useRef } from "react";
  * and still lands on (and focuses) the section after the film.
  */
 
-const triggers: { onToggle: (self: { isActive: boolean }) => void }[] = [];
-// gsap now arrives through lib/gsapLoader (after idle); resolve it at once here.
-vi.mock("@/lib/gsapLoader", () => {
-  const ScrollTrigger = {
-    create: (opts: { onToggle: (self: { isActive: boolean }) => void }) => {
-      triggers.push(opts);
-      return { kill: () => {} };
-    },
-    refresh: () => {},
-  };
-  return {
-    loadGsap: () => Promise.resolve({ gsap: {}, ScrollTrigger }),
-    refreshScrollTrigger: () => {},
-    gsapIfLoaded: () => null,
-  };
-});
+const loadGsap = vi.hoisted(() => vi.fn());
+vi.mock("@/lib/gsapLoader", () => ({
+  loadGsap,
+  refreshScrollTrigger: () => {},
+  gsapIfLoaded: () => null,
+}));
 vi.mock("@/components/SmoothScroll", () => ({ getLenis: () => null }));
 vi.mock("next/dynamic", () => ({ default: () => () => null }));
 
@@ -40,15 +30,47 @@ function Page() {
 }
 
 describe("Skip intro", () => {
+  it("retires a film that has scrolled past without loading GSAP", async () => {
+    sessionStorage.clear();
+    window.scrollTo = vi.fn();
+    render(<Page />);
+    const film = document.querySelector<HTMLElement>(".ck-cinematic")!;
+    vi.spyOn(film, "getBoundingClientRect").mockReturnValue({
+      top: -101, bottom: -1, left: 0, right: 400,
+      width: 400, height: 100, x: 0, y: -101, toJSON: () => ({}),
+    });
+    await act(async () => {
+      window.dispatchEvent(new Event("scroll"));
+      await new Promise(resolve => requestAnimationFrame(resolve));
+    });
+    expect(film.style.display).toBe("none");
+    expect(sessionStorage.getItem("ck:landing-film:collapsed")).toBe("1");
+    expect(loadGsap).not.toHaveBeenCalled();
+  });
+
   it("shows on a first visit while the film plays, and skips to the next section", async () => {
     window.localStorage.clear();
+    window.sessionStorage.clear();
     window.scrollTo = vi.fn() as unknown as typeof window.scrollTo;
     render(<Page />);
     expect(screen.queryByRole("button", { name: /skip/i })).toBeNull();
-    // Let the (mocked) gsap load resolve so the triggers are created.
+    // Initial setup must not fetch GSAP just to monitor the film's bounds.
     await act(async () => { await Promise.resolve(); });
+    expect(loadGsap).not.toHaveBeenCalled();
 
-    act(() => triggers.at(-1)!.onToggle({ isActive: true }));
+    // Active state follows live geometry; completed-film collapse does too.
+    const film = document.querySelector<HTMLElement>(".ck-cinematic") ??
+      document.querySelector<HTMLElement>("[data-cinematic-root]");
+    expect(film).not.toBeNull();
+    vi.spyOn(film!, "getBoundingClientRect").mockReturnValue({
+      top: -1, bottom: window.innerHeight + 100, left: 0, right: 400,
+      width: 400, height: window.innerHeight + 101, x: 0, y: -1,
+      toJSON: () => ({}),
+    });
+    await act(async () => {
+      window.dispatchEvent(new Event("scroll"));
+      await new Promise(resolve => requestAnimationFrame(resolve));
+    });
     const button = screen.getByRole("button", { name: /skip/i });
 
     fireEvent.click(button);

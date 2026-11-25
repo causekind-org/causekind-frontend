@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useRef, useState, type ReactNode } from "react";
 import Image from "next/image";
-import Script from "next/script";
+import { loadRazorpayCheckout } from "@/lib/razorpayLoader";
 import { useForm, type FieldPath } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as Collapsible from "@radix-ui/react-collapsible";
@@ -37,10 +37,8 @@ import {
 import "./scan.css";
 import { captureUtm, trackDonationSuccess, trackInitiateCheckout, trackScanPageView, type Utm } from "./tracking";
 
-const CHECKOUT_SRC = "https://checkout.razorpay.com/v1/checkout.js";
 const PHOTO = "/images/scan/scan-bg-smile.webp";
 const BRAND_COLOR = "#b04a15"; // --primary in styles.css
-const SCRIPT_WAIT_MS = 6_000;
 
 type RazorpaySuccess = { razorpay_payment_id: string; razorpay_order_id: string; razorpay_signature: string };
 type RazorpayInstance = { open: () => void; on: (event: "payment.failed", cb: () => void) => void };
@@ -48,20 +46,9 @@ type RazorpayCtor = new (options: Record<string, unknown>) => RazorpayInstance;
 
 const razorpayCtor = () => (window as unknown as { Razorpay?: RazorpayCtor }).Razorpay;
 
-/** next/script loads it up front; a load that failed on a weak connection is retried here. */
+/** Reuse an in-flight SDK load, retry failures immediately, and never poll. */
 async function ensureRazorpay(): Promise<RazorpayCtor | null> {
-  const deadline = Date.now() + SCRIPT_WAIT_MS;
-  while (!razorpayCtor() && Date.now() < deadline) {
-    await new Promise((resolve) => setTimeout(resolve, 150));
-  }
-  if (razorpayCtor()) return razorpayCtor()!;
-  await new Promise<void>((resolve) => {
-    const script = document.createElement("script");
-    script.src = CHECKOUT_SRC;
-    script.onload = script.onerror = () => resolve();
-    document.body.appendChild(script);
-  });
-  return razorpayCtor() ?? null;
+  return await loadRazorpayCheckout() ? razorpayCtor() ?? null : null;
 }
 
 type Stage =
@@ -134,6 +121,9 @@ function a11y(id: string, error?: string) {
 }
 
 export function ScanDonation() {
+  // Preserve this dedicated payment page's existing eager SDK warm-up, sharing
+  // the exact same promise as a tap that arrives before loading completes.
+  useEffect(() => { void loadRazorpayCheckout(); }, []);
   const [stage, setStage] = useState<Stage>({ kind: "idle" });
   const [addressOpen, setAddressOpen] = useState(false);
   const utm = useRef<Utm>({ source: "", medium: "", campaign: "", content: "" });
@@ -353,7 +343,6 @@ export function ScanDonation() {
 
   return (
     <Shell>
-      <Script src={CHECKOUT_SRC} strategy="afterInteractive" />
       <h1 className="text-3xl font-extrabold leading-tight tracking-tight">Feed a hungry person this Diwali</h1>
       <p className="mt-3 text-base text-foreground/75 max-lg:text-white/85">
         Just ₹101 can feed someone who hasn&apos;t eaten today. They need your support.

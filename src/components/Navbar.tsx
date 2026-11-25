@@ -10,7 +10,7 @@ import Link from "@/components/AppLink";
 import { RakshaBandhanWordmark } from "@/components/brand/RakshaBandhanWordmark";
 import { isRakshaBandhanCampaignActive } from "@/lib/raksha-bandhan";
 import { LogoVideo } from "@/components/LogoVideo";
-import { useRouter } from "next/navigation";
+import { useRouter } from "@/hooks/useAppRouter";
 // Visitor path without the internal /en segment, so server and client agree (React #418).
 import { useSitePathname as usePathname } from "@/lib/useSitePathname";
 import { useTranslations } from "next-intl";

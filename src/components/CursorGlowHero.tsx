@@ -17,6 +17,8 @@ export function CursorGlowHero({ children }: { children: React.ReactNode }) {
     const outer = outerRef.current;
     const inner = innerRef.current;
     if (!el || !outer || !inner) return;
+    if (!window.matchMedia("(hover: hover) and (pointer: fine)").matches ||
+        window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
 
     const handleMove = (e: MouseEvent) => {
       const rect = el.getBoundingClientRect();
@@ -54,6 +56,10 @@ export function CursorGlowHero({ children }: { children: React.ReactNode }) {
         }
         .ck-glow-static-1 { animation: ck-glow-pulse-slow  7s ease-in-out infinite; }
         .ck-glow-static-2 { animation: ck-glow-pulse-slow2 9s ease-in-out 1.5s infinite; }
+        @media (hover: none), (pointer: coarse), (prefers-reduced-motion: reduce) {
+          .ck-glow-static-1 { animation: none; opacity: 0.14; }
+          .ck-glow-static-2 { animation: none; opacity: 0.10; }
+        }
       `}</style>
 
       {/* min-h, not h: a fixed height plus overflow-hidden clipped the hero's own

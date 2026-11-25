@@ -1,6 +1,7 @@
 "use client";
 
 import dynamic from "next/dynamic";
+import { useAuth } from "@/hooks/useAuth";
 
 /**
  * Client boundary that owns every deferred, client-only overlay in the root
@@ -158,19 +159,25 @@ export function DeferredScrollProgress() {
 }
 
 export function DeferredOverlays() {
+  const { user } = useAuth();
+  const role = user?.role?.replace(/^ROLE_/, "");
   return (
     <>
       {/* Cookie banner switched off — see the note on the import below. */}
-      <WelcomeOverlay />
+      {user && <WelcomeOverlay />}
       <TourController />
-      <DonorCategoryModal />
-      <DoneeListingPrompt />
-      <DonorListingPrompt />
-      <DoneeRequestPrompt />
-      <NgoProfileToast />
-      <NgoCampaignPrompt />
-      <DriveProofPublishedPopup />
-      <DrivePickupScheduledPopup />
+      {role === "DONOR" && <><DonorCategoryModal /><DonorListingPrompt /><DoneeRequestPrompt /></>}
+      {role === "DONEE" && <DoneeListingPrompt />}
+      {(role === "NGO" || role === "NGO_PARTNER") && <><NgoProfileToast /><NgoCampaignPrompt /></>}
+      {user && <><DriveProofPublishedPopup /><DrivePickupScheduledPopup /></>}
     </>
   );
+}
+
+
+/** Keep authenticated handover/match modules out of anonymous page startup. */
+export function DeferredMemberDocks() {
+  const { user } = useAuth();
+  if (!user) return null;
+  return <><MatchActionDock /><DriveNotificationDock /><CompletionCelebrationWatcher /></>;
 }

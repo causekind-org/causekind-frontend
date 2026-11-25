@@ -13,6 +13,7 @@ import {
 } from "lucide-react";
 import { useRevealOnce, stagger } from "@/components/home/mobile/primitives";
 import { galleryFonts } from "@/components/home/supportGallery/fonts";
+import { useNearViewportFonts } from "@/hooks/useNearViewportFonts";
 import m from "./TrustSafetyMobile.module.css";
 import { DONEE_PILL_EYEBROW } from "./DoneeSectionHeading";
 
@@ -94,12 +95,13 @@ const TRUST_STATS = [
  */
 function TrustSafetyMobile({ seamless = false }: { seamless?: boolean }) {
   const ref = useRevealOnce<HTMLElement>();
+  useNearViewportFonts(ref, galleryFonts);
   return (
     <LandingAttributes><section
       ref={ref}
       id="trust"
       aria-label="Trust and Safety"
-      className={`${galleryFonts} ck-m-section relative w-full bg-[#FAF8F5] dark:bg-[#0E0C0A] ${seamless ? "" : "border-t border-stone-200/80 dark:border-stone-800/80 "}px-5`}
+      className={`ck-m-section relative w-full bg-[#FAF8F5] dark:bg-[#0E0C0A] ${seamless ? "" : "border-t border-stone-200/80 dark:border-stone-800/80 "}px-5`}
     >
       <div data-reveal-item style={stagger(0)} className={m.eyebrow}><LandingText>
         Trust &amp; safety

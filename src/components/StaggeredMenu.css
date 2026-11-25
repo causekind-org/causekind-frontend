@@ -8,6 +8,7 @@
   height: 100%;
   z-index: 9990;
   pointer-events: none;
+  --sm-num-opacity: 1;
 }
 
 .staggered-menu-wrapper.fixed-wrapper {
@@ -16,7 +17,11 @@
   width: 100vw;
   height: 100dvh;
   overflow: hidden;
+  contain: layout paint style;
+  --sm-offscreen: 101%;
 }
+
+.staggered-menu-wrapper[data-position='left'] { --sm-offscreen: -101%; }
 
 /* Hidden entirely (no pointer capture) until opened */
 .staggered-menu-wrapper:not([data-open]) {
@@ -33,13 +38,10 @@
   border: none;
   padding: 0;
   cursor: pointer;
-  /* Frosted glass: a light warm veil + blur (blur comes from the Tailwind
-     `backdrop-blur-md` utility on the element — raw `backdrop-filter` here gets
-     stripped by the component-CSS minifier, so the class is the reliable path)
-     so the page behind stays visible, just softened — not a solid dim. */
+  /* A simple veil: no live backdrop blur while the panel is moving. */
   background: rgba(250, 248, 245, 0.22);
   opacity: 1;
-  transition: opacity 0.35s ease;
+  transition: opacity 0.18s ease;
   pointer-events: auto;
   z-index: 1;
 }
@@ -64,9 +66,18 @@
   overscroll-behavior: contain;
   z-index: 10;
   pointer-events: auto;
-  opacity: 0;
+  opacity: 1;
+  transform: translate3d(var(--sm-offscreen), 0, 0);
+  visibility: hidden;
+  transition: transform 0.18s cubic-bezier(0.22, 1, 0.36, 1), visibility 0s 0.18s;
   border-left: 1px solid rgba(229, 226, 213, 0.5);
   box-shadow: -12px 0 40px -12px rgba(28, 25, 23, 0.28);
+}
+.staggered-menu-wrapper[data-open] .staggered-menu-panel {
+  transform: translate3d(0, 0, 0);
+  visibility: visible;
+  will-change: transform;
+  transition: transform 0.22s cubic-bezier(0.22, 1, 0.36, 1), visibility 0s;
 }
 .dark .staggered-menu-panel {
   background:
@@ -424,5 +435,32 @@ button.sm-panel-item {
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .sm-backdrop { transition: none; }
+  .sm-backdrop,
+  .staggered-menu-wrapper .staggered-menu-panel { transition: none; }
+}
+
+/* Restore the wording reveal without a JS timeline or layout animation.
+   Delay is capped so long role menus never wait seconds for the last entry. */
+@keyframes sm-word-reveal {
+  from { transform: translate3d(0, 115%, 0) rotate(7deg); opacity: 0; }
+  to { transform: translate3d(0, 0, 0) rotate(0); opacity: 1; }
+}
+.staggered-menu-wrapper[data-open] .sm-panel-itemLabel {
+  transform-origin: left bottom;
+  animation: sm-word-reveal 0.38s cubic-bezier(0.22, 1, 0.36, 1) var(--sm-reveal-delay, 0ms) both;
+}
+.staggered-menu-wrapper .sm-panel-item:focus-visible .sm-panel-itemLabel {
+  animation: none;
+}
+@media (prefers-reduced-motion: reduce) {
+  .staggered-menu-wrapper .sm-panel-itemLabel { animation: none; }
+}
+
+@media (max-width: 1023px), (pointer: coarse) {
+  .staggered-menu-wrapper .staggered-menu-panel {
+    box-shadow: -5px 0 16px rgba(28, 25, 23, 0.12);
+  }
+  /* Touch hover must not animate row padding and relayout the list on a tap. */
+  .sm-panel-item { transition: color 0.12s ease; }
+  .sm-panel-item:hover:not(.is-active) { padding-left: 0.9em; }
 }

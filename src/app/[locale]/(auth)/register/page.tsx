@@ -3,7 +3,8 @@
 import { safeExternalUrl } from "@/lib/externalLink";
 import { useEffect, useRef, useState } from "react";
 import { FEATURES } from "@/lib/features";
-import { useRouter, useSearchParams } from "next/navigation";
+import { useSearchParams } from "next/navigation";
+import { useRouter } from "@/hooks/useAppRouter";
 import { resolvePostAuthDestination, socialCompletionUrl } from "@/lib/postAuthDestination";
 import { loginUrlFor } from "@/lib/safeRedirect";
 import { Suspense } from "react";

@@ -1,7 +1,16 @@
-@import "tailwindcss";
+/* App utilities only: design references, scratch pages and QA artifacts are not shipped. */
+@import "tailwindcss" source(".");
 @import "tw-animate-css";
 
 @custom-variant dark (&:is(.dark *));
+
+/* Keep the first mobile screen free of layout/paint work for long sections.
+   The browser remembers each section's real size once it has been rendered. */
+@media (max-width: 1023px) {
+  #where-support-goes { content-visibility: auto; contain-intrinsic-size: auto 800px; }
+  #trust { content-visibility: auto; contain-intrinsic-size: auto 1100px; }
+  #founders-note { content-visibility: auto; contain-intrinsic-size: auto 1000px; }
+}
 
 :root {
   --radius: 0.75rem;
@@ -2439,7 +2448,7 @@ body.mobile-menu-open {
   header[data-home-hero] .ck-mobile-header > button:hover { background: rgb(255 255 255 / 0.12); }
   /* Over the photograph the logo's dark "Cause" and the menu glyph sit on
      whatever the image has there; give each a frosted cream patch of its own. */
-  header[data-home-hero="top"] .ck-mobile-header > a,
+  /* The logo itself stays bare (no cream pill) - owner decision 2026-11-24. */
   header[data-home-hero="top"] .ck-mobile-header > button {
     background: rgb(250 248 245 / 0.82);
     -webkit-backdrop-filter: blur(12px) saturate(1.2);
@@ -2447,13 +2456,8 @@ body.mobile-menu-open {
     border: 1px solid rgb(255 255 255 / 0.6);
     box-shadow: 0 6px 18px -8px rgb(28 20 16 / 0.45);
   }
-  header[data-home-hero="top"] .ck-mobile-header > a {
-    padding: 0.4rem 1rem;
-    border-radius: 9999px;
-  }
   header[data-home-hero="top"] .ck-mobile-header > button { color: #292524; }
   header[data-home-hero="top"] .ck-mobile-header > button:hover { background: rgb(250 248 245 / 0.95); }
-  .dark header[data-home-hero="top"] .ck-mobile-header > a,
   .dark header[data-home-hero="top"] .ck-mobile-header > button {
     background: rgb(9 9 11 / 0.72);
     border-color: rgb(255 255 255 / 0.12);
@@ -5198,13 +5202,39 @@ header[data-calm-header] .ck-logo-kind-shimmer {
 }
 .dark header[data-calm-header] .ck-logo-kind-shimmer { color: #ff8a4c; }
 
+/* Touch controls keep native pan/pinch while avoiding double-tap click delay.
+   Dedicated drag handles retain their more-specific touch-action: none. */
+@media (pointer: coarse) {
+  :where(a[href], button, [role="button"], summary, input, select, textarea, label) {
+    touch-action: manipulation;
+  }
+  .sm-backdrop {
+    -webkit-backdrop-filter: none;
+    backdrop-filter: none;
+  }
+}
+
 /* Donate bottom sheet (DonateChoice): a 300ms slide instead of vaul's 500ms,
    and next to no motion for visitors who ask for less. 1ms rather than "none"
    so the close still fires animationend and the sheet unmounts. */
+@media (max-width: 767px) {
+  /* Keep a dim backdrop without repainting a blurred page behind moving tiles. */
+  .ck-donate-sheet-overlay {
+    -webkit-backdrop-filter: none;
+    backdrop-filter: none;
+  }
+}
 .ck-donate-sheet[data-vaul-drawer],
 .ck-donate-sheet-overlay[data-vaul-overlay][data-vaul-snap-points] {
   animation-duration: 0.3s;
   transition-duration: 0.3s;
+}
+@media (max-width: 767px) {
+  .ck-donate-sheet[data-vaul-drawer],
+  .ck-donate-sheet-overlay[data-vaul-overlay][data-vaul-snap-points] {
+    animation-duration: 0.18s;
+    transition-duration: 0.18s;
+  }
 }
 @media (prefers-reduced-motion: reduce) {
   .ck-donate-sheet[data-vaul-drawer],
@@ -5280,4 +5310,22 @@ header[data-calm-header] .ck-logo-kind-shimmer {
   .ck-logo-icon-in, .ck-logo-letter-in, .ck-logo-kind-in, .ck-nav-panel-in { animation: none; }
   .ck-logo-hover, .ck-logo-hover:hover { transition: none; transform: none; }
   .ck-nav-pill[data-animate="true"] { transition: none; }
+}
+/* Home, phones/tablets: one background for every section (owner 2026-11-24).
+   The page was #fbf9f4, .ck-home-paper #faf8f5 plus an orange corner glow and
+   dot grain, and the Sahas reels #F5F0E8 — three creams that showed as seams.
+   Sections get the same solid cream — solid, not transparent: the Sahas reels
+   sit over the film's stage, and a see-through background let the film's
+   "Chapter one" text show through it. */
+@media (max-width: 1023px) {
+  .ck-home-page { background-color: var(--surface-cream, #faf8f5) !important; }
+  .dark .ck-home-page { background-color: #09090b !important; }
+  .ck-home-page .ck-home-paper,
+  .ck-home-page .ck-sahas-reels {
+    background: var(--surface-cream, #faf8f5) !important;
+  }
+  .dark .ck-home-page .ck-home-paper,
+  .dark .ck-home-page .ck-sahas-reels {
+    background: #09090b !important;
+  }
 }

@@ -293,9 +293,9 @@ describe("Footer Component", () => {
         const socialGrid = within(brandCol as HTMLElement).getByLabelText("Social media links");
         expect(socialGrid).toHaveClass("flex", "flex-nowrap", "justify-center", "gap-2", "md:grid", "md:grid-cols-3", "md:gap-3", "md:w-fit");
 
-        // Contact Column: Centered on mobile with 20px gap (space-y-5) and 44px tap targets; left-aligned on desktop
+        // Contact rows remain left aligned and retain 44px mobile tap targets.
         const contactHeading = screen.getByText("Contact");
-        expect(contactHeading).toHaveClass("text-center", "md:text-left");
+        expect(contactHeading.parentElement).toHaveClass("col-span-2", "md:col-span-1");
 
         const phoneLink = screen.getByRole("link", { name: "+91 7719938619" });
         expect(phoneLink).toHaveClass("min-h-[44px]", "md:min-h-0");
@@ -328,18 +328,15 @@ describe("Footer Component", () => {
   });
 
   describe("Contact column", () => {
-    it("renders address, phone link, and email link with proper hrefs, centering on mobile and left-aligned on desktop", () => {
+    it("renders address, phone link, and email link with proper hrefs, left-aligned icon rows and accessible mobile targets", () => {
       render(<Footer />);
       const heading = screen.getByText("Contact");
       expect(heading).toBeInTheDocument();
-      expect(heading).toHaveClass("text-center");
-      expect(heading).toHaveClass("md:text-left");
+      expect(heading.parentElement).toHaveClass("col-span-2", "md:col-span-1");
 
       const address = screen.getByText(/3rd Floor, Apoorva CHS, 19,/i);
       expect(address).toBeInTheDocument();
-      expect(address).toHaveClass("max-w-xs");
-      expect(address).toHaveClass("mx-auto");
-      expect(address).toHaveClass("md:mx-0");
+      expect(address.parentElement).toHaveClass("flex-row", "text-left");
       expect(screen.getByText(/Vasai West, Vasai-Virar, Maharashtra 401202/i)).toBeInTheDocument();
 
       const phoneLink = screen.getByRole("link", { name: "+91 7719938619" });

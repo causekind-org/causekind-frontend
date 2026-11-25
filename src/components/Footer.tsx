@@ -302,52 +302,52 @@ export function Footer({ role }: FooterProps) {
           </div>
 
           {/* Column 4: Contact */}
-          <div className="col-span-2 md:col-span-1 space-y-4 md:space-y-3">
-            <p className="font-bold text-white tracking-wider uppercase text-xs text-center md:text-left">
+          <div className="col-span-2 md:col-span-1 space-y-3">
+            <p className="font-bold text-white tracking-wider uppercase text-xs">
               {t("contactHeading")}
             </p>
-            <div className="space-y-5 md:space-y-3 text-sm text-[#D9CCBB]">
+            <div className="space-y-2 md:space-y-3 text-sm text-[#D9CCBB]">
               {/* Item 1: Address */}
-              <div className="flex flex-col items-center text-center md:flex-row md:items-start md:text-left gap-2 md:gap-2.5">
+              <div className="flex flex-row items-start text-left gap-3 md:gap-2.5">
                 <div
-                  className="w-10 h-10 rounded-full bg-white/[0.08] text-white flex items-center justify-center shrink-0 md:w-auto md:h-auto md:rounded-none md:bg-transparent md:border-0 md:mt-0.5"
+                  className="w-8 h-8 rounded-full bg-white/[0.08] text-white flex items-center justify-center shrink-0 md:w-auto md:h-auto md:rounded-none md:bg-transparent md:border-0 md:mt-0.5"
                   aria-hidden="true"
                 >
-                  <MapPin className="w-4.5 h-4.5 md:w-4 md:h-4 text-white md:text-[#E58A4B] shrink-0" aria-hidden="true" />
+                  <MapPin className="w-4 h-4 md:w-4 md:h-4 text-white md:text-[#E58A4B] shrink-0" aria-hidden="true" />
                 </div>
-                <span className="leading-relaxed max-w-xs mx-auto md:max-w-none md:mx-0">
+                <span className="leading-relaxed pt-1 md:pt-0">
                   {/* A postal address: shown as written, never translated. */}
                   3rd Floor, Apoorva CHS, 19, Vartak School Road, Veer Savarkar Nagar, Anand Nagar, Vasai West, Vasai-Virar, Maharashtra 401202
                 </span>
               </div>
 
               {/* Item 2: Phone */}
-              <div className="flex flex-col items-center text-center md:flex-row md:items-center md:text-left gap-1 md:gap-2.5">
+              <div className="flex flex-row items-center text-left gap-3 md:gap-2.5">
                 <div
-                  className="w-10 h-10 rounded-full bg-white/[0.08] text-white flex items-center justify-center shrink-0 md:w-auto md:h-auto md:rounded-none md:bg-transparent md:border-0"
+                  className="w-8 h-8 rounded-full bg-white/[0.08] text-white flex items-center justify-center shrink-0 md:w-auto md:h-auto md:rounded-none md:bg-transparent md:border-0"
                   aria-hidden="true"
                 >
-                  <Phone className="w-4.5 h-4.5 md:w-4 md:h-4 text-white md:text-[#E58A4B] shrink-0" aria-hidden="true" />
+                  <Phone className="w-4 h-4 md:w-4 md:h-4 text-white md:text-[#E58A4B] shrink-0" aria-hidden="true" />
                 </div>
                 <a
                   href="tel:+917719938619"
-                  className="min-h-[44px] md:min-h-0 inline-flex items-center justify-center hover:text-[#E58A4B] transition-colors"
+                  className="min-h-[44px] md:min-h-0 inline-flex items-center hover:text-[#E58A4B] transition-colors"
                 >
                   +91 7719938619
                 </a>
               </div>
 
               {/* Item 3: Email */}
-              <div className="flex flex-col items-center text-center md:flex-row md:items-center md:text-left gap-1 md:gap-2.5">
+              <div className="flex flex-row items-center text-left gap-3 md:gap-2.5">
                 <div
-                  className="w-10 h-10 rounded-full bg-white/[0.08] text-white flex items-center justify-center shrink-0 md:w-auto md:h-auto md:rounded-none md:bg-transparent md:border-0"
+                  className="w-8 h-8 rounded-full bg-white/[0.08] text-white flex items-center justify-center shrink-0 md:w-auto md:h-auto md:rounded-none md:bg-transparent md:border-0"
                   aria-hidden="true"
                 >
-                  <Mail className="w-4.5 h-4.5 md:w-4 md:h-4 text-white md:text-[#E58A4B] shrink-0" aria-hidden="true" />
+                  <Mail className="w-4 h-4 md:w-4 md:h-4 text-white md:text-[#E58A4B] shrink-0" aria-hidden="true" />
                 </div>
                 <a
                   href="mailto:support@causekind.com"
-                  className="min-h-[44px] md:min-h-0 inline-flex items-center justify-center hover:text-[#E58A4B] transition-colors"
+                  className="min-h-[44px] md:min-h-0 inline-flex items-center hover:text-[#E58A4B] transition-colors"
                 >
                   support@causekind.com
                 </a>
@@ -374,7 +374,7 @@ export function Footer({ role }: FooterProps) {
                 )}
                 <Link
                   href={item.href}
-                  className="inline-block py-2.5 -my-2.5 font-medium text-[#D9CCBB] hover:text-[#E58A4B] hover:underline underline-offset-4 transition-colors"
+                  className="inline-flex min-h-11 items-center px-1 py-2.5 font-medium text-[#D9CCBB] hover:text-[#E58A4B] hover:underline underline-offset-4 transition-colors"
                 >
                   {label(item.label)}
                 </Link>

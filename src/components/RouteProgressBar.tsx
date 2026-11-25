@@ -1,7 +1,8 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { usePathname, useSearchParams } from "next/navigation";
+import { NAVIGATION_START_EVENT } from "@/lib/navigationFeedback";
 
 /**
  * Thin progress bar across the top of the viewport during a route change.
@@ -17,9 +18,8 @@ import { usePathname, useSearchParams } from "next/navigation";
  * 100% while the page is still resolving, so it never reaches the end on its
  * own.
  *
- * <p>The 120ms arming delay matters. Most navigations in this app are instant,
- * and a bar that flashes on every click is worse than no bar — so nothing is
- * shown unless the transition is slow enough to be perceived as a wait.
+ * <p>Starts immediately for links and managed router buttons. Timers stop on
+ * route commit; opening a donation sheet does not start route progress.
  *
  * <p>Accessibility: the bar is `aria-hidden` decoration; the announcement is a
  * separate polite live region, so a screen reader hears "Loading page" once
@@ -32,6 +32,14 @@ export function RouteProgressBar() {
 
   const [visible, setVisible] = useState(false);
   const [value, setValue] = useState(0);
+  const creep = useRef<ReturnType<typeof setInterval> | undefined>(undefined);
+  const doneTimer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
+  const watchdog = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
+  const clearTimers = useCallback(() => {
+    clearInterval(creep.current);
+    clearTimeout(doneTimer.current);
+    clearTimeout(watchdog.current);
+  }, []);
 
   // The route this bar last settled on. A change means the navigation committed.
   const settledKey = useRef<string | null>(null);
@@ -46,36 +54,35 @@ export function RouteProgressBar() {
     if (settledKey.current === key) return;
 
     settledKey.current = key;
+    clearTimers();
 
     // The new route has committed. Finish, then clear — the short delay lets
     // the full bar register instead of vanishing mid-stride.
     setValue(100);
-    const done = setTimeout(() => {
+    doneTimer.current = setTimeout(() => {
       setVisible(false);
       setValue(0);
     }, 220);
-    return () => clearTimeout(done);
-  }, [key]);
+    return clearTimers;
+  }, [key, clearTimers]);
 
   // Arm on any link click or history navigation. `usePathname` only updates
   // once the route commits, which is the end of the wait, not the start — so
   // the start has to come from the interaction itself.
   useEffect(() => {
-    let armTimer: ReturnType<typeof setTimeout> | undefined;
-    let creep: ReturnType<typeof setInterval> | undefined;
-
     const start = () => {
-      clearTimeout(armTimer);
-      armTimer = setTimeout(() => {
-        setVisible(true);
-        setValue(8);
-        clearInterval(creep);
-        // Decaying approach to 90%: fast at first, then slower, so a long wait
-        // still looks like progress without ever claiming to be finished.
-        creep = setInterval(() => {
-          setValue(v => (v >= 90 ? v : v + Math.max(0.4, (90 - v) * 0.06)));
-        }, 120);
+      clearTimers();
+      setVisible(true);
+      setValue(8);
+      // Decaying approach to 90%; completion still requires a route commit.
+      creep.current = setInterval(() => {
+        setValue(v => (v >= 90 ? v : v + Math.max(0.4, (90 - v) * 0.06)));
       }, 120);
+      // Cancelled/failed navigation must not leave an immortal progress loop.
+      watchdog.current = setTimeout(() => {
+        clearTimers();
+        setVisible(false);
+      }, 20_000);
     };
 
     const onClick = (e: MouseEvent) => {
@@ -86,6 +93,7 @@ export function RouteProgressBar() {
       if (!(anchor instanceof HTMLAnchorElement)) return;
       if (anchor.target && anchor.target !== "_self") return;
       if (anchor.hasAttribute("download")) return;
+      if (anchor.matches("[data-donate-cta]:not([data-donate-direct]),[data-donate-choice]:not([data-donate-direct]),[data-navigation-managed]")) return;
 
       const href = anchor.getAttribute("href");
       if (!href || href.startsWith("#")) return;
@@ -101,13 +109,14 @@ export function RouteProgressBar() {
 
     document.addEventListener("click", onClick, true);
     window.addEventListener("popstate", start);
+    window.addEventListener(NAVIGATION_START_EVENT, start);
     return () => {
       document.removeEventListener("click", onClick, true);
       window.removeEventListener("popstate", start);
-      clearTimeout(armTimer);
-      clearInterval(creep);
+      window.removeEventListener(NAVIGATION_START_EVENT, start);
+      clearTimers();
     };
-  }, []);
+  }, [clearTimers]);
 
   // Stop the creep as soon as the bar is finishing or hidden.
   useEffect(() => {
@@ -128,8 +137,8 @@ export function RouteProgressBar() {
           <div
             className="ck-route-progress h-full origin-left bg-[var(--ck-role-accent)] shadow-[0_0_8px_var(--ck-role-accent)]"
             style={{
-              width: `${value}%`,
-              transition: "width 200ms ease-out, opacity 200ms ease-out",
+              transform: `scaleX(${value / 100})`,
+              transition: "transform 150ms ease-out, opacity 150ms ease-out",
               opacity: value >= 100 ? 0 : 1,
             }}
           />
