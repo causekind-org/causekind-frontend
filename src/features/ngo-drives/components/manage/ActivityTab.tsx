@@ -1,5 +1,6 @@
 "use client";
 
+import { useEffect, useState } from "react";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { Loader2 } from "lucide-react";
@@ -25,8 +26,13 @@ export function ActivityTab({ drives, offers, loading, error, reload, onDrivesCh
   const params = useSearchParams();
   const filterParam = params.get("filter");
   // No ?filter=: all three rows. A chip (or an old ?filter= link) shows only its row.
-  const filter: ActivityFilter | null = FILTERS.some(([f]) => f === filterParam) ? (filterParam as ActivityFilter) : null;
-  const driveId = Number(params.get("drive")) || null;
+  const urlFilter: ActivityFilter | null = FILTERS.some(([f]) => f === filterParam) ? (filterParam as ActivityFilter) : null;
+  const urlDrive = Number(params.get("drive")) || null;
+  // Local state, so a chip responds on the first tap; the URL follows (and links still drive it).
+  const [filter, setFilter] = useState<ActivityFilter | null>(urlFilter);
+  const [driveId, setDriveId] = useState<number | null>(urlDrive);
+  useEffect(() => { setFilter(urlFilter); }, [urlFilter]);
+  useEffect(() => { setDriveId(urlDrive); }, [urlDrive]);
   const focus = driveId ? drives.find((d) => d.id === driveId) ?? null : null;
 
   const forDrive = <T extends { drive: NgoDrive }>(list: T[]) => (driveId ? list.filter((o) => o.drive.id === driveId) : list);
@@ -36,7 +42,9 @@ export function ActivityTab({ drives, offers, loading, error, reload, onDrivesCh
   const counts: Record<ActivityFilter, number> = { offers: toReview.length, handovers: handovers.length, proof: proofDue.length };
 
   function go(next: Partial<{ filter: ActivityFilter | null; drive: number | null }>) {
-    const q = new URLSearchParams(params.toString());
+    if (next.filter !== undefined) setFilter(next.filter);
+    if (next.drive !== undefined) setDriveId(next.drive);
+    const q = new URLSearchParams(window.location.search);
     q.set("tab", "activity");
     if (next.filter) q.set("filter", next.filter);
     if (next.filter === null) q.delete("filter");
@@ -47,7 +55,7 @@ export function ActivityTab({ drives, offers, loading, error, reload, onDrivesCh
 
   return (
     <div className="space-y-4">
-      <div className="flex gap-2 overflow-x-auto pb-1" role="group" aria-label={ui("Activity")}>
+      <div className="flex flex-wrap gap-2 pb-1" role="group" aria-label={ui("Activity")}>
         {FILTERS.map(([key, label]) => (
           <Chip key={key} active={filter === key} onClick={() => go({ filter: filter === key ? null : key })} testId={`activity-chip-${key}`}>
             {dc(label)} <span className="tabular-nums opacity-70">{counts[key]}</span>
