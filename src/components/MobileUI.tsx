@@ -26,6 +26,7 @@ type MobileNavItem = {
 };
 
 export function MobileBottomNav() {
+  const warmedRoutes = useRef(new Map<string, number>());
   const t = useTranslations("mobileNav");
   const navT = useTranslations("nav");
   const dashboardT = useTranslations("dashboard");
@@ -73,6 +74,18 @@ export function MobileBottomNav() {
     : role === "ADMIN" ? "/admin/dashboard"
     : role === "NGO" || role === "NGO_PARTNER" ? "/dashboard/ngo"
     : "/dashboard";
+
+  function warmDockRoute(href: string) {
+    // Deliberate intent only: never restore the old viewport-wide prefetch fanout.
+    if (href === routeWithoutLocale) return;
+    const connection = navigator as Navigator & { connection?: { saveData?: boolean } };
+    if (connection.connection?.saveData) return;
+    const key = `${user?.email ?? "guest"}:${href}`;
+    const now = performance.now();
+    if (now - (warmedRoutes.current.get(key) ?? -Infinity) < 30_000) return;
+    warmedRoutes.current.set(key, now);
+    router.prefetch(href);
+  }
 
   const items: MobileNavItem[] = [
     { href: "/", icon: Home, label: t("home") },
@@ -145,7 +158,7 @@ export function MobileBottomNav() {
   function activateTab(index: number, navigate: boolean): boolean {
     const item = items[index];
     if (!item) return false;
-    if (pathname === item.href) {
+    if (routeWithoutLocale === item.href) {
       scrollToTop();
       return true;
     }
@@ -260,6 +273,8 @@ export function MobileBottomNav() {
               href={item.href}
               aria-current={index === routeActiveIndex ? "page" : undefined}
               aria-label={item.label}
+              onPointerDown={() => warmDockRoute(item.href)}
+              onFocus={() => warmDockRoute(item.href)}
               onClick={(event) => {
                 if (
                   event.defaultPrevented ||
@@ -312,6 +327,7 @@ export function MobileBottomNav() {
               if (dragPointerId.current !== event.pointerId) return;
               const point = pointOnTrack(event.clientX);
               if (!point) return;
+              warmDockRoute(items[point.index].href);
               setDragPosition(point.x);
               setDragIndex(point.index);
             }}

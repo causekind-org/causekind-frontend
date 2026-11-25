@@ -4,7 +4,8 @@ import { UiText, useUiText } from "@/components/UiText";
 
 import { serverDate } from "@/lib/serverTime";
 import { useState, useEffect, useRef, useCallback } from "react";
-import type { ComponentType } from "react";
+// @ts-expect-error -- hand-maintained JSX component has no declaration file.
+import StaggeredMenu from "@/components/StaggeredMenu";
 import Link from "@/components/AppLink";
 import { RakshaBandhanWordmark } from "@/components/brand/RakshaBandhanWordmark";
 import { isRakshaBandhanCampaignActive } from "@/lib/raksha-bandhan";
@@ -306,30 +307,7 @@ export function SiteHeader() {
   const pathname = locales.includes(segments[1] as (typeof locales)[number])
     ? `/${segments.slice(2).join("/")}` : rawPathname;
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
-  // The CSS-driven menu is code-split and warmed at idle or pointer intent.
-  const [StaggeredMenu, setStaggeredMenu] = useState<ComponentType<any> | null>(null);
-  const preloadMenu = useCallback(() => {
-    // Start before the click handler on touch, without prefetching any routes.
-    // @ts-expect-error — untyped JS module
-    void import("@/components/StaggeredMenu").then((m) => setStaggeredMenu(() => m.default));
-  }, []);
-  useEffect(() => {
-    let cancelled = false;
-    // @ts-expect-error — StaggeredMenu is the JS/CSS React Bits variant (no types shipped)
-    const load = () => import("@/components/StaggeredMenu").then((m) => { if (!cancelled) setStaggeredMenu(() => m.default); });
-    const w = window as Window & { requestIdleCallback?: (cb: () => void, o?: { timeout: number }) => number; cancelIdleCallback?: (id: number) => void };
-    let idleId: number | undefined;
-    let timer: ReturnType<typeof setTimeout> | undefined;
-    if (w.requestIdleCallback) idleId = w.requestIdleCallback(load, { timeout: 2000 });
-    else timer = setTimeout(load, 1200);
-    return () => { cancelled = true; if (idleId !== undefined) w.cancelIdleCallback?.(idleId); if (timer) clearTimeout(timer); };
-  }, []);
-  useEffect(() => {
-    // A tap before the idle load fired: fetch now (import() is cached, so this
-    // never downloads twice).
-    // @ts-expect-error — untyped JS module, see above
-    if (isSidebarOpen && !StaggeredMenu) import("@/components/StaggeredMenu").then((m) => setStaggeredMenu(() => m.default));
-  }, [isSidebarOpen, StaggeredMenu]);
+  // The CSS-only menu ships with the header so the first tap never waits for a chunk.
   // Closing the menu makes it inert, which pushes focus out to <body>. Without
   // this a keyboard user loses their place entirely, so send focus back to the
   // control they opened it with.
@@ -918,8 +896,6 @@ export function SiteHeader() {
               hover tint goes: it fought the glass for the same surface. */}
           <button
             ref={menuTriggerRef}
-            onPointerDown={preloadMenu}
-            onFocus={preloadMenu}
             onClick={() => setIsSidebarOpen(true)}
             aria-label={t("nav.openMenu")}
             aria-expanded={isSidebarOpen}
@@ -1119,8 +1095,6 @@ export function SiteHeader() {
 
             {/* Hamburger menu trigger */}
             <button
-              onPointerDown={preloadMenu}
-              onFocus={preloadMenu}
               onClick={() => setIsSidebarOpen(true)}
               className={iconBtnCls}
               aria-label={ui("Open workspace menu")}
@@ -1397,7 +1371,7 @@ export function SiteHeader() {
           sign-out live in the footer slot; a compact profile line is the header.
           The decorative profile-completion & latest-impact cards were dropped
           in favour of StaggeredMenu's cleaner list. ── */}
-      {StaggeredMenu && <StaggeredMenu
+      <StaggeredMenu
         open={isSidebarOpen}
         onClose={() => setIsSidebarOpen(false)}
         position="right"
@@ -1481,7 +1455,7 @@ export function SiteHeader() {
             )}
           </div>
         }
-      />}
+      />
     </>
   );
 }

@@ -323,6 +323,14 @@ export function HeroSection() {
     fetchPriority: "high",
     sizes: "100vw",
   });
+  const { props: mobilePhotoProps } = getImageProps({
+    src: "/images/causekind-mobile-hero-v1.webp",
+    alt: t("photoAlt"),
+    fill: true,
+    loading: "eager",
+    fetchPriority: "high",
+    sizes: "100vw",
+  });
 
   return (
     <MotionConfig reducedMotion="user">
@@ -442,7 +450,7 @@ export function HeroSection() {
             {navratri ? <><NavratriMobilePhoto /><NavratriArt /></> : <><div className="ck-hero-photo-shell absolute inset-0 z-0 min-w-0 lg:relative lg:inset-auto lg:min-h-[clamp(10.5rem,24vh,14rem)]">
               <div className="ck-hero-photo-clip absolute inset-0 overflow-hidden bg-[var(--ck-home-highlight,#e9c69d)]">
                 <picture>
-                <source media="(max-width: 1023px)" srcSet="/images/causekind-mobile-hero-v1.webp" />
+                <source media="(max-width: 1023px)" srcSet={mobilePhotoProps.srcSet} sizes={mobilePhotoProps.sizes} />
                 <LandingAttributes><img {...heroPhotoProps} className="ck-hero-photo-image object-cover object-center" /></LandingAttributes>
                 </picture>
                 <div className="pointer-events-none absolute inset-y-0 left-0 hidden w-[12%] bg-gradient-to-r from-[#fdf5ed]/65 to-transparent lg:block dark:from-[#1a1512]/78" aria-hidden />

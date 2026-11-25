@@ -121,7 +121,7 @@ export function DeferredOverlays() {
   return (
     <>
       {/* Cookie banner switched off — see the note on the import below. */}
-      <WelcomeOverlay />
+      {user && <WelcomeOverlay />}
       <TourController />
       {role === "DONOR" && <><DonorCategoryModal /><DonorListingPrompt /><DoneeRequestPrompt /></>}
       {role === "DONEE" && <DoneeListingPrompt />}
