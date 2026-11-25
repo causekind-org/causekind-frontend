@@ -6,9 +6,13 @@ Demo URL: **https://www.causekind.com/**.
 
 The public site reproduced React hydration error #418 on 25 November. The local
 performance fixes must be published and checked on that URL before the meeting.
-Local test success does not verify the deployed site. Use the workspace's existing
-verified staging-to-main release process; remote pushes require Sushil's explicit
-instruction. The Vercel connector could not inspect deployment metadata because
+Local test success does not verify the deployed site. Use the workspace's verified
+`--no-ff` merge policy; remote pushes require Sushil's explicit instruction.
+An isolated release candidate based on origin/main is prepared at
+`C:/Causekind/investor-mobile-release`. It excludes the unreleased Mail Center
+feature/dependencies in local main. Review/publish that candidate for this demo;
+its exact tip and validation are recorded in the handoff. No new branch has been
+created. The Vercel connector could not inspect deployment metadata because
 its current connection lacks access to the project team.
 
 ## After publishing
