@@ -1328,6 +1328,11 @@ section:focus-within {
 /* On the landing page the footer follows the last section, so dock clearance
    belongs after the footer rather than in the gap before it. */
 @media (max-width: 1023px) {
+  /* Every page with the footer after it (drive pages, NGO profiles, dashboards…):
+     the dock clearance goes under the footer, so no cream/orange strip shows
+     between the page's own background and the footer. */
+  .ck-main-bottom-pad:has(+ #footer) { padding-bottom: 0; }
+  .ck-main-bottom-pad + #footer { padding-bottom: calc(var(--ck-bottom-chrome) + 0.5rem); }
   .ck-main-bottom-pad:has(.ck-home-page):has(+ #footer) {
     padding-bottom: 0;
   }

@@ -1,4 +1,5 @@
 "use client";
+import { isDriveGiveFormPath } from "@/lib/driveFlowPaths";
 import { LandingText, LandingAttributes } from "@/components/LandingTranslation";
 
 
@@ -191,7 +192,10 @@ export function MobileBottomNav() {
     pathname === "/items/new" ||
     (pathname?.startsWith("/items/") && pathname?.endsWith("/edit")) ||
     (pathname?.startsWith("/requests/") && pathname?.endsWith("/offer")) ||
-    pathname === "/donations/offer";
+    pathname === "/donations/offer" ||
+    // The donor's give-to-a-drive form: its own sticky Continue bar is the navigation here
+    // (the dock sliding away left a gap under that bar with the form showing through).
+    isDriveGiveFormPath(pathname);
   if (
     pathname?.startsWith("/super-admin") ||
     pathname?.startsWith("/admin/dashboard") ||
@@ -509,12 +513,14 @@ export function FloatingSupportButton() {
   // The support bubble otherwise lands directly on top of the wizard's sticky CTA.
   const isItemListingWizard = pathname === "/items/new" || (pathname?.startsWith("/items/") && pathname?.endsWith("/edit"));
   const isDonationOfferWizard = /^\/requests\/[^/]+\/offer\/?$/.test(pathname ?? "");
+  const isDriveGiveWizard = isDriveGiveFormPath(pathname);
   if (
     pathname?.startsWith("/super-admin") ||
     pathname?.startsWith("/admin/dashboard") ||
     onHandover ||
     isItemListingWizard ||
     isDonationOfferWizard ||
+    isDriveGiveWizard ||
     user?.role === "SUPER_ADMIN"
   ) return null;
 

@@ -985,7 +985,6 @@ export function NgoDriveOfferWizard({
             submitted={submitted}
             savingExit={savingExit}
             advancing={advancing}
-            avoidBottomChrome
           />
         </form>
       </div>
