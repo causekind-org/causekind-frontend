@@ -1,5 +1,6 @@
 "use client";
 
+import { unitForTitle } from "@/lib/driveUnits";
 import { useState } from "react";
 import Link from "next/link";
 import { releaseNgoDriveOffer } from "@/lib/api";
@@ -92,10 +93,10 @@ export function HandoversPanel({ offers, reload }: { offers: DriveOffer[]; reloa
                     <div className="flex flex-wrap items-center gap-2">
                       <h3 className="font-bold text-stone-900 dark:text-stone-100">{offer.donorDisplayName || ui("Donor")}</h3>
                       {offer.distanceKm != null && <span className="text-xs text-stone-500">{df("kmAway", { km: offer.distanceKm.toFixed(1) })}</span>}
-                      <span title={HANDOVER_STATUS[offer.status] ? dc(HANDOVER_STATUS[offer.status]) : humanize(offer.status)} data-testid="handover-status-label" className={`ml-auto rounded-full px-2 py-0.5 text-xs font-bold ${PILL[group]}`}>{dc(HANDOVER_LABEL[group])}</span>
+                      <span title={HANDOVER_STATUS[offer.status] ? dc(HANDOVER_STATUS[offer.status]) : humanize(offer.status)} data-testid="handover-status-label" className={`ml-auto rounded-full px-2 py-0.5 text-xs font-bold ${PILL[group]}`}>{group === "scheduled" && !offer.handoverMethod ? ui("Awaiting donor's plan") : dc(HANDOVER_LABEL[group])}</span>
                     </div>
                     <p className="mt-1 text-sm text-stone-700 dark:text-stone-300 ck-user-text">
-                      {offer.drive.itemName} · {offer.quantity} {humanize(offer.drive.unit)} · {offer.drive.title}
+                      {offer.drive.itemName} · {offer.quantity} {unitForTitle(offer.drive.unit, offer.quantity) || humanize(offer.drive.unit)} · {offer.drive.title}
                     </p>
                     <p className="mt-0.5 text-xs text-stone-500 dark:text-stone-400" data-testid="handover-plan">
                       {received

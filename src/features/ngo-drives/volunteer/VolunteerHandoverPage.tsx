@@ -18,7 +18,8 @@ const errorText = (e: unknown, fallback: string) => (e instanceof Error && e.mes
 
 /** Handover times are Indian local times, sent with no zone. */
 export function formatPickupTime(value: string): string {
-  const d = new Date(`${value.replace(/Z$/, "")}Z`);
+  // Wall-clock IST either way: zone-less, tagged Z by the API, or re-tagged +05:30 by lib/api.
+  const d = new Date(`${value.replace(/(Z|[+-]\d{2}:?\d{2})$/, "")}Z`);
   if (Number.isNaN(d.getTime())) return value;
   return `${new Intl.DateTimeFormat("en-IN", { day: "numeric", month: "short", year: "numeric", hour: "numeric", minute: "2-digit", hour12: true, timeZone: "UTC" }).format(d)} IST`;
 }

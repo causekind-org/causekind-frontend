@@ -1,5 +1,6 @@
 "use client";
 
+import { unitFor } from "@/lib/driveUnits";
 import { currentFromParam, ngoHandoverBackHref } from "@/features/ngo-drives/ngoBackLinks";
 import { openDatePicker } from "@/lib/openDatePicker";
 import { directionsHref } from "@/features/handover/adapters";
@@ -156,7 +157,7 @@ function PlanForm({
 function PlanSummary({ offer, handover, role }: { offer: NgoDriveOfferResponse; handover: NgoDriveOfferHandoverRecordResponse; role: DriveHandoverRole }) {
   const when = new Date(handover.scheduledDateTime ?? "");
   const dropOff = handover.method === "DROP_OFF";
-  const where = dropOff ? offer.handoverDetails?.registeredOfficeAddress : handover.locationAddress;
+  const where = dropOff ? (offer.dropOffAddressDisplay || offer.dropOffAddress || offer.handoverDetails?.registeredOfficeAddress) : handover.locationAddress;
   return (
     <div className="rounded-lg bg-stone-50 p-4 text-sm dark:bg-zinc-800/60">
       <p className="font-semibold text-stone-900 dark:text-stone-100">
@@ -332,7 +333,7 @@ export function DriveHandover({
                 <Link href={driveHref} className="hover:underline">{offer.driveTitle}</Link>
               </h1>
               <p className="mt-0.5 truncate text-sm text-stone-500 dark:text-stone-400">
-                {offer.quantity} {unit} {offer.driveItemName ? `of ${offer.driveItemName}` : ""}
+                {offer.quantity} {unitFor(offer.driveUnit, offer.quantity)} {offer.driveItemName ? `of ${offer.driveItemName}` : ""}
                 {" · "}
                 {role === "NGO" ? `from ${offer.donorDisplayName || "a donor"}` : `to ${offer.ngoName || "the NGO"}`}
               </p>
@@ -500,7 +501,7 @@ export function DriveHandover({
                   <div className="flex items-start gap-2 rounded-lg bg-emerald-50 px-3 py-2.5 text-sm text-emerald-800 dark:bg-emerald-950/30 dark:text-emerald-300">
                     <ShieldCheck className="mt-0.5 h-4 w-4 shrink-0 text-emerald-600 dark:text-emerald-400" aria-hidden="true" />
                     <span>
-                      {handover?.confirmation?.ngoConfirmedQty ?? offer.quantity} {unit} received{handover?.confirmation?.otpVerified ? ", confirmed with the donor's code" : ""}.
+                      {handover?.confirmation?.ngoConfirmedQty ?? offer.quantity} {unitFor(offer.driveUnit, handover?.confirmation?.ngoConfirmedQty ?? offer.quantity)} received{handover?.confirmation?.otpVerified ? ", confirmed with the donor's code" : ""}.
                     </span>
                   </div>
                   {status === "COMPLETED" && role === "DONOR" && (
@@ -626,10 +627,10 @@ export function DriveHandover({
                           {(offer.handoverDetails.contacts?.length ?? 0) > 1 && ` (+${offer.handoverDetails.contacts!.length - 1} more)`}</span>
                       </p>
                     )}
-                    {offer.handoverDetails?.registeredOfficeAddress && !handover && (
+                    {(offer.dropOffAddressDisplay || offer.dropOffAddress || offer.handoverDetails?.registeredOfficeAddress) && !handover && (
                       <p className="flex items-start gap-1.5 text-stone-600 dark:text-stone-400">
                         <MapPin className="mt-0.5 h-4 w-4 shrink-0 text-stone-400" aria-hidden="true" />
-                        <span className="ck-user-text">{offer.handoverDetails.registeredOfficeAddress}</span>
+                        <span className="ck-user-text">{offer.dropOffAddressDisplay || offer.dropOffAddress || offer.handoverDetails?.registeredOfficeAddress}</span>
                       </p>
                     )}
                     {!offer.handoverDetails?.contactName && !offer.handoverDetails?.registeredOfficeAddress && (
@@ -665,7 +666,7 @@ export function DriveHandover({
             <Panel title="Item details">
               <div className="space-y-1.5 text-sm">
                 <p className="font-semibold text-stone-800 dark:text-stone-200">
-                  {offer.quantity} {unit} {offer.driveItemName ? `· ${offer.driveItemName}` : ""}
+                  {offer.quantity} {unitFor(offer.driveUnit, offer.quantity)} {offer.driveItemName ? `· ${offer.driveItemName}` : ""}
                 </p>
                 {offer.condition && (
                   <p className="text-xs text-stone-600 dark:text-stone-400">
@@ -729,7 +730,7 @@ export function DriveHandover({
                   {offer.driveTitle}
                 </Link>
                 <p className="text-xs text-stone-500 dark:text-stone-400">
-                  {offer.quantity} {unit} pledged for this drive
+                  {offer.quantity} {unitFor(offer.driveUnit, offer.quantity)} pledged for this drive
                 </p>
                 {offer.driveAvailableDays && offer.driveAvailableDays.length > 0 && (
                   <p className="text-xs text-stone-600 dark:text-stone-400">

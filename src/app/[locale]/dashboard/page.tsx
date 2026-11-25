@@ -4078,6 +4078,16 @@ export default function DashboardPage() {
     : !isLiveDonorOffer(o));
   const ngoOffersNeedYou = acceptedNgoOffers.some(o => ["NGO_ACCEPTED", "PENDING_ADMIN_APPROVAL", "ADMIN_APPROVED"].includes(o.status));
   const donorOffersNeedYou = liveDonorOffers.some(o => OFFER_NEEDS_DONOR.includes(o.status));
+  // Accepted drive offers live in Matches > NGO: open that segment by itself when only it has
+  // something to do, so the donor isn't left on an empty "Donee" list looking for their handover.
+  const autoNgoSegment = useRef(false);
+  useEffect(() => {
+    if (autoNgoSegment.current) return;
+    if (ngoOffersNeedYou && !donorOffersNeedYou && flowDonorMatches.length + liveDonorOffers.length === 0) {
+      autoNgoSegment.current = true;
+      setMatchSegment("ngo");
+    }
+  }, [ngoOffersNeedYou, donorOffersNeedYou, flowDonorMatches.length, liveDonorOffers.length]);
   const donorMatchesNeedYou = activeDonorMatches.some(m => MATCH_NEEDS_DONOR.has(m.status));
   const donorItemsNeedYou = itemListings.some(l => l.status === "NEEDS_INFORMATION");
   // Open on whatever is waiting; then on offers for a donor with no inventory

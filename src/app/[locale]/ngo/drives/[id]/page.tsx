@@ -1,4 +1,5 @@
 "use client";
+import { unitFor } from "@/lib/driveUnits";
 import { driveDropOffAddress } from "@/features/ngo-drives/driveFormatters";
 
 import { useCallback, useEffect, useState } from "react";
@@ -169,14 +170,19 @@ export default function NgoDriveManagePage() {
   const summary = driveSummaryParts(drive, offers);
   // Stored as "MON,TUE,..." on the NGO's own drive record.
   const days = String(drive.availableDays ?? "").split(",").filter(Boolean).join(", ");
-  const hours = `${days}${drive.availableFrom ? `, ${drive.availableFrom}–${drive.availableTo}` : ""}`;
+  const hm = (t?: string | null) => String(t ?? "").slice(0, 5);
+  const hours = `${days}${drive.availableFrom ? `, ${hm(drive.availableFrom)}–${hm(drive.availableTo)}` : ""}`;
   const unit = humanize(drive.unit).toLowerCase();
   const needed = Math.max(0, drive.quantityNeeded ?? 0);
   const received = Math.max(0, drive.quantityReceived ?? 0);
   const pledged = Math.max(0, drive.quantityPledged ?? 0);
   const still = Math.max(0, needed - received - pledged);
-  const donors = drive.donorCount ?? new Set(offers.filter((o) => COUNTED.has(o.status)).map((o) => o.donorDisplayName)).size;
-  const offerCount = drive.offerCount ?? offers.filter((o) => COUNTED.has(o.status)).length;
+  // Offers waiting for review count too: the tiles showed "Donors 0 / Offers 0" next to "3 offers to review".
+  const live = offers.filter((o) => COUNTED.has(o.status) || o.status === "PENDING_NGO_REVIEW");
+  const donors = Math.max(drive.donorCount ?? 0, new Set(live.map((o) => o.donorDisplayName)).size);
+  const offerCount = Math.max(drive.offerCount ?? 0, live.length);
+  // "Pledged" on the tile is everything promised, received or not (it read 0 once items arrived).
+  const pledgedTotal = Math.min(needed || Infinity, pledged + received);
   const pct = (n: number) => `${needed ? Math.min(100, (n / needed) * 100) : 0}%`;
   const daysLeft = formatDaysLeft(drive.neededBy);
   const statusLabel = DRIVE_STATUS_LABEL[drive.status] ?? humanize(drive.status);
@@ -236,7 +242,7 @@ export default function NgoDriveManagePage() {
                 <p data-testid="drive-activity-summary" className="mt-2 flex flex-wrap gap-x-2 text-sm text-stone-700 dark:text-stone-300">
                   {summary.map((part, i) => (
                     <span key={part.filter}>
-                      {i > 0 && <span aria-hidden="true" className="mr-2">-</span>}
+                      {i > 0 && <span aria-hidden="true" className="mr-2">·</span>}
                       <Link href={part.href} className="font-semibold text-ngo-800 underline underline-offset-2 hover:text-ngo-900 dark:text-ngo-300">{part.label}</Link>
                     </span>
                   ))}
@@ -264,7 +270,7 @@ export default function NgoDriveManagePage() {
       <div className="mx-auto mt-6 max-w-6xl space-y-6 px-4 sm:px-6">
         {/* KPI strip */}
         <dl data-testid="drive-kpis" className="grid grid-cols-2 gap-3 sm:grid-cols-5">
-          {([["Needed", needed], ["Pledged", pledged], ["Received", received], ["Still needed", still], ["Donors", donors], ["Offers", offerCount]] as const).map(([label, value]) => (
+          {([["Needed", needed], ["Pledged", pledgedTotal], ["Received", received], ["Still needed", still], ["Donors", donors], ["Offers", offerCount]] as const).map(([label, value]) => (
             <div key={label} className="rounded-2xl border border-stone-200 bg-white p-4 dark:border-zinc-800 dark:bg-zinc-900">
               <dt className="text-xs font-semibold text-stone-500 dark:text-stone-400">{label}</dt>
               <dd className="mt-1 font-serif text-2xl font-semibold text-stone-900 dark:text-stone-100 ck-user-text">{value}</dd>
@@ -274,14 +280,14 @@ export default function NgoDriveManagePage() {
 
         {/* Multi-segment progress + legend */}
         <div className="rounded-2xl border border-stone-200 bg-white p-4 dark:border-zinc-800 dark:bg-zinc-900">
-          <div role="img" aria-label={`${received} received, ${pledged} pledged, ${still} still needed of ${needed} ${unit}`}
+          <div role="img" aria-label={`${received} received, ${pledged} on the way, ${still} still needed of ${needed} ${unit}`}
             className="flex h-3 w-full overflow-hidden rounded-full bg-stone-100 dark:bg-zinc-800">
             <div className="h-full bg-ngo-700" style={{ width: pct(received) }} />
             <div className="h-full bg-ngo-300 dark:bg-ngo-600" style={{ width: pct(pledged) }} />
           </div>
           <ul className="mt-3 flex flex-wrap gap-x-5 gap-y-1 text-xs text-stone-600 dark:text-stone-400">
             <li className="flex items-center gap-1.5"><span className="h-2.5 w-2.5 rounded-full bg-ngo-700" aria-hidden="true" />Received {received}</li>
-            <li className="flex items-center gap-1.5"><span className="h-2.5 w-2.5 rounded-full bg-ngo-300 dark:bg-ngo-600" aria-hidden="true" />Pledged {pledged}</li>
+            <li className="flex items-center gap-1.5"><span className="h-2.5 w-2.5 rounded-full bg-ngo-300 dark:bg-ngo-600" aria-hidden="true" />On the way {pledged}</li>
             <li className="flex items-center gap-1.5"><span className="h-2.5 w-2.5 rounded-full bg-stone-200 dark:bg-zinc-700" aria-hidden="true" />Still needed {still}</li>
           </ul>
         </div>
@@ -355,7 +361,7 @@ export default function NgoDriveManagePage() {
                   {handovers.map((o) => (
                     <li key={o.id} className="flex flex-wrap items-center justify-between gap-2 py-2">
                       <span className="min-w-0 break-words text-sm text-stone-800 dark:text-stone-200">
-                        <strong>{o.donorDisplayName}</strong> · {o.quantity ?? 0} {unit} · {humanize(o.status)}
+                        <strong>{o.donorDisplayName}</strong> · {o.quantity ?? 0} {unitFor(drive.unit, o.quantity ?? 0)} · {humanize(o.status)}
                       </span>
                       <Link href={`/ngo-drive-offers/${o.id}/handover`} className={linkCls}>Open handover</Link>
                     </li>

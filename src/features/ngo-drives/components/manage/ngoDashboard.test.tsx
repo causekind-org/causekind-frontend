@@ -116,13 +116,15 @@ describe("Activity: offers to review", { timeout: 20000 }, () => {
     expect(screen.getByTestId("activity-chip-handovers")).toHaveTextContent(/Handovers\s*1/);
   });
 
-  it("one-click accept sends the full offered quantity, with no dialog", async () => {
+  it("accept asks once, then sends the full offered quantity (no quantity field)", async () => {
     api.reviewNgoDriveOffer.mockResolvedValue({});
     await open("tab=activity&filter=offers");
     const card = screen.getAllByTestId("offer-review-card").find((c) => c.textContent?.includes("Donor 1"))!;
     fireEvent.click(within(card).getByRole("button", { name: "Accept" }));
-    expect(screen.queryByRole("dialog")).toBeNull();
+    expect(await screen.findByTestId("accept-confirm")).toBeInTheDocument();
+    expect(api.reviewNgoDriveOffer).not.toHaveBeenCalled();
     expect(screen.queryByTestId("accept-qty")).toBeNull();
+    fireEvent.click(screen.getByTestId("accept-confirm-yes"));
     await waitFor(() => expect(api.reviewNgoDriveOffer).toHaveBeenCalledWith(1, 1, "ACCEPT", undefined, 5));
     expect(api.reviewNgoDriveOffer).toHaveBeenCalledTimes(1);
   });
@@ -133,6 +135,7 @@ describe("Activity: offers to review", { timeout: 20000 }, () => {
     screen.getAllByRole("checkbox").forEach((c) => fireEvent.click(c));
     expect(screen.getByTestId("bulk-bar")).toHaveTextContent("2 selected");
     fireEvent.click(screen.getByRole("button", { name: "Accept selected" }));
+    fireEvent.click(await screen.findByTestId("accept-confirm-yes"));
     await waitFor(() => expect(api.reviewNgoDriveOffersBulk).toHaveBeenCalledWith(1, expect.arrayContaining([1, 2]), "ACCEPT"));
     screen.getAllByRole("checkbox").forEach((c) => { if (!(c as HTMLInputElement).checked) fireEvent.click(c); });
     fireEvent.click(screen.getByRole("button", { name: "Decline selected" }));
@@ -165,13 +168,20 @@ describe("Activity: offers to review", { timeout: 20000 }, () => {
 describe("Activity: handovers", { timeout: 20000 }, () => {
   it("each handover card has a Scheduled / Received / Issue label", async () => {
     nav.params = new URLSearchParams("tab=activity&filter=handovers");
-    api.getNgoDriveOffersForNgo.mockResolvedValue([offer(1, "HANDOVER_IN_PROGRESS"), offer(2, "ISSUE_WINDOW_OPEN"), offer(3, "ISSUE_RAISED")]);
+    api.getNgoDriveOffersForNgo.mockResolvedValue([offer(1, "HANDOVER_IN_PROGRESS", { handoverMethod: "NGO_PICKUP" }), offer(2, "ISSUE_WINDOW_OPEN"), offer(3, "ISSUE_RAISED")]);
     renderSections([drive(1, "LIVE")]);
     await waitFor(() => expect(screen.getByTestId("handover-status-label")).toHaveTextContent("Scheduled"));
     fireEvent.click(screen.getByTestId("handover-chip-received"));
     expect(screen.getByTestId("handover-status-label")).toHaveTextContent("Received");
     fireEvent.click(screen.getByTestId("handover-chip-issues"));
     expect(screen.getByTestId("handover-status-label")).toHaveTextContent("Issue");
+  });
+
+  it("an accepted offer the donor hasn't planned says so instead of 'Scheduled'", async () => {
+    nav.params = new URLSearchParams("tab=activity&filter=handovers");
+    api.getNgoDriveOffersForNgo.mockResolvedValue([offer(1, "NGO_ACCEPTED")]);
+    renderSections([drive(1, "LIVE")]);
+    await waitFor(() => expect(screen.getByTestId("handover-status-label")).toHaveTextContent("Awaiting donor's plan"));
   });
 
   it("chips map the real statuses; rows have Chat, Open handover, Cancel (with reason); no Mark received", async () => {

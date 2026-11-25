@@ -9,6 +9,7 @@ import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { errorMessage } from "@/features/ngo-drives/driveGiveState";
 import { NgoOfferReviewCard } from "./NgoOfferReviewCard";
+import { unitFor } from "@/lib/driveUnits";
 import type { DriveOffer } from "./useNgoOffers";
 
 import { UiText, useUiText } from "@/components/UiText";
@@ -41,6 +42,8 @@ export function OffersPanel({ offers, reload }: { offers: DriveOffer[]; reload: 
   const [sort, setSort] = useState<OfferSort>("oldest");
   const [selected, setSelected] = useState<Set<number>>(new Set());
   const [declining, setDeclining] = useState<Decline | null>(null);
+  /** Offers waiting for "Yes, accept": accepting shares the NGO contact and can't be undone with one click. */
+  const [accepting, setAccepting] = useState<DriveOffer[] | null>(null);
   const [reason, setReason] = useState("");
   const [busy, setBusy] = useState(false);
 
@@ -92,9 +95,16 @@ export function OffersPanel({ offers, reload }: { offers: DriveOffer[]; reload: 
     if (done) { setDeclining(null); setReason(""); }
   }
 
-  async function acceptSelected() {
-    await run(() => Promise.all(byDriveIds(picked).map(([driveId, ids]) => reviewNgoDriveOffersBulk(driveId, ids, "ACCEPT"))),
-      df("offersAccepted", { count: picked.length }), ui("We couldn't accept these offers."));
+  async function acceptSelected(list: DriveOffer[]) {
+    await run(() => Promise.all(byDriveIds(list).map(([driveId, ids]) => reviewNgoDriveOffersBulk(driveId, ids, "ACCEPT"))),
+      df("offersAccepted", { count: list.length }), ui("We couldn't accept these offers."));
+  }
+
+  async function confirmAccept() {
+    const list = accepting;
+    if (!list?.length) return;
+    if (list.length === 1) await acceptOne(list[0]); else await acceptSelected(list);
+    setAccepting(null);
   }
 
   if (offers.length === 0) return <p className="py-8 text-center text-sm text-stone-500 dark:text-stone-400"><UiText>No offers waiting for your decision.</UiText></p>;
@@ -111,7 +121,7 @@ export function OffersPanel({ offers, reload }: { offers: DriveOffer[]; reload: 
         {picked.length > 0 && (
           <div className="flex flex-wrap items-center gap-2" data-testid="bulk-bar">
             <span className="text-sm font-semibold text-stone-600 dark:text-stone-300">{df("selectedCount", { count: picked.length })}</span>
-            <Button size="sm" disabled={busy} onClick={() => void acceptSelected()} className="bg-ngo-700 hover:bg-ngo-800"><UiText>Accept selected</UiText></Button>
+            <Button size="sm" disabled={busy} onClick={() => setAccepting(picked)} className="bg-ngo-700 hover:bg-ngo-800"><UiText>Accept selected</UiText></Button>
             <Button size="sm" variant="destructive" disabled={busy} onClick={() => { setDeclining({ offers: picked, title: df("declineN", { count: picked.length }) }); setReason(""); }}><UiText>Decline selected</UiText></Button>
           </div>
         )}
@@ -135,7 +145,7 @@ export function OffersPanel({ offers, reload }: { offers: DriveOffer[]; reload: 
                 <NgoOfferReviewCard key={offer.id} offer={offer} unit={drive.unit} stillNeeded={stillNeeded(drive)} label={covered ? ui("Drive covered") : null}
                   select={<input type="checkbox" aria-label={offer.donorDisplayName ? df("selectOfferFrom", { name: offer.donorDisplayName }) : ui("Select offer from donor")} checked={selected.has(offer.id)} onChange={() => toggle(offer.id)} className="mt-1 h-4 w-4 shrink-0 accent-ngo-700" />}
                   actions={<>
-                    <Button size="sm" disabled={busy} className="bg-ngo-700 hover:bg-ngo-800" data-testid="accept-offer" onClick={() => void acceptOne(offer)}><UiText>Accept</UiText></Button>
+                    <Button size="sm" disabled={busy} className="bg-ngo-700 hover:bg-ngo-800" data-testid="accept-offer" onClick={() => setAccepting([offer])}><UiText>Accept</UiText></Button>
                     <Button size="sm" variant="destructive" disabled={busy} onClick={() => { setDeclining({ offers: [offer], title: ui("Decline this offer?") }); setReason(""); }}><UiText>Decline</UiText></Button>
                   </>} />
               ))}
@@ -143,6 +153,24 @@ export function OffersPanel({ offers, reload }: { offers: DriveOffer[]; reload: 
           </section>
         );
       })}
+
+      <Dialog open={!!accepting} onOpenChange={(o) => { if (!o) setAccepting(null); }}>
+        <DialogContent data-testid="accept-confirm">
+          <DialogHeader>
+            <DialogTitle>{accepting && accepting.length > 1 ? `${ui("Accept these offers?")} (${accepting.length})` : ui("Accept this offer?")}</DialogTitle>
+            <DialogDescription>
+              {accepting?.length === 1
+                ? `${accepting[0].donorDisplayName || ui("The donor")} · ${accepting[0].quantity ?? 0} ${unitFor(accepting[0].drive.unit, accepting[0].quantity ?? 0)}. `
+                : ""}
+              <UiText>The donor is told right away and your handover contacts are shared with them, so they can plan the handover.</UiText>
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setAccepting(null)}><UiText>Cancel</UiText></Button>
+            <Button disabled={busy} className="bg-ngo-700 hover:bg-ngo-800" data-testid="accept-confirm-yes" onClick={() => void confirmAccept()}><UiText>Yes, accept</UiText></Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
       <Dialog open={!!declining} onOpenChange={(o) => { if (!o) setDeclining(null); }}>
         <DialogContent>

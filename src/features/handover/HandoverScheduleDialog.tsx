@@ -293,9 +293,10 @@ export function HandoverScheduleDialog({
                 onAddressChange={setAddress}
                 onPinChange={(a, b) => { setLat(a); setLng(b); }}
                 onBusyChange={setLocationBusy}
+                recipientLabel={vm.flow === "NGO_OFFER" ? "NGO" : "donee"}
               />
               {!hasPin && address.trim() !== "" && !locationBusy && (
-                <Hint>Place the pin too (search, use your current location, or tap the map) so the donee gets a map link.</Hint>
+                <Hint>Place the pin too (search, use your current location, or tap the map) so the {vm.flow === "NGO_OFFER" ? "NGO" : "donee"} gets a map link.</Hint>
               )}
             </Field>
           )}

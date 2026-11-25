@@ -223,7 +223,7 @@ export function NgoGlassStatusCard({ status, className = "" }: GlassStatusCardPr
     percent = 75;
     tag = "Under review";
     title = "Verification in progress";
-    nextText = "Our team is reviewing your documents. Typically takes 24–48 hours.";
+    nextText = "Our team is reviewing your documents. Typically takes 2–3 business days.";
     actionLabel = "View application status";
     actionHref = "/profile/ngo-details";
   } else if (ngoStatus === "changes_requested") {

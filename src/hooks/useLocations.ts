@@ -9,13 +9,14 @@ export function useLocations(countryIso: string, stateIso: string) {
   const [dialCodes, setDialCodes] = useState<(SelectOption & { phonecode?: string })[]>([]);
 
   useEffect(() => {
-    getCountries().then(setCountries);
-    getDialCodes().then(setDialCodes);
+    // A failed server action (e.g. an empty response under load) must not crash the page.
+    getCountries().then(setCountries).catch(() => setCountries([]));
+    getDialCodes().then(setDialCodes).catch(() => {});
   }, []);
 
   useEffect(() => {
     if (countryIso) {
-      getStates(countryIso).then(setStates);
+      getStates(countryIso).then(setStates).catch(() => setStates([]));
     } else {
       setStates([]);
     }
@@ -23,7 +24,7 @@ export function useLocations(countryIso: string, stateIso: string) {
 
   useEffect(() => {
     if (countryIso && stateIso) {
-      getCities(countryIso, stateIso).then(setCities);
+      getCities(countryIso, stateIso).then(setCities).catch(() => setCities([]));
     } else {
       setCities([]);
     }

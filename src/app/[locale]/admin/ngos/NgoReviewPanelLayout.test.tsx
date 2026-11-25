@@ -99,6 +99,7 @@ describe("NGO Applications: tabs, search and layout", { timeout: 15000 }, () => 
     render(<NgoReviewPanel />);
     await screen.findByText("Org 2");
     fireEvent.click(card("Org 2"));
+    fireEvent.change(await screen.findByRole("combobox", { name: /^Decision/ }), { target: { value: "NEEDS_INFORMATION" } });
     const checks = await screen.findAllByRole("checkbox");
     fireEvent.click(checks[0]);
     fireEvent.click(screen.getByRole("button", { name: /Back to list/ }));

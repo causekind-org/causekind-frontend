@@ -295,7 +295,7 @@ export function NgoHero() {
                 ) : (
                   <>
                     <ShieldCheck className="w-3.5 h-3.5 text-ngo-700 dark:text-ngo-300 shrink-0" />
-                    <span>Direct handovers · 10 km donor reach · Verified impact certificates</span>
+                    <span>Direct handovers · Nearby donor pickups · Verified impact certificates</span>
                   </>
                 )}
               </motion.div>

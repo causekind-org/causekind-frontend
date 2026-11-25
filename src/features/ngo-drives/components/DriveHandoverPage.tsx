@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 import { useAuth } from "@/hooks/useAuth";
 import { useEntityUpdates } from "@/hooks/useEntityUpdates";
 import {
-  getNgoDriveOffer, getNgoDriveOfferForNgo, getNgoDriveOfferHandover, invalidateRequestCache,
+  getNgoDriveOffer, getNgoDriveOfferForNgo, getNgoDriveOfferHandover, getNgoOverview, invalidateRequestCache,
   type NgoDriveOfferResponse, type NgoDriveOfferHandoverRecordResponse,
 } from "@/lib/api";
 import { PageSkeleton } from "@/components/skeletons";
@@ -43,8 +43,19 @@ export function DriveHandoverPage({ role, offerId, driveId }: { role: DriveHando
   useEffect(() => {
     if (authLoading) return;
     if (!user) { router.replace(`/login?next=${encodeURIComponent(window.location.pathname)}`); return; }
+    // An NGO opening the donor's link (/ngo-drive-offers/{id}/handover, e.g. from a shared message)
+    // got "You don't have access to this". Send it to its own page for the same handover instead.
+    if (role === "DONOR" && (user.role === "NGO" || user.role === "NGO_PARTNER")) {
+      void getNgoOverview()
+        .then((o) => {
+          const own = (o?.handovers ?? []).find((h) => h.kind === "DRIVE_OFFER" && h.id === offerId);
+          if (own?.href) router.replace(own.href); else void load();
+        })
+        .catch(() => void load());
+      return;
+    }
     void load();
-  }, [authLoading, user, router, load]);
+  }, [authLoading, user, router, load, role, offerId]);
   useEntityUpdates(["NGO_DRIVE_OFFER", "NGO_DRIVE"], () => { invalidateRequestCache(); void load(); });
 
   useEffect(() => {

@@ -134,8 +134,9 @@ describe("NgoProfileView (Consolidated at /profile)", () => {
     // Initials SF
     expect(screen.getByText("SF")).toBeInTheDocument();
 
-    // Role NGO_PARTNER
-    expect(screen.getByText("NGO_PARTNER")).toBeInTheDocument();
+    // Role shown in words, not the raw NGO_PARTNER value
+    expect(screen.getByText("NGO Partner")).toBeInTheDocument();
+    expect(screen.queryByText("NGO_PARTNER")).toBeNull();
 
     // Email, phone, city
     expect(screen.getByText("contact@smilefoundation.org")).toBeInTheDocument();

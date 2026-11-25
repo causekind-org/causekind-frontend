@@ -260,7 +260,7 @@ export function NgoHeroRedesign({ status }: { status: NgoStatusData }) {
                 <span className="font-medium text-[#EFEADB] leading-snug">
                   {ngoStatus === "under_review" && (
                     <>
-                      <strong className="text-white">Application under review:</strong> Our team is checking your documents (24–48 hours).
+                      <strong className="text-white">Application under review:</strong> Our team is checking your documents (usually 2–3 business days).
                     </>
                   )}
                   {ngoStatus === "changes_requested" && (
@@ -398,7 +398,7 @@ export function NgoHeroRedesign({ status }: { status: NgoStatusData }) {
               <ShieldCheck className="w-3.5 h-3.5 text-[#5BE49B] shrink-0" />
               {/* Two lines on mobile so nothing is cut off under the chat bubble. */}
               <span className="max-md:!whitespace-normal max-md:!overflow-visible max-md:leading-snug">
-                <span className="max-md:block">Direct handovers · 10 km donor reach</span>
+                <span className="max-md:block">Direct handovers · Nearby donor pickups</span>
                 <span className="max-md:hidden"> · </span>
                 <span className="max-md:block">Verified impact certificates</span>
               </span>

@@ -1149,7 +1149,7 @@ function RegisterContent() {
       )}
 
       {/* Social buttons — only on non-social flow and non-NGO */}
-      {!isSocialFlow && form.role !== "NGO_PARTNER" && (
+      {!isSocialFlow && (
         <div className="space-y-3">
           <Reveal delay={340}>
             <button

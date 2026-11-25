@@ -211,12 +211,21 @@ export function PreApprovalLanding({ status }: { status: NgoStatusData }) {
       {/* 10. FINAL CTA */}
       <NgoFinalCtaBand
         headline={
-          <>
-            Ready to get{" "}
-            <span className="ngo-gold-underline">verified?</span>
-          </>
+          status.status === "under_review" ? (
+            <>
+              Your application is{" "}
+              <span className="ngo-gold-underline">under review.</span>
+            </>
+          ) : (
+            <>
+              Ready to get{" "}
+              <span className="ngo-gold-underline">verified?</span>
+            </>
+          )
         }
-        primaryButton={{ label: "Complete registration", href: registerHref, showArrow: true }}
+        primaryButton={status.status === "under_review"
+          ? { label: "View application status", href: registerHref, showArrow: true }
+          : { label: "Complete registration", href: registerHref, showArrow: true }}
         photos={[
           { src: "/images/ngo-landing/ngo-school-supplies-girl-portrait.webp", alt: "A volunteer handing notebooks and a pencil box to a smiling schoolgirl" },
           { src: "/images/ngo-landing/ngo-children-school-bags-portrait.webp", alt: "Village children smiling with their new school bags" },

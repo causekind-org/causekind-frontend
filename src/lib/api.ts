@@ -2741,6 +2741,8 @@ export type Certificate = {
   ngoName?: string | null;
   /** NGO drive certificates only: the drive's title. */
   driveTitle?: string | null;
+  /** NGO drive certificates: the item given ("Blankets"). */
+  itemName?: string | null;
   /** Drive certificates only: readable unit, e.g. "pieces". */
   quantityUnit?: string | null;
   quantityDelivered: number;
@@ -6377,6 +6379,8 @@ export type PublicNgoDrive = {
   locationCity?: string | null;
   /** Pickup available within this distance (km); null on older drives. */
   pickupRadiusKm?: number | null;
+  /** The drive's drop-off point (what donors go to). Falls back to the registered office when absent. */
+  dropOffAddress?: string | null;
   urgency?: string | null;
   beneficiaryGroup?: string;
   beneficiaryGroups?: string[];
@@ -6834,17 +6838,35 @@ export type NgoDriveOfferHandoverRecordResponse = {
   } | null;
 };
 
+/**
+ * Drive handover times are Indian wall-clock times (the form sends no zone and the
+ * backend checks them against the NGO's IST hours), but the JSON comes back tagged as
+ * UTC like every other timestamp. Re-tag them as +05:30 so they display as picked
+ * (11:00 was showing as 4:30 pm).
+ */
+export function istWallTime(v: string | null | undefined): string | null {
+  if (!v) return v ?? null;
+  const m = /^(\d{4}-\d{2}-\d{2}T\d{2}:\d{2}(?::\d{2}(?:\.\d+)?)?)(?:[zZ]|[+-]00:?00)?$/.exec(v.trim());
+  return m ? `${m[1]}+05:30` : v;
+}
+function withIstSchedule<T extends { scheduledDateTime?: string | null } | null | undefined>(r: T): T {
+  if (r && typeof r === "object" && "scheduledDateTime" in r) {
+    return { ...r, scheduledDateTime: istWallTime(r.scheduledDateTime) } as T;
+  }
+  return r;
+}
+
 export async function scheduleNgoDriveOfferHandover(offerId: number, data: any): Promise<NgoDriveOfferHandoverRecordResponse> {
-  return await request<NgoDriveOfferHandoverRecordResponse>(`/api/v1/drive-offers/${offerId}/schedule-handover`, {
+  return withIstSchedule(await request<NgoDriveOfferHandoverRecordResponse>(`/api/v1/drive-offers/${offerId}/schedule-handover`, {
     method: "POST",
     body: JSON.stringify(data),
-  });
+  }));
 }
 export async function rescheduleNgoDriveOfferHandover(offerId: number, data: any): Promise<NgoDriveOfferHandoverRecordResponse> {
-  return await request<NgoDriveOfferHandoverRecordResponse>(`/api/v1/drive-offers/${offerId}/reschedule-handover`, {
+  return withIstSchedule(await request<NgoDriveOfferHandoverRecordResponse>(`/api/v1/drive-offers/${offerId}/reschedule-handover`, {
     method: "POST",
     body: JSON.stringify(data),
-  });
+  }));
 }
 /** The same code for 30 minutes; `renew` asks for a new one. Needs a donor handover photo first. */
 export async function generateNgoDriveOfferHandoverOtp(offerId: number, renew = false): Promise<{ otp: string }> {
@@ -6862,16 +6884,16 @@ export async function uploadNgoDriveHandoverPhotos(offerId: number, files: File[
   return await res.json();
 }
 export async function confirmNgoDriveOfferHandoverDonor(offerId: number, data: any): Promise<NgoDriveOfferHandoverRecordResponse> {
-  return await request<NgoDriveOfferHandoverRecordResponse>(`/api/v1/drive-offers/${offerId}/confirm-handover`, {
+  return withIstSchedule(await request<NgoDriveOfferHandoverRecordResponse>(`/api/v1/drive-offers/${offerId}/confirm-handover`, {
     method: "POST",
     body: JSON.stringify(data),
-  });
+  }));
 }
 export async function confirmNgoDriveOfferHandoverNgo(driveId: number, offerId: number, data: any): Promise<NgoDriveOfferHandoverRecordResponse> {
-  return await request<NgoDriveOfferHandoverRecordResponse>(`/api/v1/ngo-drives/${driveId}/offers/${offerId}/confirm-handover`, {
+  return withIstSchedule(await request<NgoDriveOfferHandoverRecordResponse>(`/api/v1/ngo-drives/${driveId}/offers/${offerId}/confirm-handover`, {
     method: "POST",
     body: JSON.stringify(data),
-  });
+  }));
 }
 
 
@@ -6902,7 +6924,7 @@ export async function uploadDistributionProof(driveId: number, files: File[], be
 /** The planned handover of a drive offer (donor or the drive's NGO); null until the donor plans it. */
 export async function getNgoDriveOfferHandover(offerId: number): Promise<NgoDriveOfferHandoverRecordResponse | null> {
   const record = await request<NgoDriveOfferHandoverRecordResponse | undefined>(`/api/v1/drive-offers/${offerId}/handover`);
-  return record ?? null;
+  return withIstSchedule(record ?? null);
 }
 
 /** One offer to the NGO's own drive (the donor-only /drive-offers/{id} refuses the NGO). */

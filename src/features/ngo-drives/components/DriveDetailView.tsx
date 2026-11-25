@@ -1,5 +1,6 @@
 "use client";
 
+import { unitForTitle } from "@/lib/driveUnits";
 import { EXTERNAL_LINK_REL, linkDomain, safeExternalUrl } from "@/lib/externalLink";
 import { categoryDetailRows } from "@/features/ngo-drives/driveCategoryDetails";
 import { AboutNgoContent } from "./AboutNgoCard";
@@ -161,8 +162,8 @@ export function DriveDetailView({
   const visual = CATEGORY_VISUALS[drive.category];
   const VisualIcon = visual?.Icon || Package;
 
-  // Registered office address
-  const fullAddress = drive.ngo?.registeredOfficeAddress;
+  // Where donors go: the drive's own drop-off point, else the NGO's registered office.
+  const fullAddress = drive.dropOffAddress?.trim() || drive.ngo?.registeredOfficeAddress;
   const ngoWebsite = safeExternalUrl(drive.ngo?.website);
   const pastWorkLink = safeExternalUrl(drive.pastWorkUrl);
 
@@ -852,7 +853,7 @@ export function DriveDetailView({
               <div className="flex flex-col items-center justify-center rounded-xl border border-emerald-100/70 bg-emerald-50/30 p-2.5 dark:border-emerald-950/30 dark:bg-emerald-950/10">
                 <div className="flex items-center gap-1 text-3xs font-bold uppercase tracking-wider text-emerald-600 dark:text-emerald-400">
                   <Truck className="h-3 w-3 shrink-0" aria-hidden="true" />
-                  <span><UiText>On way</UiText></span>
+                  <span><UiText>Offered</UiText></span>
                 </div>
                 <span className="mt-1 text-base font-black text-stone-900 dark:text-stone-100">
                   {drive.quantityPledged}
@@ -958,13 +959,13 @@ export function DriveDetailView({
               ) : giveStateResult?.kind === "offered" ? (
                 <div data-testid="my-drive-offers">
                   <p className="text-sm font-semibold text-stone-800 dark:text-stone-200">
-                    {df("youAlreadyOffered", { qty: giveStateResult.total, unit: humanize(drive.unit) })}
+                    {df("youAlreadyOffered", { qty: giveStateResult.total, unit: unitForTitle(drive.unit, giveStateResult.total) })}
                   </p>
                   <ul className="mt-3 space-y-2">
                     {giveStateResult.offers.map((o) => (
                       <li key={o.id} data-testid="my-drive-offer" className="rounded-xl border border-stone-200 p-3 dark:border-zinc-700">
                         <p className="text-sm font-bold text-stone-900 dark:text-stone-100">
-                          {o.quantity ?? 0} {humanize(drive.unit)}
+                          {o.quantity ?? 0} {unitForTitle(drive.unit, o.quantity ?? 0)}
                         </p>
                         <p className="text-xs text-stone-600 dark:text-stone-400">{offerStatusLabel(o.status)}</p>
                         <Link

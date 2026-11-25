@@ -92,10 +92,10 @@ describe("1. Redesigned Progress Card States (DriveDetailView)", () => {
     expect(progressbar).toHaveAttribute("aria-valuenow", "10");
     expect(progressbar).toHaveAttribute("aria-valuemax", "50");
 
-    // Three stat tiles: Received, On way, Needed
+    // Three stat tiles: Received, Offered, Needed
     expect(screen.getByText("Received")).toBeInTheDocument();
     expect(screen.getAllByText("10").length).toBeGreaterThanOrEqual(1);
-    expect(screen.getByText("On way")).toBeInTheDocument();
+    expect(screen.getByText("Offered")).toBeInTheDocument();
     expect(screen.getByText("0")).toBeInTheDocument();
     expect(screen.getByText("Needed")).toBeInTheDocument();
     expect(screen.getByText("40")).toBeInTheDocument();

@@ -82,8 +82,14 @@ export function PostApprovalLanding({ status }: { status: NgoStatusData }) {
   const overview = status.overview;
 
   const campaignProgress = status.activeRequests;
-  const donationsReceived = status.itemsPledged;
-  const itemsDelivered = (overview as any)?.verifiedDeliveries ?? 0;
+  // Items, not handovers: verifiedDeliveries counts handovers (3 handovers of 6 blankets read "3 items").
+  const handoverRows: { received?: boolean; quantity?: number }[] = (overview as any)?.handovers ?? [];
+  const receivedItems = handoverRows.filter((h) => h.received).reduce((n, h) => n + Math.max(0, h.quantity ?? 0), 0);
+  const itemsDelivered = handoverRows.length ? receivedItems : ((overview as any)?.verifiedDeliveries ?? 0);
+  // Everything donors gave or promised (itemsPledged alone dropped to 0 once items arrived).
+  const donationsReceived = status.itemsPledged + itemsDelivered;
+  const hasHadDrive = itemsDelivered > 0 || donationsReceived > 0 || campaignProgress > 0
+    || ((overview as any)?.successStories?.length ?? 0) > 0 || ((overview as any)?.proofDueDrives?.length ?? 0) > 0;
 
   // A failed overview shows "—" counters, not the empty "no activity yet" state.
   const hasAnyData = status.statsUnavailable || campaignProgress > 0 || donationsReceived > 0 || itemsDelivered > 0;
@@ -198,7 +204,7 @@ export function PostApprovalLanding({ status }: { status: NgoStatusData }) {
                 href="/ngo/drives/new"
                 className="ngo-btn-pill ngo-btn-gold inline-flex"
               >
-                <span>Create your first drive</span>
+                <span>{hasHadDrive ? "Create your next drive" : "Create your first drive"}</span>
                 <ArrowRight className="w-4 h-4 ml-2" />
               </Link>
               </div>
@@ -234,7 +240,7 @@ export function PostApprovalLanding({ status }: { status: NgoStatusData }) {
                     <span className="ngo-stat-num">
                       {status.statsUnavailable ? "—" : <AnimatedCounter value={donationsReceived} />}
                     </span>
-                    <span className="text-base text-[#EFEADB]/70">pledged</span>
+                    <span className="text-base text-[#EFEADB]/70">offered</span>
                   </div>
                 </div>
                 <div className="ngo-stat-cell">
@@ -248,7 +254,7 @@ export function PostApprovalLanding({ status }: { status: NgoStatusData }) {
                     <span className="ngo-stat-num">
                       {status.statsUnavailable ? "—" : <AnimatedCounter value={itemsDelivered} />}
                     </span>
-                    <span className="text-base text-[#EFEADB]/70">confirmed</span>
+                    <span className="text-base text-[#EFEADB]/70">received</span>
                   </div>
                 </div>
                 </div>
@@ -265,11 +271,11 @@ export function PostApprovalLanding({ status }: { status: NgoStatusData }) {
       <section className="ngo-section ngo-band-cream pt-0">
         <div className="ngo-container">
           <NgoSectionHeader
-            eyebrow="Create your first drive"
+            eyebrow={hasHadDrive ? "Create your next drive" : "Create your first drive"}
             h2="Say what you need, clearly."
           />
 
-          <SwipeRow label="Create your first drive" className="grid grid-cols-1 md:grid-cols-3 gap-6">
+          <SwipeRow label={hasHadDrive ? "Create your next drive" : "Create your first drive"} className="grid grid-cols-1 md:grid-cols-3 gap-6">
             <NgoCard
               number="1"
               title="Describe your need"

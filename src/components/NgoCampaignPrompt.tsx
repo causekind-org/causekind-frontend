@@ -1,5 +1,6 @@
 "use client";
 
+import { isTaskPath } from "@/lib/taskPaths";
 import { UiText, useUiText } from "@/components/UiText";
 
 import { useEffect, useRef, useState } from "react";
@@ -67,7 +68,9 @@ export function NgoCampaignPrompt() {
     function show(delay: number) {
       t1.current = setTimeout(() => {
         if (cancelled) return;
-        if (pathnameRef.current === "/ngo/drives/new") {
+        // Not on task pages, and not on the NGO home: its hero already has "Start a Drive",
+        // and the toast covered the "Verified NGO" pill there.
+        if (isTaskPath(pathnameRef.current) || pathnameRef.current === "/" || /^\/[a-z]{2}\/?$/.test(pathnameRef.current ?? "")) {
           show(REPEAT_DELAY_MS);
           return;
         }
@@ -107,7 +110,7 @@ export function NgoCampaignPrompt() {
     setVisible(false);
   }
 
-  if (!isDesktop || !visible || !isNgo || !canPostRequest) return null;
+  if (!isDesktop || !visible || !isNgo || !canPostRequest || isTaskPath(pathname) || pathname === "/") return null;
 
 
   return (

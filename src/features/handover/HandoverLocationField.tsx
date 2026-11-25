@@ -50,7 +50,7 @@ export function formatPinAddress(a: Record<string, string>): string {
 }
 
 export function HandoverLocationField({
-  address, lat, lng, onAddressChange, onPinChange, onBusyChange, disabled, addressId = "ho-address",
+  address, lat, lng, onAddressChange, onPinChange, onBusyChange, disabled, addressId = "ho-address", recipientLabel = "donee",
 }: {
   address: string;
   lat: number | null;
@@ -60,6 +60,8 @@ export function HandoverLocationField({
   onBusyChange?: (busy: boolean) => void;
   disabled?: boolean;
   addressId?: string;
+  /** Who reads this address: "the donee" on requests, "the NGO" on drive handovers. */
+  recipientLabel?: string;
 }) {
   const pin = lat != null && lng != null ? { lat, lng } : null;
 
@@ -181,7 +183,7 @@ export function HandoverLocationField({
             </p>
           ) : (
             <p className="text-xs text-muted-foreground">
-              The donee sees this address and a Google Maps link to the pin.
+              The {recipientLabel} sees this address and a Google Maps link to the pin.
             </p>
           )}
         </div>

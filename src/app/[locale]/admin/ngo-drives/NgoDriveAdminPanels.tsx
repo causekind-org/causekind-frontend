@@ -44,6 +44,8 @@ const button = "rounded-lg border border-stone-300 px-4 py-2 text-sm font-semibo
 const primary = `${button} bg-stone-900 text-white dark:bg-stone-100 dark:text-stone-900`;
 const card = "rounded-xl border border-stone-200 bg-white p-5 dark:border-zinc-700 dark:bg-zinc-900 sm:p-7";
 const label = (value?: string | null) => (value ?? "").toLowerCase().replace(/_/g, " ");
+/** As label, capitalised, for standalone values ("High", "Both") rather than units after a number. */
+const labelTitle = (value?: string | null) => label(value).replace(/^\w/, (c) => c.toUpperCase());
 
 /** Error text plus the per-item reasons the server gave (field errors), like the NGO Applications panel. */
 function useErrors() {
@@ -211,10 +213,10 @@ export function NgoDriveReviewPanel({ onChange }: { onChange?: () => void }) {
                   d.requireClean ? "(Washed and clean)" : null,
                 ].filter(Boolean).join(" · "),
                 ...Object.fromEntries(categoryDetailRows(d.category, d.categoryDetails).map(r => [r.label, r.value])),
-                Urgency: label(d.urgency),
+                Urgency: labelTitle(d.urgency),
                 "People who will benefit": `${d.beneficiaryCount} · ${d.beneficiaryGroup}${d.beneficiaryDescription ? ` (${d.beneficiaryDescription})` : ""}`,
                 "Needed by": d.neededBy,
-                "Handover mode": label(d.handoverMode || "BOTH"),
+                "Handover mode": labelTitle(d.handoverMode || "BOTH"),
                 "Available days": (d.availableDays || "").split(",").join(", "),
                 Hours: `${(d.availableFrom || "").slice(0, 5)} – ${(d.availableTo || "").slice(0, 5)}`,
                 Contact: `${d.contactName} · ${d.contactPhone}`,
@@ -247,15 +249,18 @@ export function NgoDriveReviewPanel({ onChange }: { onChange?: () => void }) {
             )}
             {Array.isArray(d.photos) && d.photos.length > 0 ? (
               <div className="mt-4 text-sm">
-                <p className="mb-2 text-stone-500 font-semibold">Photos ({d.photos.length})</p>
+                {/* The cover is stored apart from the reference photos; show it first so the count is right. */}
+                {(() => { const all = [...(d.coverPhotoUrl ? [{ url: d.coverPhotoUrl }] : []), ...d.photos]; return (<>
+                <p className="mb-2 text-stone-500 font-semibold">Photos ({all.length})</p>
                 <div className="flex flex-wrap gap-2">
-                  {d.photos.map((p, idx) => (
+                  {all.map((p, idx) => (
                     <div key={p.url || idx} className="relative">
                       <Photo src={p.url} alt={`Photo ${idx + 1}`} />
                       {idx === 0 && <span className="absolute bottom-1 left-1 bg-ngo-700 text-white text-[9px] px-1 py-0.5 rounded font-bold uppercase">Cover</span>}
                     </div>
                   ))}
                 </div>
+                </>); })()}
               </div>
             ) : d.referencePhotoUrl ? (
               <div className="mt-4 text-sm"><p className="mb-1 text-stone-500">Reference photo</p><Photo src={d.referencePhotoUrl} alt="Reference" /></div>
@@ -443,6 +448,7 @@ export function NgoDriveProofsPanel({ onChange }: { onChange?: () => void }) {
   const [drives, setDrives] = useState<AdminProofDrive[]>([]);
   const [loading, setLoading] = useState(true);
   const [reasons, setReasons] = useState<Record<number, string>>({});
+  const [confirmApprove, setConfirmApprove] = useState<number | null>(null);
   const [busy, setBusy] = useState<number | null>(null);
   const [notice, setNotice] = useState("");
   const { index: statusIndex, setIndex: setStatusIndex, tab, query, setQuery } = useAdminStatusTabs(PROOF_TABS);
@@ -510,10 +516,21 @@ export function NgoDriveProofsPanel({ onChange }: { onChange?: () => void }) {
             <textarea className={field} rows={2} maxLength={500} value={reasons[d.id] ?? ""} disabled={busy === d.id}
               onChange={e => setReasons(prev => ({ ...prev, [d.id]: e.target.value }))} />
           </label>
+          {confirmApprove === d.id ? (
+            // Approving closes the drive as fulfilled and publishes the photos: ask once before it happens.
+            <div className="mt-3 rounded-lg border border-green-300 bg-green-50 p-3 text-sm text-green-900 dark:border-green-800 dark:bg-green-950/30 dark:text-green-100" data-testid="proof-approve-confirm">
+              <p className="font-semibold">Approve this proof? The drive becomes fulfilled and the photos go on its public page.</p>
+              <div className="mt-2 flex gap-3">
+                <button className={primary} disabled={busy === d.id} onClick={() => { setConfirmApprove(null); void decide(d, true); }}>Yes, approve</button>
+                <button className={button} disabled={busy === d.id} onClick={() => setConfirmApprove(null)}>Cancel</button>
+              </div>
+            </div>
+          ) : (
           <div className="mt-3 flex gap-3">
-            <button className={primary} disabled={busy === d.id} onClick={() => void decide(d, true)}>Approve</button>
+            <button className={primary} disabled={busy === d.id} onClick={() => setConfirmApprove(d.id)}>Approve</button>
             <button className={`${button} border-red-300 text-red-700`} disabled={busy === d.id} onClick={() => void decide(d, false)}>Reject</button>
           </div>
+          )}
           </>}
         </article>
       ))}

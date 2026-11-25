@@ -481,7 +481,14 @@ export function NgoDriveOfferWizard({
 
         setCompatState({ kind: "checking" });
         try {
-          const check = { isFlagged: false, notesForDonor: [] } as any;
+          // Fit from what the drive asks for: an accepted condition and a quantity within what is still
+          // needed is a strong match (it always read "Possible match" before, even for a perfect offer).
+          const norm = (v: string) => v.replace(/[\s_-]/g, "").toLowerCase();
+          const accepted = (acceptedConditions ?? []).map(norm);
+          const conditionOk = accepted.length === 0 || accepted.includes(norm(model.condition));
+          const qtyOk = stillNeededQuantity == null || stillNeededQuantity <= 0 || qty <= stillNeededQuantity;
+          const indicator = !conditionOk ? "NOT_ELIGIBLE" : qtyOk ? "STRONG_MATCH" : "POSSIBLE_MATCH";
+          const check = { isFlagged: !conditionOk, notesForDonor: [], indicator } as any;
           if (token !== compatTokenRef.current) return;
           compatSavedKeyRef.current = key;
           setCompat(check);

@@ -474,8 +474,8 @@ export function nextStepCopy(vm: HandoverViewModel): { title: string; body: stri
     case "ready_to_handover":
       if (vm.flow === "NGO_OFFER") {
         return donor
-          ? { title: "Hand over the items", body: "Take a handover photo, then show your code to the NGO when you meet." }
-          : { title: "Confirm what you received", body: "Upload a photo of the items, then enter the donor's code and the quantity received." };
+          ? { title: "Hand over the items", body: "Show your code to the NGO when you meet. Once they confirm it, one handover photo completes it." }
+          : { title: "Confirm what you received", body: "Enter the donor's code and the quantity received. Then one handover photo completes it." };
       }
       return donor
         ? { title: "Confirm the handover",

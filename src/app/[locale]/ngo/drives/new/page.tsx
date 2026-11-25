@@ -1257,7 +1257,7 @@ const [altContact, setAltContact] = useState("");
     );
   }
 
-  // "Drive submitted!" as a popup over the form. One drive at a time: "Start another drive" stays disabled.
+  // "Drive submitted!" as a popup over the form. One drive at a time, so no "Start another drive" button here.
   const submittedPopup = submitted ? (
     <Dialog open onOpenChange={() => { /* closed with the buttons only */ }}>
       <DialogContent data-ck-role-theme="ngo" data-testid="drive-submitted" showCloseButton={false} className="block max-w-md p-8 text-center">
@@ -1272,10 +1272,10 @@ const [altContact, setAltContact] = useState("");
           <Link href="/dashboard/ngo" className="block w-full py-3 px-4 rounded-xl bg-ngo-700 hover:bg-ngo-800 text-white font-bold text-sm transition-colors">
             <UiText>Go to NGO dashboard</UiText>
           </Link>
-          <button type="button" disabled aria-describedby="one-drive-note"
-            className="block w-full py-3 px-4 rounded-xl border border-stone-200 dark:border-zinc-800 text-stone-400 dark:text-stone-500 font-semibold text-sm cursor-not-allowed">
-            <UiText>Start another drive</UiText>
-          </button>
+          <Link href="/dashboard/ngo?tab=drives" aria-describedby="one-drive-note"
+            className="block w-full py-3 px-4 rounded-xl border border-stone-200 dark:border-zinc-800 text-stone-700 dark:text-stone-200 font-semibold text-sm hover:bg-stone-50 dark:hover:bg-zinc-800">
+            <UiText>View my drives</UiText>
+          </Link>
           <p id="one-drive-note" className="text-xs text-stone-500 dark:text-stone-400"><UiText>You can start another drive once this one is completed with proof.</UiText></p>
         </div>
       </DialogContent>
@@ -1372,7 +1372,7 @@ const [altContact, setAltContact] = useState("");
 
         {/* 4. Drive Story */}
         <section className="min-w-0 rounded-xl border border-slate-200/80 bg-white p-4 sm:p-5 dark:border-slate-700 dark:bg-slate-900 space-y-4" aria-labelledby="story-heading">
-          <h3 id="story-heading" className="text-[11px] font-bold uppercase tracking-wide text-ngo-700 dark:text-ngo-300"><UiText>4. Drive Story</UiText></h3>
+          <h3 id="story-heading" className="text-[11px] font-bold uppercase tracking-wide text-ngo-700 dark:text-ngo-300"><UiText>2. Drive Story</UiText></h3>
           
           <WizardField label={ui("Details")} required error={fieldErrors.details} hint={df("detailsHint", { count: details.length, max: DETAILS_MAX })}>
             {({ id, describedBy, invalid }) => (
@@ -1412,7 +1412,7 @@ const [altContact, setAltContact] = useState("");
       <div className="min-w-0 space-y-5">
         {/* 2. Urgency Classification */}
         <section className="min-w-0 rounded-xl border border-slate-200/80 bg-white p-4 sm:p-5 dark:border-slate-700 dark:bg-slate-900 space-y-4" aria-labelledby="urgency-heading">
-          <h3 id="urgency-heading" className="text-[11px] font-bold uppercase tracking-wide text-ngo-700 dark:text-ngo-300"><UiText>2. Urgency Classification</UiText></h3>
+          <h3 id="urgency-heading" className="text-[11px] font-bold uppercase tracking-wide text-ngo-700 dark:text-ngo-300"><UiText>3. Urgency Classification</UiText></h3>
           <fieldset className="space-y-1">
             <legend className="text-xs font-bold text-stone-700 dark:text-stone-200 mb-1"><UiText>Urgency Level</UiText></legend>
             <div className="flex gap-1 rounded-lg bg-slate-100 p-1 dark:bg-slate-800">
@@ -1430,7 +1430,7 @@ const [altContact, setAltContact] = useState("");
   
         {/* 3. Item Requirements */}
         <section className="min-w-0 rounded-xl border border-slate-200/80 bg-white p-4 sm:p-5 dark:border-slate-700 dark:bg-slate-900 space-y-4" aria-labelledby="item-req-heading">
-          <h3 id="item-req-heading" className="text-[11px] font-bold uppercase tracking-wide text-ngo-700 dark:text-ngo-300"><UiText>3. Item Requirements</UiText></h3>
+          <h3 id="item-req-heading" className="text-[11px] font-bold uppercase tracking-wide text-ngo-700 dark:text-ngo-300"><UiText>4. Item Requirements</UiText></h3>
           
           <WizardField label={ui("Condition accepted")} required error={fieldErrors.condition} hint={wizardConditionHelper(condition) ? dc(wizardConditionHelper(condition)) : undefined}>
             {({ id, describedBy, invalid }) => (
@@ -1664,7 +1664,7 @@ const [altContact, setAltContact] = useState("");
 
         {/* 4. Who is behind the drive */}
         <section className="min-w-0 rounded-xl border border-slate-200/80 bg-white p-4 sm:p-5 dark:border-slate-700 dark:bg-slate-900 space-y-4" aria-labelledby="changemaker-heading">
-          <h3 id="changemaker-heading" className="text-[11px] font-bold uppercase tracking-wide text-ngo-700 dark:text-ngo-300"><UiText>4. Who is Behind the Drive</UiText></h3>
+          <h3 id="changemaker-heading" className="text-[11px] font-bold uppercase tracking-wide text-ngo-700 dark:text-ngo-300"><UiText>3. Who is Behind the Drive</UiText></h3>
 
           <div className="grid grid-cols-2 gap-4">
             <WizardField label={ui("Name")} required error={fieldErrors.changemakerName} hint={`${changemakerName.length}/100`}>
@@ -1729,7 +1729,7 @@ const [altContact, setAltContact] = useState("");
       <div className="min-w-0 space-y-5">
         {/* 3. Handover Availability */}
         <section className="min-w-0 rounded-xl border border-slate-200/80 bg-white p-4 sm:p-5 dark:border-slate-700 dark:bg-slate-900 space-y-4" aria-labelledby="handover-heading">
-          <h3 id="handover-heading" className="text-[11px] font-bold uppercase tracking-wide text-ngo-700 dark:text-ngo-300"><UiText>3. Handover Availability</UiText></h3>
+          <h3 id="handover-heading" className="text-[11px] font-bold uppercase tracking-wide text-ngo-700 dark:text-ngo-300"><UiText>4. Handover Availability</UiText></h3>
           <div className="p-3 bg-ngo-50 dark:bg-ngo-900/20 border border-ngo-100 dark:border-ngo-800 rounded-lg text-xs text-ngo-800 dark:text-ngo-200 leading-relaxed mb-4">
             <UiText>Your address is shown on the drive page. Your drive contact person&apos;s phone number is shared with a donor only after you accept their offer.</UiText>
           </div>
@@ -1916,6 +1916,18 @@ const [altContact, setAltContact] = useState("");
             </span>
           </div>
 
+          <div className="flex justify-between pb-2 border-b border-stone-100 dark:border-slate-800" data-testid="review-category">
+            <span className="text-stone-500"><UiText>Category</UiText></span>
+            <span className="font-medium text-right text-stone-900 dark:text-stone-100">{dc(category) || category}</span>
+          </div>
+
+          <div className="flex justify-between pb-2 border-b border-stone-100 dark:border-slate-800" data-testid="review-urgency">
+            <span className="text-stone-500"><UiText>Urgency</UiText></span>
+            <span className="font-medium text-right text-stone-900 dark:text-stone-100">
+              {urgency === "CRITICAL" ? ui("Critical") : urgency === "HIGH" ? ui("High") : ui("Normal")}
+            </span>
+          </div>
+
           <div className="flex justify-between pb-2 border-b border-stone-100 dark:border-slate-800">
             <span className="text-stone-500"><UiText>Condition accepted</UiText></span>
             <span className="font-medium text-right max-w-[200px] sm:max-w-md text-stone-900 dark:text-stone-100">
@@ -1952,6 +1964,9 @@ const [altContact, setAltContact] = useState("");
               <p className="ck-user-text"><strong className="text-stone-900 dark:text-stone-100"><UiText>Who for:</UiText></strong> {whoFor}</p>
               <p className="ck-user-text"><strong className="text-stone-900 dark:text-stone-100"><UiText>Why now:</UiText></strong> {whyNow}</p>
               <p><strong className="text-stone-900 dark:text-stone-100"><UiText>What changes:</UiText></strong> {whatChanges}</p>
+              {details.trim() && (
+                <p className="ck-user-text"><strong className="text-stone-900 dark:text-stone-100"><UiText>Details:</UiText></strong> {details}</p>
+              )}
             </div>
           </div>
 

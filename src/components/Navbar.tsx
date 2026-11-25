@@ -18,7 +18,7 @@ import { LanguageSwitcher } from "@/components/LanguageSwitcher";
 import { Menu, X, LogIn, UserPlus, Shield, Sun, Moon, User, LayoutGrid, LogOut, Globe, ChevronRight, ChevronDown, Heart, HandHeart, Compass, HeartHandshake, HelpCircle, Mail, Phone, MessageCircle, ArrowRight, Sparkles, ShieldCheck } from "lucide-react";
 import { useAuth, type AuthUser } from "@/hooks/useAuth";
 import { useRoleColors } from "@/hooks/useRoleColors";
-import { getMyProfile, getMyMatches, getMyNgoApplication, type UserProfile, type ItemMatch } from "@/lib/api";
+import { getMyProfile, getMyMatches, getMyNgoApplication, getMyNgoDriveOffers, getNgoOverview, type UserProfile, type ItemMatch } from "@/lib/api";
 import { FEATURES } from "@/lib/features";
 import { Button } from "@/components/ui/button";
 import { NotificationBell } from "@/components/NotificationBell";
@@ -376,6 +376,8 @@ export function SiteHeader() {
   if (logoutDialogOpen) logoutDialogUsed.current = true;
   const [profile, setProfile] = useState<UserProfile | null>(null);
   const [matches, setMatches] = useState<ItemMatch[]>([]);
+  /** Completed handovers outside item matches: a donor's drive gifts, or an NGO's received drive handovers. */
+  const [driveHandoversDone, setDriveHandoversDone] = useState(0);
   const [avatarDataUrl, setAvatarDataUrl] = useState<string | null>(null);
 
   // Desktop mega-menu hover state and timers.
@@ -545,18 +547,31 @@ export function SiteHeader() {
     roRef.current = ro;
   }, []);
 
+  // The name is needed before the menu opens (it showed the email prefix, e.g. "asha.kiran.audit").
+  useEffect(() => {
+    if (!user) { setProfile(null); return; }
+    getMyProfile().then(setProfile).catch(() => {});
+  }, [user]);
+
   useEffect(() => {
     if (user && isSidebarOpen) {
       const savedAvatar = localStorage.getItem(`ck_profile_image_${user.email}`);
       setAvatarDataUrl(savedAvatar);
 
-      getMyProfile()
-        .then(setProfile)
-        .catch(() => {});
-
       getMyMatches()
         .then(setMatches)
         .catch(() => {});
+
+      const ngo = user.role === "NGO" || user.role === "NGO_PARTNER";
+      if (ngo) {
+        getNgoOverview()
+          .then((o) => setDriveHandoversDone((o?.handovers ?? []).filter((h) => h.received).length))
+          .catch(() => {});
+      } else if (user.role === "DONOR") {
+        getMyNgoDriveOffers()
+          .then((list) => setDriveHandoversDone(list.filter((o) => ["COMPLETED", "ISSUE_WINDOW_OPEN"].includes(o.status)).length))
+          .catch(() => {});
+      }
     }
   }, [user, isSidebarOpen]);
 
@@ -627,9 +642,12 @@ export function SiteHeader() {
   const ui = useUiText();
 
   // ── Derived panel data (all real, no hardcoded values) ────────────────────
+  const isNgoUser = user?.role === "NGO" || user?.role === "NGO_PARTNER";
+  const displayName = ((isNgoUser ? profile?.organizationName : null) || profile?.fullName || user?.fullName
+    || user?.email?.split("@")[0] || "").trim() || "?";
   const livesTouched = matches.filter(
     m => m.status === "COMPLETED" || m.status === "FULFILLED"
-  ).length;
+  ).length + driveHandoversDone;
 
   const profileCompletion = (() => {
     let score = 0;
@@ -832,7 +850,7 @@ export function SiteHeader() {
         ngoDriveItem(ui("Post a Drive"), "/ngo/drives/new",
           !ngoStatus.isVerified || ngoStatus.isPhotosDue, !ngoStatus.canStartDrive),
         ngoDriveItem(ui("Live Drives"), "/dashboard/ngo#live-drives", !ngoStatus.isVerified),
-        ngoDriveItem(ui("Handovers & Photos"), "/ngo/handovers", !ngoStatus.isVerified),
+        ngoDriveItem(ui("Handovers & Photos"), "/dashboard/ngo?tab=activity&filter=handovers", !ngoStatus.isVerified),
       ],
     },
     { label: t("nav.blog"), link: "/blog", ariaLabel: t("nav.blog"), active: isActive("/blog") },
@@ -1424,13 +1442,13 @@ export function SiteHeader() {
                   <img src={avatarDataUrl} alt="" className="w-full h-full object-cover" />
                 ) : (
                   <div className="w-full h-full bg-[var(--ck-role-accent)]/10 flex items-center justify-center text-lg font-black text-[var(--ck-role-accent)] uppercase">
-                    {user.email[0]}
+                    {displayName[0]}
                   </div>
                 )}
               </div>
               <div className="min-w-0">
                 <p className="text-sm font-bold text-stone-850 dark:text-white truncate">
-                  {profile?.fullName || user.email.split("@")[0]}
+                  {displayName}
                 </p>
                 <p className="text-xs font-semibold text-stone-500 dark:text-stone-400">
                   {roleLabel[user.role] ?? user.role} · {t("nav.livesTouched", { count: livesTouched })}</p>

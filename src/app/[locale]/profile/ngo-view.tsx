@@ -1364,7 +1364,7 @@ function NgoMemberPass({
         <div className="relative mt-4 sm:mt-6 flex items-end justify-between">
           <div>
             <p className="text-5xs font-black uppercase tracking-[0.25em] text-white/45">Role</p>
-            <p className="text-xs font-black uppercase tracking-wider text-white mt-0.5">{role}</p>
+            <p className="text-xs font-black uppercase tracking-wider text-white mt-0.5">{role === "NGO_PARTNER" || role === "NGO" ? "NGO Partner" : role.replace(/_/g, " ")}</p>
           </div>
           {city && (
             <div className="text-right max-w-[55%]">
