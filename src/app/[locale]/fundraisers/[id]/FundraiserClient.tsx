@@ -131,14 +131,28 @@ export default function FundraiserPage() {
             <h2 id="sp" className={s.serif} style={{ fontSize: 22 }}><UiText>Supporters</UiText></h2>
             {d.supporters.length === 0 ? <p className={`${s.small} ${s.muted}`}><UiText>Be the first to support this fundraiser.</UiText></p> : (
               <ul style={{ listStyle: "none", padding: 0 }} className={s.small}>
-                {d.supporters.map((p, i) => <li key={i} style={{ display: "flex", justifyContent: "space-between", padding: "10px 0", borderBottom: "1px solid #efe7de" }}><span>{p.name}</span><span className={s.muted}>{fmt.date(p.at)}</span></li>)}
+                {/* Leaderboard (owner, 2026-11-26): the server sends supporters biggest donation first. */}
+                {d.supporters.map((p, i) => (
+                  <li key={i} style={{ display: "flex", alignItems: "center", gap: 12, padding: "10px 0", borderBottom: "1px solid #efe7de" }}>
+                    <span className={s.tabular} aria-label={`Rank ${i + 1}`}
+                      style={{ flex: "none", width: 28, height: 28, borderRadius: 9999, display: "inline-flex", alignItems: "center", justifyContent: "center", fontWeight: 700, fontSize: 13,
+                        background: i === 0 ? "#b04a15" : i < 3 ? "#f6e3d6" : "#f3eee8", color: i === 0 ? "#fff" : "#6b3a1d" }}>
+                      {i + 1}
+                    </span>
+                    <span style={{ flex: 1, minWidth: 0, display: "flex", flexDirection: "column" }}>
+                      <span style={{ fontWeight: i < 3 ? 600 : 400, overflowWrap: "anywhere" }}>{p.name}</span>
+                      <span className={s.muted}>{fmt.date(p.at)}</span>
+                    </span>
+                    {p.amount != null && <strong className={s.tabular} style={{ flex: "none" }}>{formatINR(p.amount)}</strong>}
+                  </li>
+                ))}
               </ul>
             )}
-            <p className={`${s.small} ${s.muted}`}><UiText>Only supporters who chose to show their name are named. Amounts are not shown here.</UiText></p>
+            <p className={`${s.small} ${s.muted}`}><UiText>Biggest donations first. Supporters who chose to hide their name show as Anonymous.</UiText></p>
           </section>
         </article>
 
-        <aside className={s.card} style={{ padding: 24, display: "flex", flexDirection: "column", gap: 14 }} aria-label={ui("Donate")}>
+        <aside className={`${s.card} ${s.stickyAside}`} style={{ padding: 24, display: "flex", flexDirection: "column", gap: 14 }} aria-label={ui("Donate")}>
           <span className={`${s.chip} ${d.acceptingDonations ? s.cOk : d.status === "PAUSED" ? s.cW : s.cM}`} style={{ alignSelf: "flex-start" }}>{d.acceptingDonations ? ui("Live", "campaign status") : d.status === "PAUSED" ? ui("Paused", "campaign status") : d.outcome ? ui("Outcome published", "campaign status") : d.remaining === 0 ? ui("Target reached", "campaign status") : ui("Collections closed", "campaign status")}</span>
           {d.status === "PAUSED" && <p className={s.small} role="status" style={{ padding: "10px 12px", borderRadius: 8, background: "#fdf3e1" }}>{d.pauseNotice || ui("Donations are paused while we review some information.")}</p>}
           <p className={s.tabular}><strong style={{ fontSize: 30 }}>{formatINR(c.raised)}</strong><br /><span className={s.muted}>{t("confirmedOfTarget", { target: formatINR(c.target) })}</span></p>
