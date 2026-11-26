@@ -5,7 +5,8 @@ import { UiText, useUiText } from "@/components/UiText";
 import { serverDate } from "@/lib/serverTime";
 import { useState, useEffect, useLayoutEffect, useRef, useCallback } from "react";
 import dynamic from "next/dynamic";
-import type { ComponentType } from "react";
+// @ts-expect-error -- hand-maintained JSX component has no declaration file.
+import StaggeredMenu from "@/components/StaggeredMenu";
 import Link from "@/components/AppLink";
 import { RakshaBandhanWordmark } from "@/components/brand/RakshaBandhanWordmark";
 import { isRakshaBandhanCampaignActive } from "@/lib/raksha-bandhan";
