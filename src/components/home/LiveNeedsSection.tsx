@@ -126,6 +126,12 @@ export function LiveNeedsSection({
 
   const cardCount = displayedNeeds.length;
 
+  // Fit the board to what exists (2026-11-26, landing audit item 14): with a
+  // handful of needs, a toolbar of ten-plus mostly-empty category pills is
+  // larger than the content it filters. Show it once there is enough to filter.
+  const MIN_NEEDS_FOR_FILTERS = 4;
+  const showFilters = allNeeds.length >= MIN_NEEDS_FOR_FILTERS;
+
   /*
    * How many open needs sit behind each category pill.
    *
@@ -218,8 +224,8 @@ export function LiveNeedsSection({
           </div>
         </div>
 
-        {/* ── Category Filter Pills Row ── */}
-        <div className="relative ck-live-needs-filters">
+        {/* ── Category Filter Pills Row ── (hidden while there are too few needs to filter) */}
+        {showFilters && <div className="relative ck-live-needs-filters">
           {/* Phones swipe one row; from md up the pills wrap, because a
               hidden-scrollbar row clipped the last pill (Sports) with no cue
               that more existed — worse once counts and translations widen it. */}
@@ -279,7 +285,7 @@ export function LiveNeedsSection({
               );
             })}
           </div>
-        </div>
+        </div>}
 
         {/* ── The needs themselves ────────────────────────────────────────────
             A grid, not a carousel. The carousel was a fixed-height stage

@@ -106,12 +106,21 @@ describe("LiveNeedsSection", () => {
 
   it("filters cards when a category pill is clicked", async () => {
     const user = userEvent.setup();
-    render(<LiveNeedsSection initialRequests={SAMPLE_REQUESTS} />);
+    // The pill row appears from four needs (audit item 14).
+    const fourNeeds = [...SAMPLE_REQUESTS, { ...SAMPLE_REQUESTS[0], id: 4, title: "Geometry Box" }];
+    render(<LiveNeedsSection initialRequests={fourNeeds} />);
 
     const educationPill = screen.getByRole("button", { name: /Education/i });
     await user.click(educationPill);
 
     expect(screen.getByText("School Bags for Primary Students")).toBeInTheDocument();
+  });
+
+  it("hides the category pills while there are fewer than four needs", () => {
+    render(<LiveNeedsSection initialRequests={SAMPLE_REQUESTS} />);
+
+    expect(screen.queryByRole("button", { name: /All Categories/i })).toBeNull();
+    expect(screen.getByText("Sewing Machine")).toBeInTheDocument();
   });
 
   it("renders a real empty state when initialRequests is empty", () => {
