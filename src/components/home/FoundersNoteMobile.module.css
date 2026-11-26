@@ -471,3 +471,47 @@
     transition: none !important;
   }
 }
+
+/* ── Plain card (2026-11-26, landing audit item 9: one visual language) ────
+   The letter dressing — tape, envelope, folds, paper grain, street doodle,
+   stamp and postmark, and every tilt — is switched off here, in one block, so
+   it is easy to review or undo. Layout (photo overlap, spacing) is unchanged;
+   the sheet is now a plain card in the site style. */
+.print,
+.letter,
+.envelope,
+.stampWrap,
+.sig {
+  rotate: none;
+}
+.print::before,
+.envelope,
+.doodle,
+.stampWrap,
+.postmark {
+  display: none;
+}
+.print {
+  border-radius: 12px;
+  box-shadow: 0 8px 20px -12px rgb(28 20 16 / 0.35);
+}
+.printPhoto {
+  border-radius: 8px;
+}
+.letter {
+  border-radius: 16px;
+  background-color: #fff;
+  background-image: none;
+  border: 1px solid rgb(231 229 228 / 0.9);
+  box-shadow: 0 1px 2px rgb(28 20 16 / 0.05);
+}
+:global(.dark) .print {
+  background: #181411;
+  box-shadow: none;
+}
+:global(.dark) .letter {
+  background-color: #181411;
+  background-image: none;
+  border-color: rgb(41 37 36);
+  box-shadow: none;
+}
