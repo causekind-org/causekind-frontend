@@ -361,12 +361,13 @@ export function Footer({ role }: FooterProps) {
       <div className="border-t border-white/[0.12] py-4 px-4 sm:px-6">
         <div className="mx-auto max-w-7xl flex flex-col md:flex-row items-center justify-between gap-3 text-xs text-[#D9CCBB] font-medium">
           {/* Left: Copyright */}
-          <div className="text-center md:text-left">
+          <div className="text-center md:text-left xl:shrink-0 xl:whitespace-nowrap">
             © 2026 <span className="font-bold text-white">Cause</span><span className="font-bold text-[#E58A4B]">Kind</span>. {t("rights")}
           </div>
 
-          {/* Right: Legal Links */}
-          <div className="flex flex-wrap items-center justify-center md:justify-end gap-x-2.5 sm:gap-x-3 gap-y-1 sm:gap-y-1.5 text-center">
+          {/* Right: Legal Links. One line from xl (1280px) up (owner, 26 Nov 2026);
+              narrower screens still wrap, as before. */}
+          <div className="flex flex-wrap xl:flex-nowrap items-center justify-center md:justify-end gap-x-2.5 sm:gap-x-3 gap-y-1 sm:gap-y-1.5 text-center xl:whitespace-nowrap">
             {FOOTER_LEGAL_LINKS.map((item, idx) => (
               <React.Fragment key={item.href}>
                 {idx > 0 && (

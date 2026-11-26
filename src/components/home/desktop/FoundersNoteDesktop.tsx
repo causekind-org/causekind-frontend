@@ -319,8 +319,13 @@ export function FoundersNoteDesktop({
             {/* Note paragraphs */}
             <div className="founder-anim-item space-y-3 text-sm sm:text-base lg:text-lg text-stone-700 dark:text-stone-300 font-medium leading-relaxed max-w-2xl mx-auto lg:mx-0">
               <p>
-                We built CauseKind so the things you no longer need reach someone near you who does. Give items or money, and see where your support goes.
+                Every home has things it no longer needs. And just a few streets
+                away, someone is waiting for exactly those things.
                 {FOUNDER.personalLine && ` ${FOUNDER.personalLine}`}
+              </p>
+              <p>
+                We built CauseKind to connect the two — simply, safely and with
+                dignity. Give items or money, and see where your support goes.
               </p>
             </div>
 

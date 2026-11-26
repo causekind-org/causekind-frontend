@@ -9,6 +9,8 @@ import { getReviews, GoogleReviewsData, GoogleReview } from "@/data/googleReview
 export function GoogleReviewsSection({ initial = null }: { initial?: GoogleReviewsData | null }) {
   const [data, setData] = useState<GoogleReviewsData | null>(initial);
   const [finished, setFinished] = useState(Boolean(initial));
+  const [prefersReducedMotion, setPrefersReducedMotion] = useState(false);
+  const [expandedCount, setExpandedCount] = useState(0);
   const loadTarget = useRef<HTMLDivElement>(null);
   
   useEffect(() => {
@@ -35,17 +37,45 @@ export function GoogleReviewsSection({ initial = null }: { initial?: GoogleRevie
       } else load();
     }
 
+    const mql = window.matchMedia('(prefers-reduced-motion: reduce)');
+    setPrefersReducedMotion(mql.matches);
+    
+    const handler = (e: MediaQueryListEvent) => {
+      if (mounted) setPrefersReducedMotion(e.matches);
+    };
+    
+    mql.addEventListener('change', handler);
     return () => {
       mounted = false;
       controller.abort();
       observer?.disconnect();
+      mql.removeEventListener('change', handler);
     };
   }, [initial]);
 
   if (!data) return finished ? null : <div ref={loadTarget} className="min-h-60" aria-hidden="true" />;
 
+  const isPaused = expandedCount > 0;
+
   return (
     <section className="relative w-full bg-[#FAF8F5] dark:bg-[#0E0C0A] pt-8 pb-16 sm:pt-10 sm:pb-24 overflow-hidden transition-colors">
+      <style>{`
+        @keyframes scroll-left {
+          0% { transform: translateX(0%); }
+          100% { transform: translateX(-50%); }
+        }
+        .marquee-scroll {
+          animation: scroll-left 50s linear infinite;
+        }
+        @media (hover: hover) and (pointer: fine) {
+          .marquee-scroll:hover {
+            animation-play-state: paused;
+          }
+        }
+        .marquee-paused {
+          animation-play-state: paused !important;
+        }
+      `}</style>
 
       <div className="max-w-6xl mx-auto px-5 sm:px-8 w-full flex flex-col items-center">
         <h2 className="text-3xl sm:text-4xl lg:text-5xl font-extrabold tracking-tight text-stone-900 dark:text-white mb-3 text-center"><LandingText>
@@ -78,19 +108,45 @@ export function GoogleReviewsSection({ initial = null }: { initial?: GoogleRevie
             {attribution.providerUri ? <a href={attribution.providerUri} target="_blank" rel="noopener noreferrer">{attribution.provider}</a> : attribution.provider}
           </p>
         ))}
-        {/* A still row (2026-11-26, landing audit): it used to be a 50 s
-            marquee, which moved the evidence while people read it. Visitors
-            scroll it themselves; on wide screens it simply sits there. */}
-        <LandingAttributes><ul
-          aria-label="Google reviews"
-          className="w-full mt-10 sm:mt-14 flex gap-4 sm:gap-6 overflow-x-auto snap-x snap-mandatory pb-3 -mx-5 px-5 sm:mx-0 sm:px-0 lg:flex-wrap lg:justify-center lg:overflow-visible"
-        >
-          {data.reviews.map((review) => (
-            <li key={review.id} className="snap-start shrink-0 flex">
-              <ReviewCard review={review} />
-            </li>
-          ))}
-        </ul></LandingAttributes>
+        {/* Carousel / Marquee */}
+        <div className="w-full mt-10 sm:mt-14 relative">
+          {prefersReducedMotion ? (
+            <div className="flex flex-wrap justify-center gap-4 sm:gap-6">
+              {data.reviews.map((review) => (
+                <ReviewCard 
+                  key={review.id} 
+                  review={review} 
+                  onExpandChange={(expanded) => setExpandedCount(prev => prev + (expanded ? 1 : -1))}
+                />
+              ))}
+            </div>
+          ) : (
+            <div className="overflow-hidden w-full">
+              <div className={`flex w-max marquee-scroll ${isPaused ? 'marquee-paused' : ''}`}>
+                {/* First set */}
+                <div className="flex gap-4 sm:gap-6 pr-4 sm:pr-6">
+                  {data.reviews.map((review) => (
+                    <ReviewCard 
+                      key={review.id} 
+                      review={review} 
+                      onExpandChange={(expanded) => setExpandedCount(prev => prev + (expanded ? 1 : -1))}
+                    />
+                  ))}
+                </div>
+                {/* Second set (duplicate for seamless loop) */}
+                <div className="flex gap-4 sm:gap-6 pr-4 sm:pr-6" aria-hidden="true">
+                  {data.reviews.map((review) => (
+                    <ReviewCard 
+                      key={`dup-${review.id}`} 
+                      review={review} 
+                      onExpandChange={(expanded) => setExpandedCount(prev => prev + (expanded ? 1 : -1))}
+                    />
+                  ))}
+                </div>
+              </div>
+            </div>
+          )}
+        </div>
       </div>
     </section>
   );

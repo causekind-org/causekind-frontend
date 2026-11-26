@@ -145,6 +145,11 @@ function FoundersNoteMobile({ tone = "donor", seamless = false }: { tone?: Found
           <p className={fm.salutation}><LandingText>Dear neighbour,</LandingText></p>
 
           <div className={fm.body}>
+            <p><LandingText>
+              Every home has things it no longer needs. And just a few streets away, someone is waiting for exactly those things.
+              </LandingText><LandingText>{FOUNDER.personalLine && ` ${FOUNDER.personalLine}`}</LandingText>
+            </p>
+
             <div ref={doodleRef} className={fm.doodle} aria-hidden="true">
               <div className="relative">
                 <svg viewBox="0 0 240 66" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
@@ -166,7 +171,9 @@ function FoundersNoteMobile({ tone = "donor", seamless = false }: { tone?: Found
               <span className={fm.doodleNote}><LandingText>just a few streets away</LandingText></span>
             </div>
 
-            <p><LandingText>We built CauseKind so the things you no longer need reach someone near you who does. Give items or money, and see where your support goes.</LandingText><LandingText>{FOUNDER.personalLine && ` ${FOUNDER.personalLine}`}</LandingText></p>
+            <p><LandingText>
+              We built CauseKind to connect the two — simply, safely and with dignity. Give items or money, and see where your support goes.
+            </LandingText></p>
           </div>
 
           <footer ref={signoffRef} className={fm.signoff}>
@@ -526,7 +533,13 @@ function FoundersNoteFull({
 
             {/* Note Paragraphs */}
             <div className="founder-anim-item space-y-3 text-sm sm:text-base lg:text-lg text-stone-700 dark:text-stone-300 font-medium leading-relaxed max-w-2xl mx-auto lg:mx-0">
-              <p><LandingText>We built CauseKind so the things you no longer need reach someone near you who does. Give items or money, and see where your support goes.</LandingText><LandingText>{FOUNDER.personalLine && ` ${FOUNDER.personalLine}`}</LandingText></p>
+              <p><LandingText>
+                Every home has things it no longer needs. And just a few streets away, someone is waiting for exactly those things.
+                </LandingText><LandingText>{FOUNDER.personalLine && ` ${FOUNDER.personalLine}`}</LandingText>
+              </p>
+              <p><LandingText>
+                We built CauseKind to connect the two — simply, safely and with dignity. Give items or money, and see where your support goes.
+              </LandingText></p>
             </div>
 
             {/* ── Sign-off: Signature, Name & Title ── */}
