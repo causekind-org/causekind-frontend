@@ -1,5 +1,6 @@
 "use client";
 
+import { unitForTitle } from "@/lib/driveUnits";
 import type { ReactNode } from "react";
 import type { NgoDriveOfferResponse } from "@/lib/api";
 import { formatAgeRange } from "@/features/ngo-drives/driveOfferAge";
@@ -36,7 +37,7 @@ export function NgoOfferReviewCard({ offer, unit, stillNeeded, label, select, ac
             {label && <span className="rounded-full bg-stone-200 px-2 py-0.5 text-xs font-bold text-stone-700 dark:bg-zinc-800 dark:text-stone-200">{label}</span>}
           </div>
           <p className="mt-1 text-sm font-semibold text-ngo-800 dark:text-ngo-200" data-testid="offer-vs-need">
-            {df("offerQty", { qty: offer.quantity ?? "", unit: u })}{stillNeeded != null ? ` · ${df("driveStillNeeds", { count: Math.max(0, stillNeeded) })}` : ""}
+            {df("offerQty", { qty: offer.quantity ?? "", unit: unitForTitle(unit, offer.quantity) || u })}{stillNeeded != null && stillNeeded > 0 ? ` · ${df("driveStillNeeds", { count: stillNeeded })}` : ""}
           </p>
           <p className="ck-user-text mt-1 text-sm text-stone-700 dark:text-stone-300">
             {dc(offer.condition) || ui("Condition not given")}

@@ -71,7 +71,9 @@ describe("the need-profile gate when the server has no such endpoint", () => {
     await act(async () => { allowed = await result.current.requestAccess("/requests/new"); });
 
     expect(allowed).toBe(true);
-    expect(seenMode.value).toBe("closed");
+    // Never shown: the modal is now only mounted once it has been opened, so
+    // it is either not mounted ("unset") or closed.
+    expect(["unset", "closed"]).toContain(seenMode.value);
   });
 
   it("still blocks on a 500, where the profile's state is genuinely unknown", async () => {

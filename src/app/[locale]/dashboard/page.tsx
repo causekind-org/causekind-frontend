@@ -1952,6 +1952,107 @@ function DonorHistoryCard({
 }
 
 /**
+ * NGO drive entry in the donor's History, laid out like the donee card
+ * (DonorHistoryCard): status header, item row, the NGO's distribution proof in
+ * its own section, then Certificate / View details (owner, 24 Nov 2026).
+ */
+function DriveHistoryCard({ offerId, title, ngoName, ngoDriveLabel, tag, published, qty, itemName, city, handedOver, distributed, photos, proof }: {
+  offerId: number; title: string; ngoName: string | null; ngoDriveLabel: string; tag: string;
+  published: boolean; qty: number | null; itemName: string | null; city: string | null;
+  handedOver: string | null; distributed: string | null; photos: string[]; proof: React.ReactNode;
+}) {
+  const [viewing, setViewing] = useState<number | null>(null);
+  return (
+    <div data-testid={`history-drive-offer-${offerId}`} className="relative rounded-2xl border border-stone-200/80 bg-white p-4 sm:p-5 shadow-sm transition-all hover:shadow-md dark:border-zinc-800 dark:bg-zinc-900">
+      <div className="absolute left-0 top-0 bottom-0 w-1 rounded-l-2xl bg-emerald-600" />
+      {viewing !== null && photos[viewing] && (
+        <div role="dialog" aria-modal="true" aria-label={`Photos of ${title}`}
+          className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/85 p-4"
+          onClick={() => setViewing(v => v === null || photos.length < 2 ? null : (v + 1) % photos.length)}>
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img src={photos[viewing]} alt="" className="max-h-[85vh] max-w-[92vw] rounded-xl object-contain" />
+          <button type="button" onClick={e => { e.stopPropagation(); setViewing(null); }} aria-label="Close"
+            className="absolute right-4 top-4 rounded-full bg-white/15 px-3 py-1.5 text-sm font-bold text-white hover:bg-white/25">✕</button>
+        </div>
+      )}
+
+      <div className="flex flex-col gap-3">
+        {/* Header: status, how it ended, NGO drive, date */}
+        <div className="flex flex-wrap items-center justify-between gap-2 border-b border-stone-100 pb-2.5 dark:border-zinc-800">
+          <div className="flex flex-wrap items-center gap-2">
+            <span className="inline-flex items-center gap-1 rounded-full border border-emerald-200 bg-emerald-100 px-2.5 py-0.5 text-xs font-bold text-emerald-800 dark:border-emerald-800 dark:bg-emerald-950/40 dark:text-emerald-300">
+              <Check className="size-3" /> {published ? "Distributed" : "Donated"}
+            </span>
+            <span className="rounded-full bg-stone-100 px-2.5 py-0.5 text-xs font-semibold text-stone-600 dark:bg-zinc-800 dark:text-stone-300">{tag}</span>
+            <span data-testid="history-ngo-drive-tag" className="inline-flex items-center gap-1 rounded-full bg-blue-50 px-2.5 py-0.5 text-xs font-semibold text-blue-700 dark:bg-blue-950/40 dark:text-blue-300">
+              <HandCoins className="size-3" aria-hidden /> {ngoDriveLabel}
+            </span>
+          </div>
+          {handedOver && <span data-testid="history-drive-date" className="text-xs text-stone-400">Handed over {handedOver}</span>}
+        </div>
+
+        {/* Item: photo, title, quantity, NGO and place */}
+        <div className="flex items-start gap-3 sm:gap-4">
+          <button type="button" disabled={!photos.length} onClick={() => setViewing(0)}
+            aria-label={photos.length ? `View ${photos.length} photo${photos.length === 1 ? "" : "s"} of ${title}` : undefined}
+            className="relative h-14 w-14 sm:h-16 sm:w-16 shrink-0 overflow-hidden rounded-xl border border-stone-200/80 bg-stone-100 enabled:cursor-zoom-in dark:border-zinc-800 dark:bg-zinc-800">
+            {photos[0] ? <Image src={photos[0]} alt="" fill sizes="64px" className="object-cover" unoptimized />
+              : <PackageCheck className="absolute inset-0 m-auto h-6 w-6 text-stone-400" aria-hidden />}
+            {photos.length > 1 && <span className="absolute bottom-0 right-0 rounded-tl-md bg-black/60 px-1.5 text-[10px] font-bold leading-tight text-white">{photos.length}</span>}
+          </button>
+          <div className="min-w-0 flex-1 space-y-1.5">
+            <h3 data-testid="history-drive-title" className="text-base sm:text-lg font-bold text-stone-900 [overflow-wrap:anywhere] dark:text-stone-100">
+              <TranslatedText text={title} />
+            </h3>
+            {qty != null && (
+              <span data-testid="history-drive-qty" className="inline-flex items-center gap-1.5 rounded-lg bg-emerald-50 px-2.5 py-1 text-xs font-bold text-emerald-800 dark:bg-emerald-950/40 dark:text-emerald-300">
+                <PackageCheck className="size-3.5" aria-hidden /> {qty} given{itemName ? ` · ${itemName.toLowerCase()}` : ""}
+              </span>
+            )}
+            <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-stone-500 dark:text-stone-400">
+              {ngoName && (
+                <span className="flex items-center gap-1 font-medium text-stone-700 dark:text-stone-300">
+                  <User className="size-3.5 text-stone-400" aria-hidden /> NGO: {ngoName}
+                  <BadgeCheck data-testid="history-ngo-verified" className="h-3.5 w-3.5 text-emerald-600" aria-label="Verified NGO" />
+                </span>
+              )}
+              {city && <span className="flex items-center gap-1"><MapPin className="size-3.5 text-stone-400" aria-hidden />{city}</span>}
+            </div>
+            {distributed && <p className="text-xs text-stone-600 dark:text-stone-300">{distributed}</p>}
+          </div>
+        </div>
+
+        {/* The NGO's distribution proof, or where it stands */}
+        {proof ? (
+          <div className="rounded-xl border border-ngo-200 bg-ngo-50/40 p-3 sm:p-4 dark:border-ngo-900/50 dark:bg-ngo-950/10">
+            <p className="mb-3 text-2xs font-black uppercase tracking-[0.18em] text-ngo-700 dark:text-ngo-300">
+              Distribution proof{ngoName ? ` · ${ngoName}` : ""}
+            </p>
+            {proof}
+          </div>
+        ) : (
+          <p data-testid="history-proof-pending" className="rounded-xl bg-stone-50 px-3 py-2 text-xs text-stone-600 dark:bg-zinc-800/60 dark:text-stone-300">
+            Proof pending: the NGO will share photos after distribution.
+          </p>
+        )}
+
+        {/* Actions, same as the donee card */}
+        <div className="flex flex-wrap items-center gap-2 pt-2 border-t border-stone-100 dark:border-zinc-800">
+          <Link href={`/certificate?offerId=${offerId}&type=ngo_drive`}
+            className="inline-flex min-h-9 items-center gap-1.5 rounded-xl bg-emerald-600 px-3.5 py-1.5 text-xs font-extrabold text-white shadow-sm hover:bg-emerald-700 transition-colors">
+            <Award className="size-3.5" aria-hidden /> <UiText>Certificate</UiText>
+          </Link>
+          <Link href={`/ngo-drive-offers/${offerId}/handover`}
+            className="inline-flex min-h-9 items-center gap-1 rounded-xl border border-stone-200 bg-white px-3 py-1.5 text-xs font-bold text-stone-700 hover:bg-stone-50 dark:border-zinc-700 dark:bg-zinc-800 dark:text-stone-300 dark:hover:bg-zinc-700">
+            <UiText>View details</UiText> <ChevronRight className="size-3.5" aria-hidden />
+          </Link>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+/**
  * An NGO drive offer in History, from the moment the handover completed (code confirmed + first
  * photo, ISSUE_WINDOW_OPEN): "Donated · certificate issued" + Certificate, and "Proof pending" until
  * the NGO's distribution proof is approved; then the same entry shows the proof. One entry per offer.
@@ -1973,34 +2074,25 @@ function driveDoneEntry(o: DonationOffer, labels: DriveDoneLabels) {
     at: Date.parse(when ?? "") || 0,
     text: [o.requestTitle, o.requestCity, "donated ngo drive certificate", distributed, "issued"].join(" "),
     node: (
-      <div className="space-y-2" data-testid={`history-drive-offer-${o.id}`}>
-        <div data-testid="history-drive-meta" className="flex flex-wrap items-center gap-x-2 gap-y-1 text-2xs text-stone-600 dark:text-stone-300">
-          <span data-testid="history-ngo-drive-tag" className="rounded-full bg-emerald-100 px-2 py-0.5 font-bold text-emerald-800 dark:bg-emerald-900/40 dark:text-emerald-200">{labels.ngoDrive}</span>
-          {d.ngoName && <span className="inline-flex items-center gap-1 font-semibold">{d.ngoName}
-            <BadgeCheck data-testid="history-ngo-verified" className="h-3.5 w-3.5 text-emerald-600" aria-label="Verified NGO" /></span>}
-          {o.requestTitle && <span data-testid="history-drive-title" className="[overflow-wrap:anywhere]">{o.requestTitle}</span>}
-          {qty != null && <span data-testid="history-drive-qty">{qty} given</span>}
-          {when && <span data-testid="history-drive-date">Handed over {doneDate(when)}</span>}        </div>
-        <DoneRow title={o.requestTitle ?? labels.ngoDrive} tag={tag}
-          sub={distributed ?? [doneDate(when), o.requestCity].filter(Boolean).join(" · ")}
-          thumb={photos[0] ?? null} photos={photos}
-          href={`/certificate?offerId=${o.id}&type=ngo_drive`} />
-        {published && d.proofPublished ? (
-          <DriveProofCard proof={{
+      <DriveHistoryCard
+        offerId={o.id} title={o.requestTitle ?? labels.ngoDrive} ngoName={d.ngoName ?? null}
+        ngoDriveLabel={labels.ngoDrive} tag={tag} published={published}
+        qty={qty} itemName={d.driveItemName ?? null}
+        // For drive offers the server fills requestCity with the NGO's name, not a place; don't show it twice.
+        city={o.requestCity && o.requestCity.trim().toLowerCase() !== (d.ngoName ?? "").trim().toLowerCase() ? o.requestCity : null}
+        handedOver={when ? doneDate(when) : null} distributed={distributed}
+        photos={photos}
+        proof={published && d.proofPublished ? (
+          <DriveProofCard bare factsGridClassName="grid-cols-2 lg:grid-cols-4" proof={{
             ngoName: d.ngoName ?? null, beneficiariesReached: d.driveBeneficiariesReached ?? null, beneficiaryGroup: d.driveBeneficiaryGroup ?? null,
             quantityDistributed: d.proofQuantityDistributed ?? null, itemName: d.driveItemName ?? null, distributedOn: d.proofDistributedOn ?? null,
             location: d.proofLocation ?? null, ngoStatement: d.proofNote ?? null,
             media: proofPhotos.map(u => ({ mediaUrl: u, mediaType: "IMAGE" })),
           } as never} />
         ) : published && d.driveId ? (
-          <DriveProofCardLoader driveId={d.driveId} />
-        ) : (
-          <p data-testid="history-proof-pending" className="text-2xs text-stone-500 dark:text-stone-400">
-            Proof pending: the NGO will share photos after distribution.{" "}
-            <Link href={`/ngo-drive-offers/${o.id}/handover`} className="font-semibold text-emerald-700 hover:underline dark:text-emerald-400">Open handover</Link>
-          </p>
-        )}
-      </div>
+          <DriveProofCardLoader bare driveId={d.driveId} />
+        ) : null}
+      />
     ),
   };
 }
@@ -3995,6 +4087,16 @@ export default function DashboardPage() {
     : !isLiveDonorOffer(o));
   const ngoOffersNeedYou = acceptedNgoOffers.some(o => ["NGO_ACCEPTED", "PENDING_ADMIN_APPROVAL", "ADMIN_APPROVED"].includes(o.status));
   const donorOffersNeedYou = liveDonorOffers.some(o => OFFER_NEEDS_DONOR.includes(o.status));
+  // Accepted drive offers live in Matches > NGO: open that segment by itself when only it has
+  // something to do, so the donor isn't left on an empty "Donee" list looking for their handover.
+  const autoNgoSegment = useRef(false);
+  useEffect(() => {
+    if (autoNgoSegment.current) return;
+    if (ngoOffersNeedYou && !donorOffersNeedYou && flowDonorMatches.length + liveDonorOffers.length === 0) {
+      autoNgoSegment.current = true;
+      setMatchSegment("ngo");
+    }
+  }, [ngoOffersNeedYou, donorOffersNeedYou, flowDonorMatches.length, liveDonorOffers.length]);
   const donorMatchesNeedYou = activeDonorMatches.some(m => MATCH_NEEDS_DONOR.has(m.status));
   const donorItemsNeedYou = itemListings.some(l => l.status === "NEEDS_INFORMATION");
   // Open on whatever is waiting; then on offers for a donor with no inventory

@@ -10,11 +10,11 @@ import React, { useState, useEffect, useMemo, useRef } from "react";
 import DOMPurify from "isomorphic-dompurify";
 import Image from "next/image";
 import Link from "@/components/AppLink";
-import { motion, AnimatePresence } from "framer-motion";
+// Entrance motion is CSS (blogPostMotion.css): framer-motion kept the article
+// at opacity 0 until hydration and added the library to every post.
+import "./blogPostMotion.css";
 import { useLocale, useTranslations } from "next-intl";
 import { fetchBlogTranslation, getBlogTranslation, preloadBlogTranslations, type BlogTranslation } from "@/data/blogTranslations";
-import { AnimatedWrapper } from "../../components/AnimatedWrapper";
-import { StaggerContainer, itemVariants } from "../../components/StaggerContainer";
 import { LanguageSwitcher } from "@/components/LanguageSwitcher";
 import { searchBlogPosts } from "@/lib/blogSearch";
 import { withHeadingIds } from "@/lib/blogToc";
@@ -351,7 +351,7 @@ export default function BlogPostClient({ slug, content }: BlogPostClientProps) {
           {/* Hero Section — contained card */}
           <div className="max-w-[1280px] lg:max-w-[1680px] mx-auto px-5 sm:px-6 lg:px-10 pt-6 pb-6 md:pt-10 md:pb-10 lg:pb-0">
             {/* Image card */}
-            <AnimatedWrapper delay={0} duration={0.6} direction="up">
+            <div>
               <div className="relative w-full aspect-[16/10] md:aspect-auto md:h-[420px] rounded-2xl overflow-hidden shadow-xl mb-6 md:mb-10">
                 {/* Same box, scale and crop as the former CSS background
                     (bg-cover bg-center = object-cover object-center), now a
@@ -363,6 +363,7 @@ export default function BlogPostClient({ slug, content }: BlogPostClientProps) {
                     alt={post.heroAlt ?? post.title}
                     fill
                     priority
+                    fetchPriority="high"
                     sizes="(min-width: 1680px) 1600px, 100vw"
                     className="object-cover object-center"
                   />
@@ -379,20 +380,20 @@ export default function BlogPostClient({ slug, content }: BlogPostClientProps) {
                   </Link>
                 </div>
               </div>
-            </AnimatedWrapper>
+            </div>
 
             {/* Article meta below the image: same left/right edges as the hero image */}
             <div>
-              <AnimatedWrapper delay={0.15} duration={0.6} direction="up">
+              <div>
                 <h1 className="font-display-lg text-[#b04a15] dark:text-[#e07b3a] mb-4 leading-tight text-2xl sm:text-4xl md:text-5xl font-bold break-words">
                   {displayTitle}
                 </h1>
-              </AnimatedWrapper>
-              <AnimatedWrapper delay={0.25} duration={0.55} direction="up">
+              </div>
+              <div>
                 <p className="font-body-lg text-stone-600 dark:text-stone-400 text-lg mb-6 leading-relaxed">
                   {displayDescription}
                 </p>
-              </AnimatedWrapper>
+              </div>
 
               {/* Voice Narration (English and Hindi only): desktop-only, as before, now under the subtitle */}
               {canNarrate && narrationSupported && (
@@ -438,12 +439,7 @@ export default function BlogPostClient({ slug, content }: BlogPostClientProps) {
           {/* Content Grid Layout */}
           <div className="max-w-[1280px] lg:max-w-[1680px] mx-auto px-5 sm:px-6 lg:px-10 grid grid-cols-1 md:grid-cols-12 gap-12 lg:grid-cols-[11rem_minmax(0,1fr)_13rem] lg:gap-8 xl:grid-cols-[12rem_minmax(0,1fr)_16rem] xl:gap-10 relative">
             {/* Left Sidebar: Share Story */}
-            <motion.aside
-              className="hidden md:block lg:hidden md:col-span-3 relative"
-              initial={{ opacity: 0, x: -24 }}
-              animate={{ opacity: 1, x: 0 }}
-              transition={{ duration: 0.55, delay: 0.3, ease: [0.25, 0.46, 0.45, 0.94] }}
-            >
+            <aside className="ck-blog-aside-left hidden md:block lg:hidden md:col-span-3 relative">
               <div className="sticky top-[120px] flex flex-col gap-8">
                 {/* Social Share */}
                 <div className="flex flex-col gap-3 relative">
@@ -473,7 +469,7 @@ export default function BlogPostClient({ slug, content }: BlogPostClientProps) {
                   </div>
                 </div>
               </div>
-            </motion.aside>
+            </aside>
 
             {/* Left column, desktop only (lg+): "In this article". The column
                 stays (empty) when a post has fewer than 2 headings. */}
@@ -507,11 +503,8 @@ export default function BlogPostClient({ slug, content }: BlogPostClientProps) {
 
             {/* Center Article Content */}
             <div className="col-span-1 md:col-span-6 lg:col-span-1 min-w-0">
-            <motion.div
-              className="article-content text-stone-800 dark:text-stone-100"
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.7, delay: 0.45, ease: [0.25, 0.46, 0.45, 0.94] }}
+            <div
+              className="ck-blog-article-in article-content text-stone-800 dark:text-stone-100"
               // Fix #3: sanitize HTML before injection — strips <script>, onerror, etc.
               // No fallback to post.content: that is the raw article HTML, and
               // falling back to it is exactly how unsanitized markup used to reach
@@ -556,11 +549,11 @@ export default function BlogPostClient({ slug, content }: BlogPostClientProps) {
             {recommendedPosts.length > 0 && (
               <section className="mt-12 lg:hidden">
                   <h2 className="font-display-lg text-2xl text-[#b04a15] dark:text-[#e07b3a] mb-6 font-bold">{t("readNext")}</h2>
-                  <StaggerContainer delayStart={0.6} staggerDelay={0.12} className={`grid grid-cols-1 sm:grid-cols-2 ${recommendedPosts.length >= 3 ? "lg:grid-cols-3" : ""} gap-6`}>
-                    {recommendedPosts.map((rec) => {
+                  <div className={`grid grid-cols-1 sm:grid-cols-2 ${recommendedPosts.length >= 3 ? "lg:grid-cols-3" : ""} gap-6`}>
+                    {recommendedPosts.map((rec, i) => {
                       const tr = translatePost(rec);
                       return (
-                        <motion.div key={rec.slug} variants={itemVariants}>
+                        <div key={rec.slug} className="ck-blog-card-in" style={{ animationDelay: `${0.6 + i * 0.12}s` }}>
                           <Link className="group block" href={`/blog/${rec.slug}`}>
                             <div className="w-full h-32 rounded-xl overflow-hidden mb-3 border border-stone-200 dark:border-stone-700">
                               <div className="relative w-full h-full group-hover:scale-105 transition-transform duration-500">
@@ -574,21 +567,16 @@ export default function BlogPostClient({ slug, content }: BlogPostClientProps) {
                               {tr.title}
                             </p>
                           </Link>
-                        </motion.div>
+                        </div>
                       );
                     })}
-                  </StaggerContainer>
+                  </div>
               </section>
             )}
             </div>
 
             {/* Right Sidebar: Next For You */}
-            <motion.aside
-              className="hidden lg:block lg:col-span-1 min-w-0 pl-8 border-l border-stone-200 dark:border-stone-700"
-              initial={{ opacity: 0, x: 24 }}
-              animate={{ opacity: 1, x: 0 }}
-              transition={{ duration: 0.55, delay: 0.5, ease: [0.25, 0.46, 0.45, 0.94] }}
-            >
+            <aside className="ck-blog-aside-right hidden lg:block lg:col-span-1 min-w-0 pl-8 border-l border-stone-200 dark:border-stone-700">
               <div className="sticky top-[120px] flex max-h-[calc(100vh-144px)] flex-col">
                 {/* Search Stories — live dropdown, same ranking as the blog listing page */}
                 <div ref={searchBoxRef} className="relative z-20 shrink-0 mb-[clamp(1rem,3vh,2rem)]">
@@ -616,14 +604,9 @@ export default function BlogPostClient({ slug, content }: BlogPostClientProps) {
                       </button>
                     )}
                   </div>
-                  <AnimatePresence>
                     {isSearchFocused && searchQuery.trim() !== "" && (
-                      <motion.div
-                        initial={{ opacity: 0, y: -6 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        exit={{ opacity: 0, y: -6 }}
-                        transition={{ duration: 0.15 }}
-                        className="absolute top-full left-0 right-0 mt-2 bg-white dark:bg-stone-900 border border-stone-200 dark:border-stone-800 rounded-2xl shadow-xl z-30 overflow-hidden"
+                      <div
+                        className="ck-blog-search-in absolute top-full left-0 right-0 mt-2 bg-white dark:bg-stone-900 border border-stone-200 dark:border-stone-800 rounded-2xl shadow-xl z-30 overflow-hidden"
                       >
                         {liveSearchResults.length > 0 ? (
                           <ul className="max-h-96 overflow-y-auto divide-y divide-stone-100 dark:divide-stone-800">
@@ -659,17 +642,16 @@ export default function BlogPostClient({ slug, content }: BlogPostClientProps) {
                             {t("noSearchResults", { query: searchQuery })}
                           </p>
                         )}
-                      </motion.div>
+                      </div>
                     )}
-                  </AnimatePresence>
                 </div>
 
                 <h2 className="relative z-10 shrink-0 font-display-lg text-[clamp(1rem,2.4vh,1.125rem)] leading-snug whitespace-nowrap text-[#b04a15] dark:text-[#e07b3a] mb-[clamp(0.75rem,2vh,1rem)] pb-0.5 font-bold">{t("readNext")}</h2>
-                <StaggerContainer delayStart={0.6} staggerDelay={0.12} className="min-h-0 flex-1 overflow-y-auto ck-no-scrollbar flex flex-col gap-[clamp(0.75rem,2.2vh,1.25rem)]">
-                  {recommendedPosts.slice(0, 2).map((rec) => {
+                <div className="min-h-0 flex-1 overflow-y-auto ck-no-scrollbar flex flex-col gap-[clamp(0.75rem,2.2vh,1.25rem)]">
+                  {recommendedPosts.slice(0, 2).map((rec, i) => {
                     const tr = translatePost(rec);
                     return (
-                      <motion.div key={rec.slug} variants={itemVariants}>
+                      <div key={rec.slug} className="ck-blog-card-in" style={{ animationDelay: `${0.6 + i * 0.12}s` }}>
                         <Link className="group block" href={`/blog/${rec.slug}`}>
                           <div className="w-full h-[clamp(3.5rem,11vh,5.5rem)] rounded-xl overflow-hidden mb-2 border border-stone-200 dark:border-stone-700">
                             <div className="relative w-full h-full group-hover:scale-105 transition-transform duration-500">
@@ -683,12 +665,12 @@ export default function BlogPostClient({ slug, content }: BlogPostClientProps) {
                             {tr.title}
                           </p>
                         </Link>
-                      </motion.div>
+                      </div>
                     );
                   })}
-                </StaggerContainer>
+                </div>
               </div>
-            </motion.aside>
+            </aside>
           </div>
         </article>
 

@@ -172,7 +172,7 @@ export default function RazorpayPolicyPage() {
             </div>
           </div>
 
-          <p className="mb-3 text-xs font-black uppercase tracking-[0.2em] text-[#e07b3a]">
+          <p className="mb-3 text-xs font-black uppercase tracking-[0.2em] text-[#f0b97a]">
             Secure Payments
           </p>
           <h1 className="pp-shimmer-text text-4xl font-extrabold tracking-tight sm:text-5xl">

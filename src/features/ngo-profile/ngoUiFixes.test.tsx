@@ -41,7 +41,9 @@ describe("drive form", () => {
     expect(handoverModeInWords("BOTH", 20)).toBe("I pick up from donors within 20 km; donors farther away drop off at the drive address");
     expect(handoverModeInWords("DROP_OFF", 20)).toMatch(/drop the items off/);
     expect(page).toContain('data-testid="drive-submitted"');
-    expect(page).toMatch(/disabled aria-describedby="one-drive-note"/);
+    // No disabled "Start another drive": a working "View my drives" link instead.
+    expect(page).not.toContain("<UiText>Start another drive</UiText>");
+    expect(page).toMatch(/aria-describedby="one-drive-note"/);
     expect(page).toContain("You can start another drive once this one is completed with proof.");
     expect(page).toContain("Reference photos: how you&apos;d like the items to look");
     expect(page).toContain('data-testid="drive-cover-field"');

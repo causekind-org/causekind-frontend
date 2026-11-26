@@ -3,10 +3,12 @@
 import { Country, State, City } from "country-state-city";
 
 export async function getCountries() {
-  return Country.getAllCountries().map((c) => ({
+  const all = Country.getAllCountries().map((c) => ({
     value: c.isoCode,
     label: c.name,
   }));
+  // CauseKind works in India: list it first instead of between Iceland and Indonesia.
+  return [...all.filter((c) => c.value === "IN"), ...all.filter((c) => c.value !== "IN")];
 }
 
 export async function getStates(countryIso: string) {

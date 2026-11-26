@@ -355,7 +355,7 @@ function Table({
               type="button"
               className={`${styles.indexBtn} ${styles.mono}`}
               aria-current={i === active}
-              aria-label={`Photo ${i + 1}: ${p.category}`}
+              aria-label={`Photo ${two(i + 1)}: ${p.category}`}
               onClick={() => pick(i)}
             >
               {two(i + 1)}
@@ -487,7 +487,7 @@ function Pile({
               type="button"
               className={`${styles.mIndexBtn} ${styles.mono}`}
               aria-current={i === active}
-              aria-label={`Photo ${i + 1}: ${p.category}`}
+              aria-label={`Photo ${two(i + 1)}: ${p.category}`}
               onClick={() => go(i)}
             >
               {two(i + 1)}

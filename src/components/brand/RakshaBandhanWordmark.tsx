@@ -28,6 +28,8 @@
  */
 
 /** Native size of the encoded asset. Everything else is derived from it. */
+import "./RakshaBandhanWordmark.css";
+
 const INTRINSIC = { width: 442, height: 140 } as const;
 const RATIO = INTRINSIC.width / INTRINSIC.height;
 

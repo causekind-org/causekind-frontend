@@ -232,7 +232,7 @@ export default async function AboutPage({ params }: LocaleParams) {
               <div className="w-9 h-9 md:w-12 md:h-12 rounded-2xl bg-[#1e3a60]/10 flex items-center justify-center text-[#1e3a60] dark:text-blue-400 mb-3 md:mb-6 group-hover:scale-110 transition-transform">
                 <Shield className="w-5 h-5 md:w-6 md:h-6" />
               </div>
-              <h4 className="font-extrabold text-base md:text-base text-stone-900 dark:text-white mb-1.5 md:mb-2">{t("securePlatformTitle")}</h4>
+              <h3 className="font-extrabold text-base md:text-base text-stone-900 dark:text-white mb-1.5 md:mb-2">{t("securePlatformTitle")}</h3>
               <p className="text-xs text-stone-600 dark:text-stone-400 leading-relaxed font-medium">
                 {t("securePlatformText")}
               </p>
@@ -253,7 +253,7 @@ export default async function AboutPage({ params }: LocaleParams) {
               <div className="w-9 h-9 md:w-12 md:h-12 rounded-2xl bg-[#b04a15]/10 flex items-center justify-center text-[#b04a15] mb-3 md:mb-6 group-hover:scale-110 transition-transform">
                 <Heart className="w-5 h-5 md:w-6 md:h-6 fill-[#b04a15]" />
               </div>
-              <h4 className="font-extrabold text-base md:text-base text-stone-900 dark:text-white mb-1.5 md:mb-2">{t("verifiedNeedsTitle")}</h4>
+              <h3 className="font-extrabold text-base md:text-base text-stone-900 dark:text-white mb-1.5 md:mb-2">{t("verifiedNeedsTitle")}</h3>
               <p className="text-xs text-stone-600 dark:text-stone-400 leading-relaxed font-medium">
                 {t("verifiedNeedsText")}
               </p>

@@ -168,7 +168,8 @@ export function NgoPublicPage({ slug }: { slug: string }) {
   if (state === "not-found") return <NgoNotFound />;
   if (state === "error" || !ngo) return <p role="alert" className="p-8 text-center text-red-600">{message || "We couldn't load this page."}</p>;
 
-  const place = [ngo.city, ngo.state].filter(Boolean).join(", ");
+  // The city can already carry the state ("Pune, MH, IN"); keep each part once ("Pune, MH, IN, MH" before).
+  const place = [...new Set([ngo.city, ngo.state].filter(Boolean).flatMap((p) => String(p).split(",")).map((p) => p.trim()).filter(Boolean))].join(", ");
   const tr = ngo.trackRecord;
   // Up to 3 links (older pages: the website as the single link).
   const links = (ngo.links?.length ? ngo.links : ngo.website ? [ngo.website] : [])

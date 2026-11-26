@@ -102,7 +102,8 @@ export function NgoReviewPanel({
   const [errorItems, setErrorItems] = useState<string[]>([]);
   const [notice, setNotice] = useState("");
   const [reason, setReason] = useState("");
-  const [decision, setDecision] = useState<"APPROVED" | "REJECTED" | "NEEDS_INFORMATION">("NEEDS_INFORMATION");
+  // No decision is picked up front: it defaulted to "Request corrections", so a note + Save sent the NGO back.
+  const [decision, setDecision] = useState<"" | "APPROVED" | "REJECTED" | "NEEDS_INFORMATION">("");
   /** Items flagged for correction → the reviewer's note for each. */
   const [flagged, setFlagged] = useState<Record<string, string>>({});
   const [links, setLinks] = useState<Record<string, { url: string; at: number }>>({});
@@ -133,7 +134,7 @@ export function NgoReviewPanel({
     const request = ++selection.current;
     setOpening(true); setDetail(null); setLinks({}); setLinkErrors({}); setEnlarged(null); retried.current = new Set();
     setReason(""); setFlagged({}); setError(""); setErrorItems([]); setNotice("");
-    setDecision("NEEDS_INFORMATION");
+    setDecision("");
     try {
       let result = await adminGetNgoApplication(id);
       const latest = supersededBy(result);
@@ -260,6 +261,7 @@ export function NgoReviewPanel({
   async function saveDecision(event: React.FormEvent) {
     event.preventDefault();
     if (!detail || busy) return;
+    if (!decision) { setError("Choose a decision first."); return; }
     if (decision === "NEEDS_INFORMATION" && !correctionsReady) {
       setError(flaggedItems.length === 0
         ? "Pick at least one item that needs changes."
@@ -483,7 +485,7 @@ export function NgoReviewPanel({
             {detail.current && detail.application.status === "UNDER_REVIEW" && <form onSubmit={saveDecision} className="mt-6 space-y-4 rounded-2xl border border-white/80 bg-[#eef4fb] p-4 sm:p-5">
               <h3 className="text-[12px] font-semibold uppercase tracking-wide text-[#4f6480]">Your decision</h3>
               <label className="block text-sm">Decision<select className={field} value={decision} disabled={busy} onChange={e => setDecision(e.target.value as typeof decision)}>
-                <option value="NEEDS_INFORMATION">Request corrections</option><option value="APPROVED">Approve organization</option><option value="REJECTED">Reject application</option>
+                <option value="" disabled>Choose a decision…</option><option value="NEEDS_INFORMATION">Request corrections</option><option value="APPROVED">Approve organization</option><option value="REJECTED">Reject application</option>
               </select></label>
               {decision === "NEEDS_INFORMATION" && (
                 <fieldset className="space-y-2" aria-label="Items that need changes">
@@ -515,7 +517,7 @@ export function NgoReviewPanel({
               </label>
               <p className="text-xs text-stone-500">Approving lets this NGO post requests and start drives. Every decision updates the applicant’s status.</p>
               <button className={`${button} !border-[#10233a] !bg-[#10233a] text-white hover:!bg-[#1f66b3]`}
-                disabled={busy || (decision === "NEEDS_INFORMATION" && !correctionsReady)}>{busy ? "Saving decision…" : "Save decision"}</button>
+                disabled={busy || !decision || (decision === "NEEDS_INFORMATION" && !correctionsReady)}>{busy ? "Saving decision…" : "Save decision"}</button>
             </form>}
             {detail.decisions.length > 0 && <div className="mt-6"><h3 className="font-bold">Decision history</h3><ul className="mt-2 space-y-3 text-sm">
               {detail.decisions.map(entry => <li key={entry.id}><p>{label(entry.fromStatus)} → {label(entry.toStatus)} · {entry.changedByEmail}</p><p className="whitespace-pre-wrap ck-user-text">{entry.note}</p><p className="text-xs text-stone-500">{serverDate(entry.changedAt).toLocaleString()}</p></li>)}

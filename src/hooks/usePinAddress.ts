@@ -108,7 +108,7 @@ export function usePinAddress() {
     if (timer.current) { clearTimeout(timer.current); timer.current = null; }
     settle();
     setState({ running: true, error: null });
-    const geo = await geocodeAddressFromServer(q);
+    const geo = await geocodeAddressFromServer(q).catch(() => ({ ok: false as const }));
     if (mine !== seq.current) return null;
     const coords = geo.ok ? { lat: geo.lat, lng: geo.lng } : fallback;
     setState({

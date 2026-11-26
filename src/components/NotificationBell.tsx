@@ -1,4 +1,6 @@
 "use client";
+
+import { createPortal } from "react-dom";
 import { LandingText, LandingAttributes } from "@/components/LandingTranslation";
 
 
@@ -180,6 +182,15 @@ export function isNgoFixLink(link?: string | null): boolean {
 }
 
 export function NotificationBell() {
+  const [isPhone, setIsPhone] = useState(false);
+  useEffect(() => {
+    if (typeof window.matchMedia !== "function") return;
+    const mq = window.matchMedia("(max-width: 639px)");
+    const sync = () => setIsPhone(mq.matches);
+    sync();
+    mq.addEventListener("change", sync);
+    return () => mq.removeEventListener("change", sync);
+  }, []);
   const { user } = useAuth();
   const { notifications, unread, markAllRead } = useNotifications();
   const [open, setOpen] = useState(false);
@@ -189,7 +200,10 @@ export function NotificationBell() {
   // Close on outside click
   useEffect(() => {
     function handle(e: MouseEvent) {
-      if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false);
+      const t = e.target as Node;
+      // The phone panel is portalled to <body>, outside ref: taps inside it are not "outside".
+      const inPanel = (t as Element)?.closest?.('[data-testid="notification-panel"]');
+      if (ref.current && !ref.current.contains(t) && !inPanel) setOpen(false);
     }
     if (open) document.addEventListener("mousedown", handle);
     return () => document.removeEventListener("mousedown", handle);
@@ -235,7 +249,10 @@ export function NotificationBell() {
           top-16 clears the 57px mobile header (px-6 py-3 around a 32px control,
           plus its 1px border). From sm: up it reverts to the original
           bell-anchored dropdown. */}
+      {(() => {
+        const panelEl = (
       <div
+        data-testid="notification-panel"
         className={`fixed left-1/2 -translate-x-1/2 top-16 w-[calc(100vw-4rem)] max-w-[340px] sm:absolute sm:left-auto sm:translate-x-0 sm:right-0 sm:top-[calc(100%+10px)] sm:w-80 sm:max-w-none bg-white dark:bg-zinc-900 rounded-xl sm:rounded-2xl border border-[var(--nav-border,#e5e2d5)] dark:border-zinc-800 shadow-2xl shadow-stone-900/10 dark:shadow-zinc-950/40 z-[200] overflow-hidden transition-all duration-200 origin-top sm:origin-top-right ${
           open ? "scale-100 opacity-100 pointer-events-auto" : "scale-95 opacity-0 pointer-events-none"
         }`}
@@ -275,6 +292,12 @@ export function NotificationBell() {
           </div>
         )}
       </div>
+        );
+        // Phones: rendered at the page level, so "centred on the screen" really is the screen.
+        // Inside a floating/blurred header (NGO home) it centred on the header's box and spilled
+        // off the left edge.
+        return isPhone && typeof document !== "undefined" ? createPortal(panelEl, document.body) : panelEl;
+      })()}
     </div>
   );
 }

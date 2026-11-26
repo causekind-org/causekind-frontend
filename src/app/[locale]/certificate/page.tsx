@@ -382,7 +382,7 @@ export default function CertificatePage() {
                   verification check into a disclosure. */}
               {isDrive && cert.ngoName?.trim() && <TableRow label="NGO" value={cert.ngoName} wrap />}
               {isDrive && cert.driveTitle?.trim() && <TableRow label="Drive" value={cert.driveTitle} wrap />}
-              <TableRow label={isMoney ? "Contribution" : "Item Donated"} value={cert.category} />
+              <TableRow label={isMoney ? "Contribution" : "Item Donated"} value={(!isMoney && cert.itemName) || cert.category} />
               {!isDrive && cert.condition && <TableRow label="Condition" value={cert.condition} />}
               {/* Same label/value as the backend PDF (CertificatePdfRenderer.renderDrive): a bare number, no unit. */}
               {isDrive && <TableRow label="Quantity" value={cert.quantityUnit ? `${cert.quantityDelivered} ${cert.quantityUnit}` : String(cert.quantityDelivered)} />}

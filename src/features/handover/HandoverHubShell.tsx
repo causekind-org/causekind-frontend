@@ -9,6 +9,7 @@ import { HandoverNextAction } from "./HandoverNextAction";
 import { HandoverScheduleSummary } from "./HandoverScheduleSummary";
 import { HandoverScheduleDialog, type SchedulePayload } from "./HandoverScheduleDialog";
 import { HandoverContactPanel } from "./HandoverContactPanel";
+import { HandoverProofGallery } from "./HandoverProofGallery";
 import { HandoverChatPanel, HandoverChatDrawer } from "./HandoverChatPanel";
 import { HandoverSafetyActions } from "./HandoverSafetyActions";
 import { HandoverDeliveryPanel, type DeliveryAddressActions } from "./HandoverDeliveryAddress";
@@ -171,6 +172,9 @@ export function HandoverHubShell({
               <HandoverScheduleSummary vm={vm} onReschedule={() => setScheduleOpen(true)} />
             </div>
             <HandoverContactPanel vm={vm} onTogglePermission={actions.setCallPermission} />
+            {actions.proof && actions.proof.photos.length > 0 && (
+              <HandoverProofGallery photos={actions.proof.photos} viewerRole={vm.role} />
+            )}
             {drive?.aside}
           </aside>
         </div>

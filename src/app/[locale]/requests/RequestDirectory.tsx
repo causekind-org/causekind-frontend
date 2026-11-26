@@ -13,7 +13,7 @@ import { ALL_REQUEST_CATEGORIES, CATEGORY_VISUALS } from "@/lib/categoryVisuals"
 import { AUDIENCE_OPTIONS, type AudienceUrlType } from "@/lib/requestAudience";
 import { TranslatedText } from "@/hooks/useDynamicTranslation";
 import { LiveNeedCard, LiveNeedCardSkeleton } from "@/components/home/LiveNeedCard";
-import { registerUrlPreserving } from "@/lib/postAuthDestination";
+import { loginUrlFor } from "@/lib/safeRedirect";
 import { NgoDriveCard } from "@/features/ngo-drives/components/NgoDriveCard";
 import type { UnifiedNeedItem } from "@/features/ngo-drives/ngoDriveFilters";
 
@@ -474,7 +474,7 @@ export function RequestDirectory(props: Props) {
                             urgent: item.data.urgency === "CRITICAL" || item.data.isEmergency,
                             byName: item.data.requesterType === "NGO" ? item.data.organizationName : item.data.doneeName || null,
                           }}
-                          href={registerUrlPreserving(`/requests/${item.data.id}/offer`)}
+                          href={loginUrlFor(`/requests/${item.data.id}/offer`)}
                           ctaLabel={ui("Log in to offer this item")}
                           locked
                           viewHref={`/requests/${item.data.id}`}

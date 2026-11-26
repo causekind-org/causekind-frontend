@@ -82,6 +82,8 @@ describe("admin NGO review: request changes per item (point 9)", { timeout: 1500
   it("lists every wizard field and uploaded file, and can't save without an item and a note", async () => {
     const user = userEvent.setup();
     render(<NgoReviewPanel initialApplicationId="CK-NGO-2026-AAAA0001" />);
+    // No decision is pre-selected: the admin picks "Request corrections" first.
+    await user.selectOptions(await screen.findByRole("combobox", { name: /^Decision/ }), "NEEDS_INFORMATION");
     const checklist = await screen.findByRole("group", { name: /Items that need changes/i });
     for (const name of ["Organization name", "Legal structure", "Registration number", "Registered office address",
       "Year of establishment", "Representative name", "Designation", "Mobile number", "Official email",
@@ -110,6 +112,8 @@ describe("admin NGO review: request changes per item (point 9)", { timeout: 1500
   it("unticking an item drops it, and approval sends no items", async () => {
     const user = userEvent.setup();
     render(<NgoReviewPanel initialApplicationId="CK-NGO-2026-AAAA0001" />);
+    // No decision is pre-selected: the admin picks "Request corrections" first.
+    await user.selectOptions(await screen.findByRole("combobox", { name: /^Decision/ }), "NEEDS_INFORMATION");
     const checklist = await screen.findByRole("group", { name: /Items that need changes/i });
     await user.click(within(checklist).getByRole("checkbox", { name: /^Designation/ }));
     await user.click(within(checklist).getByRole("checkbox", { name: /^Designation/ }));

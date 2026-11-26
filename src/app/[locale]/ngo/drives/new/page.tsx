@@ -13,6 +13,7 @@ import React, { useEffect, useRef, useState, useCallback, Suspense } from "react
 import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { toast } from "@/lib/toast";
+import { TimePicker } from "@/components/ui/time-picker";
 import { useAuth } from "@/hooks/useAuth";
 import {
   getMyNgoApplication,
@@ -340,8 +341,12 @@ function NewNgoDriveForm() {
   const clearDrivePinError = useCallback(() => {
     setFieldErrors(e => (e.latitude || e.longitude ? { ...e, latitude: "", longitude: "" } : e));
   }, []);
+  const warnDriveOutsideIndia = useCallback(() => {
+    toast.error(ui("NGO drives are only available in India for now. Please pick a location in India."));
+  }, [ui]);
   const { lookup: driveLookup, handlePin: handleDrivePin, handleGeocodeTyped: handleDriveGeocodeTyped } = useLocationPinHandlers({
     modelRef: driveLocRef, commit: commitDriveLoc, clearPinError: clearDrivePinError, profileCenter: null,
+    onlyCountry: "IN", onOutsideCountry: warnDriveOutsideIndia,
   });
   const setDriveLocField = useCallback(<K extends keyof LocationFields>(key: K, value: LocationFields[K]) => {
     commitDriveLoc({ ...driveLocRef.current, [key]: value });
@@ -896,6 +901,7 @@ const [altContact, setAltContact] = useState("");
     const e: Record<string, string> = {};
     if (s === "drive-location") {
       if (!driveLoc.countryIso) e.countryIso = ui("Choose the country");
+      else if (driveLoc.countryIso !== "IN") e.countryIso = ui("NGO drives are only available in India for now.");
       if (!driveLoc.stateIso) e.stateIso = ui("Choose the state");
       if (!driveLoc.city.trim() || driveLoc.city.length > 100) e.city = ui("Enter the city");
       if (driveLoc.locality.length > 100) e.locality = ui("Locality cannot exceed 100 characters");
@@ -953,12 +959,22 @@ const [altContact, setAltContact] = useState("");
         if (!/^[6-9]\d{9}$/.test(c.phone.trim())) e[`extraContacts.${i}.phone`] = "Enter a 10-digit mobile number starting with 6, 7, 8 or 9";
         const emailProblem = contactEmailError(c.email, c.phone);
         if (emailProblem) e[`extraContacts.${i}.email`] = emailProblem;
+        // Repeats of someone already listed: say so, rather than a vague count error.
+        const earlier = [{ phone: contactPhone, email: contactEmail }, ...extraContacts.slice(0, i)];
+        const who = (j: number) => (j === 0 ? "the first contact" : `Contact ${j + 1}`);
+        const samePhone = earlier.findIndex((p) => p.phone.trim() && p.phone.trim() === c.phone.trim());
+        if (samePhone >= 0 && !e[`extraContacts.${i}.phone`]) e[`extraContacts.${i}.phone`] = `Same number as ${who(samePhone)}. Each contact must be a different person with their own number.`;
+        const sameEmail = earlier.findIndex((p) => p.email.trim() && p.email.trim().toLowerCase() === c.email.trim().toLowerCase());
+        if (sameEmail >= 0 && !e[`extraContacts.${i}.email`]) e[`extraContacts.${i}.email`] = `Same email as ${who(sameEmail)}. Each contact needs their own email.`;
       });
       { const emailProblem = contactEmailError(contactEmail, contactPhone);
         if (emailProblem) e.contactEmail = emailProblem; }
       { const required = editId === null ? MIN_HANDOVER_CONTACTS : Math.min(MIN_HANDOVER_CONTACTS, storedPhones.length);
         const people = new Set([contactPhone, ...extraContacts.map((c) => c.phone)].map((p) => p.trim()).filter(Boolean)).size;
-        if (people < required) e.handoverContacts = `Add at least ${required} different people`; }
+        const listed = [contactPhone, ...extraContacts.map((c) => c.phone)].map((p) => p.trim()).filter(Boolean).length;
+        if (people < required) e.handoverContacts = listed > people
+          ? `You've added the same details more than once. Add at least ${required} different people.`
+          : `Add at least ${required} different people`; }
       if (altContact.trim()) {
         const isEmail = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(altContact.trim());
         const isPhone = /^\d{10}$/.test(altContact.trim());
@@ -1257,7 +1273,7 @@ const [altContact, setAltContact] = useState("");
     );
   }
 
-  // "Drive submitted!" as a popup over the form. One drive at a time: "Start another drive" stays disabled.
+  // "Drive submitted!" as a popup over the form. One drive at a time, so no "Start another drive" button here.
   const submittedPopup = submitted ? (
     <Dialog open onOpenChange={() => { /* closed with the buttons only */ }}>
       <DialogContent data-ck-role-theme="ngo" data-testid="drive-submitted" showCloseButton={false} className="block max-w-md p-8 text-center">
@@ -1272,10 +1288,10 @@ const [altContact, setAltContact] = useState("");
           <Link href="/dashboard/ngo" className="block w-full py-3 px-4 rounded-xl bg-ngo-700 hover:bg-ngo-800 text-white font-bold text-sm transition-colors">
             <UiText>Go to NGO dashboard</UiText>
           </Link>
-          <button type="button" disabled aria-describedby="one-drive-note"
-            className="block w-full py-3 px-4 rounded-xl border border-stone-200 dark:border-zinc-800 text-stone-400 dark:text-stone-500 font-semibold text-sm cursor-not-allowed">
-            <UiText>Start another drive</UiText>
-          </button>
+          <Link href="/dashboard/ngo?tab=drives" aria-describedby="one-drive-note"
+            className="block w-full py-3 px-4 rounded-xl border border-stone-200 dark:border-zinc-800 text-stone-700 dark:text-stone-200 font-semibold text-sm hover:bg-stone-50 dark:hover:bg-zinc-800">
+            <UiText>View my drives</UiText>
+          </Link>
           <p id="one-drive-note" className="text-xs text-stone-500 dark:text-stone-400"><UiText>You can start another drive once this one is completed with proof.</UiText></p>
         </div>
       </DialogContent>
@@ -1372,7 +1388,7 @@ const [altContact, setAltContact] = useState("");
 
         {/* 4. Drive Story */}
         <section className="min-w-0 rounded-xl border border-slate-200/80 bg-white p-4 sm:p-5 dark:border-slate-700 dark:bg-slate-900 space-y-4" aria-labelledby="story-heading">
-          <h3 id="story-heading" className="text-[11px] font-bold uppercase tracking-wide text-ngo-700 dark:text-ngo-300"><UiText>4. Drive Story</UiText></h3>
+          <h3 id="story-heading" className="text-[11px] font-bold uppercase tracking-wide text-ngo-700 dark:text-ngo-300"><UiText>2. Drive Story</UiText></h3>
           
           <WizardField label={ui("Details")} required error={fieldErrors.details} hint={df("detailsHint", { count: details.length, max: DETAILS_MAX })}>
             {({ id, describedBy, invalid }) => (
@@ -1412,7 +1428,7 @@ const [altContact, setAltContact] = useState("");
       <div className="min-w-0 space-y-5">
         {/* 2. Urgency Classification */}
         <section className="min-w-0 rounded-xl border border-slate-200/80 bg-white p-4 sm:p-5 dark:border-slate-700 dark:bg-slate-900 space-y-4" aria-labelledby="urgency-heading">
-          <h3 id="urgency-heading" className="text-[11px] font-bold uppercase tracking-wide text-ngo-700 dark:text-ngo-300"><UiText>2. Urgency Classification</UiText></h3>
+          <h3 id="urgency-heading" className="text-[11px] font-bold uppercase tracking-wide text-ngo-700 dark:text-ngo-300"><UiText>3. Urgency Classification</UiText></h3>
           <fieldset className="space-y-1">
             <legend className="text-xs font-bold text-stone-700 dark:text-stone-200 mb-1"><UiText>Urgency Level</UiText></legend>
             <div className="flex gap-1 rounded-lg bg-slate-100 p-1 dark:bg-slate-800">
@@ -1430,7 +1446,7 @@ const [altContact, setAltContact] = useState("");
   
         {/* 3. Item Requirements */}
         <section className="min-w-0 rounded-xl border border-slate-200/80 bg-white p-4 sm:p-5 dark:border-slate-700 dark:bg-slate-900 space-y-4" aria-labelledby="item-req-heading">
-          <h3 id="item-req-heading" className="text-[11px] font-bold uppercase tracking-wide text-ngo-700 dark:text-ngo-300"><UiText>3. Item Requirements</UiText></h3>
+          <h3 id="item-req-heading" className="text-[11px] font-bold uppercase tracking-wide text-ngo-700 dark:text-ngo-300"><UiText>4. Item Requirements</UiText></h3>
           
           <WizardField label={ui("Condition accepted")} required error={fieldErrors.condition} hint={wizardConditionHelper(condition) ? dc(wizardConditionHelper(condition)) : undefined}>
             {({ id, describedBy, invalid }) => (
@@ -1664,7 +1680,7 @@ const [altContact, setAltContact] = useState("");
 
         {/* 4. Who is behind the drive */}
         <section className="min-w-0 rounded-xl border border-slate-200/80 bg-white p-4 sm:p-5 dark:border-slate-700 dark:bg-slate-900 space-y-4" aria-labelledby="changemaker-heading">
-          <h3 id="changemaker-heading" className="text-[11px] font-bold uppercase tracking-wide text-ngo-700 dark:text-ngo-300"><UiText>4. Who is Behind the Drive</UiText></h3>
+          <h3 id="changemaker-heading" className="text-[11px] font-bold uppercase tracking-wide text-ngo-700 dark:text-ngo-300"><UiText>3. Who is Behind the Drive</UiText></h3>
 
           <div className="grid grid-cols-2 gap-4">
             <WizardField label={ui("Name")} required error={fieldErrors.changemakerName} hint={`${changemakerName.length}/100`}>
@@ -1729,7 +1745,7 @@ const [altContact, setAltContact] = useState("");
       <div className="min-w-0 space-y-5">
         {/* 3. Handover Availability */}
         <section className="min-w-0 rounded-xl border border-slate-200/80 bg-white p-4 sm:p-5 dark:border-slate-700 dark:bg-slate-900 space-y-4" aria-labelledby="handover-heading">
-          <h3 id="handover-heading" className="text-[11px] font-bold uppercase tracking-wide text-ngo-700 dark:text-ngo-300"><UiText>3. Handover Availability</UiText></h3>
+          <h3 id="handover-heading" className="text-[11px] font-bold uppercase tracking-wide text-ngo-700 dark:text-ngo-300"><UiText>4. Handover Availability</UiText></h3>
           <div className="p-3 bg-ngo-50 dark:bg-ngo-900/20 border border-ngo-100 dark:border-ngo-800 rounded-lg text-xs text-ngo-800 dark:text-ngo-200 leading-relaxed mb-4">
             <UiText>Your address is shown on the drive page. Your drive contact person&apos;s phone number is shared with a donor only after you accept their offer.</UiText>
           </div>
@@ -1782,15 +1798,20 @@ const [altContact, setAltContact] = useState("");
           <div className="grid grid-cols-2 gap-4">
             <WizardField label={ui("From (time)")} required error={fieldErrors.availableFrom}>
               {({ id, describedBy, invalid }) => (
-                <Input id={id} name="availableFrom" type="time" value={availableFrom} onChange={e => setAvailableFrom(e.target.value)} aria-describedby={describedBy} aria-invalid={invalid} className={`w-full box-border h-11 ${invalid ? "border-red-500" : ""}`} />
+                <TimePicker id={id} name="availableFrom" value={availableFrom} onChange={setAvailableFrom} aria-describedby={describedBy} aria-invalid={invalid} invalid={invalid} />
               )}
             </WizardField>
             <WizardField label={ui("To (time)")} required error={hoursProblem || fieldErrors.availableTo}>
               {({ id, describedBy, invalid }) => (
-                <Input id={id} name="availableTo" type="time" value={availableTo} onChange={e => setAvailableTo(e.target.value)} aria-describedby={describedBy} aria-invalid={invalid} className={`w-full box-border h-11 ${invalid ? "border-red-500" : ""}`} />
+                <TimePicker id={id} name="availableTo" value={availableTo} onChange={setAvailableTo} aria-describedby={describedBy} aria-invalid={invalid} invalid={invalid} />
               )}
             </WizardField>
           </div>
+          {nightHours(availableFrom, availableTo) && (
+            <p role="status" data-testid="night-hours-warning" className="rounded-lg border border-amber-300 bg-amber-50 px-3 py-2 text-xs font-semibold text-amber-900 dark:border-amber-800 dark:bg-amber-950/30 dark:text-amber-200">
+              <UiText>These hours are at night (before 7 AM or after 9 PM). Did you mean PM? Donors and pickups will use exactly these times.</UiText>
+            </p>
+          )}
         </section>
   
         {/* 5. Contact Person */}
@@ -1916,6 +1937,18 @@ const [altContact, setAltContact] = useState("");
             </span>
           </div>
 
+          <div className="flex justify-between pb-2 border-b border-stone-100 dark:border-slate-800" data-testid="review-category">
+            <span className="text-stone-500"><UiText>Category</UiText></span>
+            <span className="font-medium text-right text-stone-900 dark:text-stone-100">{dc(category) || category}</span>
+          </div>
+
+          <div className="flex justify-between pb-2 border-b border-stone-100 dark:border-slate-800" data-testid="review-urgency">
+            <span className="text-stone-500"><UiText>Urgency</UiText></span>
+            <span className="font-medium text-right text-stone-900 dark:text-stone-100">
+              {urgency === "CRITICAL" ? ui("Critical") : urgency === "HIGH" ? ui("High") : ui("Normal")}
+            </span>
+          </div>
+
           <div className="flex justify-between pb-2 border-b border-stone-100 dark:border-slate-800">
             <span className="text-stone-500"><UiText>Condition accepted</UiText></span>
             <span className="font-medium text-right max-w-[200px] sm:max-w-md text-stone-900 dark:text-stone-100">
@@ -1952,6 +1985,9 @@ const [altContact, setAltContact] = useState("");
               <p className="ck-user-text"><strong className="text-stone-900 dark:text-stone-100"><UiText>Who for:</UiText></strong> {whoFor}</p>
               <p className="ck-user-text"><strong className="text-stone-900 dark:text-stone-100"><UiText>Why now:</UiText></strong> {whyNow}</p>
               <p><strong className="text-stone-900 dark:text-stone-100"><UiText>What changes:</UiText></strong> {whatChanges}</p>
+              {details.trim() && (
+                <p className="ck-user-text"><strong className="text-stone-900 dark:text-stone-100"><UiText>Details:</UiText></strong> {details}</p>
+              )}
             </div>
           </div>
 
@@ -2372,6 +2408,14 @@ class ErrorBoundary extends React.Component<{children: React.ReactNode}, {hasErr
 }
 
 const MIN_HANDOVER_CONTACTS = 3;
+
+/** Handover hours that start before 7 AM or end after 9 PM: almost always an AM/PM slip. */
+function nightHours(from: string, to: string): boolean {
+  const h = (t: string) => { const m = /^(\d{1,2}):(\d{2})/.exec(t || ""); return m ? Number(m[1]) + Number(m[2]) / 60 : null; };
+  const f = h(from), t = h(to);
+  if (f == null || t == null) return false;
+  return f < 7 || t > 21 || f >= 21;
+}
 
 export default function NgoRequestCreationPage() {
   return (

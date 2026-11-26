@@ -7,7 +7,8 @@ import {
   independenceDayOrdinal,
   ordinalSuffix,
 } from "@/lib/independence-day";
-import type { PlatformStats } from "@/lib/api";
+import type { PlatformStats } from "@/lib/api";
+import "./IndependenceHero.css";
 
 /**
  * The 15 August pieces of the hero.

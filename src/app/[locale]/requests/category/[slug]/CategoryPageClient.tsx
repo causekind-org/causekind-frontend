@@ -146,6 +146,7 @@ export default function CategoryPageClient({ cat }: Props) {
             alt=""
             fill
             priority
+            fetchPriority="high"
             // Served as-is: these files are already 22-61 KB at 1600x900, and the
             // optimizer re-encodes them larger (measured: +34 KB on desktop).
             unoptimized

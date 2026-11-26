@@ -13,12 +13,12 @@ import { SahasHubList } from "@/features/sahas/SahasHubList";
 const TABS: SahasTab[] = ["active", "upcoming", "completed"];
 
 /** /sahas — the Sahas Campaigns hub (design board HF · /sahas hub). */
-export default function SahasHubPage({ intro }: { intro?: ReactNode }) {
+export default function SahasHubPage({ intro, outro }: { intro?: ReactNode; outro?: ReactNode }) {
   if (!FEATURES.sahas) notFound();
-  return <SahasHub intro={intro} />;
+  return <SahasHub intro={intro} outro={outro} />;
 }
 
-function SahasHub({ intro }: { intro?: ReactNode }) {
+function SahasHub({ intro, outro }: { intro?: ReactNode; outro?: ReactNode }) {
   const ui = useUiText();
   const locale = useLocale();
   const [cards, setCards] = useState<SahasCampaignCard[] | null>(null);
@@ -109,6 +109,9 @@ function SahasHub({ intro }: { intro?: ReactNode }) {
         ) : (
           <SahasHubList cards={shown} locale={locale} />
         )}
+
+        {/* Server-rendered explainer below the list (page.tsx), visible without JS. */}
+        {outro}
       </div>
     </div>
   );

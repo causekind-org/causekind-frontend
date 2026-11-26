@@ -1,0 +1,108 @@
+/*
+  Moved out of src/styles.css (25 Nov 2026) so only the page that uses it
+  downloads it; every page used to block its first paint on these rules.
+  Unchanged otherwise.
+*/
+/* ── Card-deck carousel: active card pops out of its slot, then recedes
+      behind the incoming card, which slides in over the top of it.
+      Tuned: 0.7s, gentle pop (1.02), enters from 110% (clears padded stage). ── */
+@keyframes card-pop-behind-left {
+  0% {
+    transform: translate(0, 0) scale(1);
+    opacity: 1;
+    filter: drop-shadow(0 10px 18px rgba(28, 18, 10, 0.10));
+  }
+
+  35% {
+    transform: translate(-1.5%, -1%) scale(1.02);
+    opacity: 1;
+    filter: drop-shadow(0 30px 46px rgba(28, 18, 10, 0.22));
+  }
+
+  /* pop out — shadow lifts */
+  70% {
+    opacity: 0.8;
+  }
+
+  100% {
+    transform: translate(-5%, 1.5%) scale(0.88);
+    opacity: 0;
+    filter: drop-shadow(0 4px 8px rgba(28, 18, 10, 0.04));
+  }
+
+  /* recede — shadow grounds */
+}
+
+@keyframes card-pop-behind-right {
+  0% {
+    transform: translate(0, 0) scale(1);
+    opacity: 1;
+    filter: drop-shadow(0 10px 18px rgba(28, 18, 10, 0.10));
+  }
+
+  35% {
+    transform: translate(1.5%, -1%) scale(1.02);
+    opacity: 1;
+    filter: drop-shadow(0 30px 46px rgba(28, 18, 10, 0.22));
+  }
+
+  70% {
+    opacity: 0.8;
+  }
+
+  100% {
+    transform: translate(5%, 1.5%) scale(0.88);
+    opacity: 0;
+    filter: drop-shadow(0 4px 8px rgba(28, 18, 10, 0.04));
+  }
+}
+
+@keyframes card-cover-from-right {
+  from {
+    transform: translateX(110%) scale(0.97);
+    filter: drop-shadow(-18px 34px 50px rgba(28, 18, 10, 0.26));
+  }
+
+  /* airborne — deep shadow */
+  to {
+    transform: translateX(0) scale(1);
+    filter: drop-shadow(0 0 0 rgba(28, 18, 10, 0));
+  }
+
+  /* landed — shadow settles */
+}
+
+@keyframes card-cover-from-left {
+  from {
+    transform: translateX(-110%) scale(0.97);
+    filter: drop-shadow(18px 34px 50px rgba(28, 18, 10, 0.26));
+  }
+
+  to {
+    transform: translateX(0) scale(1);
+    filter: drop-shadow(0 0 0 rgba(28, 18, 10, 0));
+  }
+}
+
+.animate-card-pop-behind-left,
+.animate-card-pop-behind-right,
+.animate-card-cover-right,
+.animate-card-cover-left {
+  will-change: transform, opacity, filter;
+}
+
+.animate-card-pop-behind-left {
+  animation: card-pop-behind-left 0.7s cubic-bezier(0.45, 0.05, 0.25, 1) both;
+}
+
+.animate-card-pop-behind-right {
+  animation: card-pop-behind-right 0.7s cubic-bezier(0.45, 0.05, 0.25, 1) both;
+}
+
+.animate-card-cover-right {
+  animation: card-cover-from-right 0.7s cubic-bezier(0.32, 0.72, 0, 1) both;
+}
+
+.animate-card-cover-left {
+  animation: card-cover-from-left 0.7s cubic-bezier(0.32, 0.72, 0, 1) both;
+}

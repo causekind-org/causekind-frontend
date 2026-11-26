@@ -281,7 +281,14 @@ function NgoDetailsEditor() {
 
   // Keep the URL in sync with the current step.
   useEffect(() => {
-    if (loading || data.applicationId || currentStep === "submitted") return;
+    if (loading) return;
+    if (data.applicationId || currentStep === "submitted" || currentStep === "email-verification") {
+      // Past the form (email code, or submitted): drop the stale ?step=review-submit.
+      if (typeof window !== "undefined" && new URLSearchParams(window.location.search).has("step")) {
+        window.history.replaceState(null, "", window.location.pathname);
+      }
+      return;
+    }
     if (typeof window !== "undefined") {
       const currentSearch = new URLSearchParams(window.location.search);
       if (currentSearch.get("step") !== currentStep) {
@@ -949,16 +956,7 @@ function NgoDetailsEditor() {
                       >
                         {busy ? "Saving…" : "Save draft"}
                       </button>
-                      {NGO_STEPS.indexOf(currentStep as NGOStep) > 0 && (
-                        <button
-                          type="button"
-                          disabled={busy}
-                          onClick={handlePreviousSection}
-                          className="min-h-[44px] rounded-xl border border-stone-300 dark:border-zinc-700 px-3.5 py-2 text-xs font-bold text-stone-700 dark:text-stone-300 hover:bg-stone-50 dark:hover:bg-zinc-800 transition-colors disabled:opacity-50"
-                        >
-                          Previous
-                        </button>
-                      )}
+                      {/* No "Previous" here: each step already has its own Back button. */}
                     </div>
                   )}
                 </div>

@@ -97,6 +97,7 @@ describe("admin NGO review: current wizard", { timeout: 20000 }, () => {
   it("can request changes on new fields, documents and a representative", async () => {
     vi.mocked(adminGetNgoApplication).mockResolvedValue(v2Detail as never);
     render(<NgoReviewPanel initialApplicationId="CK-NGO-2026-V2000001" />);
+    await userEvent.selectOptions(await screen.findByRole("combobox", { name: /^Decision/ }), "NEEDS_INFORMATION");
     const items = await screen.findByRole("group", { name: /Items that need changes/i });
     for (const name of ["PAN number", "PAN card", "Representative 2 email", "Representative 1 ID proof", "80G certificate", "Section 8 Licence (Form INC-12)"].slice(0, 5)) {
       expect(within(items).getByText(name)).toBeInTheDocument();
@@ -121,6 +122,7 @@ describe("admin NGO review: current wizard", { timeout: 20000 }, () => {
     expect(screen.queryByTestId("representative")).not.toBeInTheDocument();
     expect(screen.getAllByRole("heading", { level: 4 }).map((h) => h.textContent)).toEqual(["Documents"]);
     expect(screen.getAllByText("Current Trustee / Office-Bearer Info").length).toBeGreaterThan(0);
+    await userEvent.selectOptions(screen.getByRole("combobox", { name: /^Decision/ }), "NEEDS_INFORMATION");
     const checklist = screen.getByRole("group", { name: /Items that need changes/i });
     expect(within(checklist).getByText("Official email")).toBeInTheDocument();
   });

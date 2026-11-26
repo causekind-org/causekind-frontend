@@ -387,7 +387,13 @@
       color-mix(in srgb, var(--ck-role-accent, #0ea5e9) 90%, transparent) 50%,
       color-mix(in srgb, var(--ck-role-accent, #0ea5e9) 55%, transparent) 80%,
       transparent 100%);
-  animation: ck-divider-sweep 6s linear infinite;
+}
+
+@media (pointer: coarse), (prefers-reduced-motion: reduce) {
+  .ck-cat-divider {
+    animation: none;
+    background-position: 50% 0, 0 0;
+  }
 }
 
 @media (pointer: coarse), (prefers-reduced-motion: reduce) {

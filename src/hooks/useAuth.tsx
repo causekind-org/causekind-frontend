@@ -1,5 +1,6 @@
 "use client";
 
+import { clearNgoStatus } from "@/lib/ngoStatusCache";
 import {
   createContext,
   useContext,
@@ -177,6 +178,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     localStorage.removeItem("ck_token");
     sessionStorage.removeItem("ck_token");
     sessionStorage.removeItem("ck_ngo_profile_toast_shown");
+    clearNgoStatus(); // the next account must never see this NGO's last-known status
     setUserState(null);
 
     const BASE = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8080";

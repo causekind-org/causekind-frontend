@@ -10,7 +10,8 @@ export function useLocations(countryIso: string, stateIso: string) {
   const [dialCodesLoading, setDialCodesLoading] = useState(true);
 
   useEffect(() => {
-    getCountries().then(setCountries);
+    // A failed server action (e.g. an empty response under load) must not crash the page.
+    getCountries().then(setCountries).catch(() => setCountries([]));
     let active = true;
     getDialCodes()
       .then((codes) => { if (active) setDialCodes(codes); })
@@ -21,7 +22,7 @@ export function useLocations(countryIso: string, stateIso: string) {
 
   useEffect(() => {
     if (countryIso) {
-      getStates(countryIso).then(setStates);
+      getStates(countryIso).then(setStates).catch(() => setStates([]));
     } else {
       setStates([]);
     }
@@ -29,7 +30,7 @@ export function useLocations(countryIso: string, stateIso: string) {
 
   useEffect(() => {
     if (countryIso && stateIso) {
-      getCities(countryIso, stateIso).then(setCities);
+      getCities(countryIso, stateIso).then(setCities).catch(() => setCities([]));
     } else {
       setCities([]);
     }

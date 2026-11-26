@@ -4,8 +4,9 @@ import { LandingText, LandingAttributes } from "@/components/LandingTranslation"
 
 
 import Link from "@/components/AppLink";
-import { usePathname } from "next/navigation";
 import { useRouter } from "@/hooks/useAppRouter";
+// Visitor path without the internal /en segment, so server and client agree (React #418).
+import { useSitePathname as usePathname } from "@/lib/useSitePathname";
 import { Home, LayoutDashboard, Megaphone, ClipboardList, User, MessageCircle, X, Mail, Phone, Plus, type LucideIcon } from "lucide-react";
 import { useState, useEffect, useLayoutEffect, useRef } from "react";
 import { useAuth } from "@/hooks/useAuth";

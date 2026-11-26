@@ -1,5 +1,7 @@
 "use client";
 
+import Image from "next/image";
+
 import React from "react";
 import {
   Eye, Handshake, Repeat, Users, Megaphone, HeartHandshake, ShieldCheck,
@@ -9,7 +11,7 @@ import { NgoStepsScrollSection } from "./NgoStepsScrollSection";
 import type { NgoStatusData } from "./useNgoStatus";
 import { NgoHeroRedesign } from "./NgoHeroRedesign";
 import { NgoCard, NgoSectionHeader, NgoMarquee, NgoFinalCtaBand } from "./NgoSharedComponents";
-import { RevealGroup, SwipeRow, NgoSidewaysHeader, NgoStackCards, NgoPhotoPanel } from "./NgoMotion";
+import { RevealGroup, SwipeRow, NgoStackCards, NgoPhotoPanel } from "./NgoMotion";
 import { ArchPhoto, FadeUp, GlassPhotoCard, IconBubble, IMG } from "./NgoShowcase";
 
 const WHY_JOIN = [
@@ -63,7 +65,7 @@ export function PreApprovalLanding({ status }: { status: NgoStatusData }) {
 
           <div className="lg:col-span-7">
             <NgoSectionHeader eyebrow="Why join CauseKind" h2="Visibility, trust and transparency, built in." className="!mb-10" />
-            <SwipeRow label="Why join CauseKind" className="flex flex-col gap-4">
+            <SwipeRow label="Why join CauseKind" className="flex flex-col gap-4" stack>
               {WHY_JOIN.map(({ n, title, body, Icon }) => (
                 <div key={n} className="ngo-card ngo-card-interactive !flex-row items-center gap-5 !p-6 md:!p-7">
                   <IconBubble><Icon className="h-6 w-6" strokeWidth={1.8} /></IconBubble>
@@ -85,8 +87,8 @@ export function PreApprovalLanding({ status }: { status: NgoStatusData }) {
       {/* 5. CHALLENGES: bento mosaic of photo and colour tiles */}
       <section className="ngo-section ngo-band-cream">
         <div className="ngo-container">
-          <NgoSidewaysHeader eyebrow="The challenges NGOs face" h2="Doing good is hard enough." />
-          <SwipeRow label="The challenges NGOs face" className="ngo-bento">
+          <NgoSectionHeader eyebrow="The challenges NGOs face" h2="Doing good is hard enough." />
+          <SwipeRow label="The challenges NGOs face" className="ngo-bento" reveal={false}>
             <GlassPhotoCard src={IMG + "ngo-winter-blankets-elderly-landscape.webp"} alt="Volunteers giving warm blankets to elderly villagers seated on charpais"
               className="h-full" sizes="(max-width: 768px) 100vw, 480px">
               <span className="ngo-tile-tag">Resources</span>
@@ -131,9 +133,9 @@ export function PreApprovalLanding({ status }: { status: NgoStatusData }) {
           <NgoSectionHeader eyebrow="NGO registration process" h2="Create your account in minutes." align="center" />
           <SwipeRow label="NGO registration process" className="ngo-timeline">
             {REGISTRATION.map((s) => (
-              <div key={s.n} className="flex flex-col items-center text-center">
+              <div key={s.n} className="flex h-full flex-col items-center text-center">
                 <span className="ngo-timeline-dot">{s.n}</span>
-                <div className="ngo-card mt-8 w-full items-center !p-8">
+                <div className="ngo-card mt-8 w-full flex-1 items-center justify-center !p-8">
                   <h3 className="ngo-heading text-2xl md:text-[28px]">{s.title}</h3>
                   <p className="mt-2 opacity-75">{s.body}</p>
                 </div>
@@ -171,15 +173,13 @@ export function PreApprovalLanding({ status }: { status: NgoStatusData }) {
         <div className="ngo-container grid grid-cols-1 items-start gap-12 lg:grid-cols-12 lg:gap-20">
           <div className="lg:col-span-5 lg:sticky lg:top-28">
             <NgoSectionHeader eyebrow="Documents required" h2="Keep these ready." className="!mb-8" />
-            <FadeUp className="relative">
-              <div className="ngo-blob -right-6 -top-6 h-40 w-40" aria-hidden />
-              <div className="relative aspect-[4/3] overflow-hidden rounded-[32px] shadow-2xl">
-                <ArchPhoto src={IMG + "ngo-classroom-notebooks-landscape.webp"} alt="A teacher handing notebooks to children seated on a mat in a village classroom"
-                  className="absolute inset-0 !rounded-none !shadow-none" sizes="(max-width: 1024px) 90vw, 460px" />
-              </div>
-            </FadeUp>
+            {/* A plain photo (the ArchPhoto here collapsed to 0 height, leaving an empty card and a big blob). */}
+            <div className="relative aspect-[4/3] overflow-hidden rounded-[32px] shadow-2xl">
+              <Image src={IMG + "ngo-classroom-notebooks-landscape.webp"} alt="A teacher handing notebooks to children seated on a mat in a village classroom"
+                fill sizes="(max-width: 1024px) 90vw, 460px" className="object-cover" loading="lazy" />
+            </div>
           </div>
-          <div className="lg:col-span-7 min-w-0"><SwipeRow label="Documents required" className="grid grid-cols-1 sm:grid-cols-2 gap-x-10 md:border-t md:border-[var(--ngo-line)]">
+          <div className="lg:col-span-7 min-w-0"><SwipeRow label="Documents required" reveal={false} className="ngo-docs-grid grid grid-cols-1 sm:grid-cols-2 gap-x-10">
             {DOCUMENTS.map(({ title, body, Icon }) => (
               <div key={title} className="ngo-check-row !border-t-0">
                 <IconBubble><Icon className="h-6 w-6" strokeWidth={1.8} /></IconBubble>
@@ -211,14 +211,24 @@ export function PreApprovalLanding({ status }: { status: NgoStatusData }) {
       {/* 10. FINAL CTA */}
       <NgoFinalCtaBand
         headline={
-          <>
-            Ready to get{" "}
-            <span className="ngo-gold-underline">verified?</span>
-          </>
+          status.status === "under_review" ? (
+            <>
+              Your application is{" "}
+              <span className="ngo-gold-underline">under review.</span>
+            </>
+          ) : (
+            <>
+              Ready to get{" "}
+              <span className="ngo-gold-underline">verified?</span>
+            </>
+          )
         }
-        primaryButton={{ label: "Complete registration", href: registerHref, showArrow: true }}
+        primaryButton={status.status === "under_review"
+          ? { label: "View application status", href: registerHref, showArrow: true }
+          : { label: "Complete registration", href: registerHref, showArrow: true }}
         photos={[
-          { src: "/images/ngo-landing/ngo-school-supplies-girl-portrait.webp", alt: "A volunteer handing notebooks and a pencil box to a smiling schoolgirl" },
+          // A landscape photo: the portrait one was cut off in this wide band (the girl and the giving were lost).
+          { src: "/images/ngo-landing/ngo-ration-distribution-landscape.webp", alt: "Volunteers handing a grain sack and ration box to villagers waiting in line" },
           { src: "/images/ngo-landing/ngo-children-school-bags-portrait.webp", alt: "Village children smiling with their new school bags" },
         ]}
       />

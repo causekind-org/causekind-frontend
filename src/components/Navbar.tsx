@@ -3,65 +3,113 @@ import { UiText, useUiText } from "@/components/UiText";
 
 
 import { serverDate } from "@/lib/serverTime";
-import { useState, useEffect, useRef, useCallback } from "react";
-// @ts-expect-error -- hand-maintained JSX component has no declaration file.
-import StaggeredMenu from "@/components/StaggeredMenu";
+import { useState, useEffect, useLayoutEffect, useRef, useCallback } from "react";
+import dynamic from "next/dynamic";
+import type { ComponentType } from "react";
 import Link from "@/components/AppLink";
 import { RakshaBandhanWordmark } from "@/components/brand/RakshaBandhanWordmark";
 import { isRakshaBandhanCampaignActive } from "@/lib/raksha-bandhan";
 import { LogoVideo } from "@/components/LogoVideo";
-import { usePathname } from "next/navigation";
-import { locales } from "@/i18n/config";
 import { useRouter } from "@/hooks/useAppRouter";
+// Visitor path without the internal /en segment, so server and client agree (React #418).
+import { useSitePathname as usePathname } from "@/lib/useSitePathname";
 import { useTranslations } from "next-intl";
-import { motion, AnimatePresence } from "framer-motion";
 import { LanguageSwitcher } from "@/components/LanguageSwitcher";
 import { Menu, X, LogIn, UserPlus, Shield, Sun, Moon, User, LayoutGrid, LogOut, Globe, ChevronRight, ChevronDown, Heart, HandHeart, Compass, HeartHandshake, HelpCircle, Mail, Phone, MessageCircle, ArrowRight, Sparkles, ShieldCheck } from "lucide-react";
 import { useAuth, type AuthUser } from "@/hooks/useAuth";
 import { useRoleColors } from "@/hooks/useRoleColors";
-import { getMyProfile, getMyMatches, getMyNgoApplication, type UserProfile, type ItemMatch } from "@/lib/api";
+import { readNgoStatus, writeNgoStatus } from "@/lib/ngoStatusCache";
+import { getMyProfile, getMyMatches, getMyNgoApplication, getMyNgoDriveOffers, getNgoOverview, type UserProfile, type ItemMatch } from "@/lib/api";
 import { FEATURES } from "@/lib/features";
 import { Button } from "@/components/ui/button";
 import { NotificationBell } from "@/components/NotificationBell";
 import { RakshaBandhanNavAdornment } from "@/components/RakshaBandhanNavAdornment";
 import { GlobalSearch, SearchTrigger } from "@/components/GlobalSearch";
 import { useTilt } from "@/hooks/useTilt";
-import DonateMegaMenu from "@/components/DonateMegaMenu";
+// Only rendered inside the open In-Kind panel; it uses framer-motion, so it is
+// loaded on demand to keep that library out of the shared header bundle.
+const DonateMegaMenu = dynamic(() => import("@/components/DonateMegaMenu"), { ssr: false });
 import { DonateNowButton } from "@/components/donate/DonateNowButton";
-import { openDonateChoice } from "@/components/donate/DonateChoice";
+import { openDonateChoice } from "@/components/donate/donateChoiceEvents";
 import { DONATE_HREF } from "@/lib/donateScroll";
 import { isNgoRole } from "@/lib/isNgoRole";
 import { toast } from "@/lib/toast";
 import { useNgoStatus, triggerNgoLockedToast } from "@/components/ngo-landing/useNgoStatus";
-import {
-  AlertDialog,
-  AlertDialogContent,
-  AlertDialogHeader,
-  AlertDialogTitle,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogCancel,
-  AlertDialogAction,
-} from "@/components/ui/alert-dialog";
-import {
-  DropdownMenu,
-  DropdownMenuTrigger,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuSeparator,
-} from "@/components/ui/dropdown-menu";
+// Radix AlertDialog only loads on the first "Log out" click (Lighthouse, 24 Nov 2026).
+const LogoutConfirmDialog = dynamic(() => import("@/components/LogoutConfirmDialog"), { ssr: false });
 
 
-/** "Cause" reveals a letter at a time; the container only sets the cadence. */
-const logoStagger = {
-  hidden: {},
-  visible: { transition: { staggerChildren: 0.045, delayChildren: 0.08 } },
-};
+/*
+  The header no longer uses framer-motion (Lighthouse, 24 Nov 2026): it was
+  the only reason the library sat in the bundle every page hydrates. The logo
+  entrance, the travelling nav pill and the mega-menu panels are CSS now
+  (styles.css "Header motion"), with the same timings.
+*/
 
-const logoLetterVariants = {
-  hidden:  { opacity: 0, y: 8 },
-  visible: { opacity: 1, y: 0 },
-};
+/**
+ * The one glass pill behind the desktop nav. Each item that should own it
+ * marks itself `data-pill-on="true"`; this measures that item and moves the
+ * pill there with a CSS transition, so it still glides between items as the
+ * framer `layoutId` pill did.
+ *
+ * <p>Before it has measured (the server render and the first client render)
+ * the items draw their own static pill, so the HTML and hydration match and
+ * the active item is highlighted from the first paint. `onReady` tells the
+ * header to stop drawing those.
+ */
+function NavGlassPill({ onReady }: { onReady: () => void }) {
+  const ref = useRef<HTMLSpanElement>(null);
+  const [box, setBox] = useState<{ x: number; y: number; w: number; h: number } | null>(null);
+  const [animate, setAnimate] = useState(false);
+  const [, setResizeTick] = useState(0);
+
+  useEffect(() => {
+    const onResize = () => setResizeTick((t) => t + 1);
+    window.addEventListener("resize", onResize);
+    return () => window.removeEventListener("resize", onResize);
+  }, []);
+
+  // No dependency list on purpose: the owner can change on any header render.
+  useLayoutEffect(() => {
+    const nav = ref.current?.parentElement;
+    if (!nav) return;
+    const owner = nav.querySelector<HTMLElement>('[data-pill-on="true"]');
+    let next: { x: number; y: number; w: number; h: number } | null = null;
+    if (owner) {
+      const n = nav.getBoundingClientRect();
+      const r = owner.getBoundingClientRect();
+      next = { x: r.left - n.left - nav.clientLeft, y: r.top - n.top - nav.clientTop, w: r.width, h: r.height };
+    }
+    setBox((prev) => {
+      if (prev === null && next === null) return prev;
+      if (prev && next && prev.x === next.x && prev.y === next.y && prev.w === next.w && prev.h === next.h) return prev;
+      return next;
+    });
+    onReady();
+  });
+
+  // First placement jumps; every move after that glides.
+  useEffect(() => {
+    if (!box || animate) return;
+    const id = requestAnimationFrame(() => setAnimate(true));
+    return () => cancelAnimationFrame(id);
+  }, [box, animate]);
+
+  return (
+    <span
+      ref={ref}
+      aria-hidden="true"
+      className="glass-pill ck-nav-pill pointer-events-none absolute left-0 top-0 rounded-full"
+      data-animate={animate ? "true" : undefined}
+      style={{
+        width: box?.w ?? 0,
+        height: box?.h ?? 0,
+        transform: box ? `translate(${box.x}px, ${box.y}px)` : undefined,
+        opacity: box ? 1 : 0,
+      }}
+    />
+  );
+}
 
 /** How long the "NGO Approved" navbar pill stays after the NGO first sees its approval. */
 const NGO_APPROVED_PILL_MS = 2 * 60 * 1000;
@@ -79,21 +127,14 @@ export function CauseKindLogo({ size = "md", hideIcon = false, seasonal = true }
   const rakshaBandhan = isRakshaBandhanCampaignActive();
 
   return (
-    <motion.span
-      className={`font-extrabold tracking-tight ${sizes[size]} flex items-center gap-2`}
+    <span
+      className={`ck-logo-hover font-extrabold tracking-tight ${sizes[size]} flex items-center gap-2`}
       aria-label="CauseKind"
-      whileHover={{ scale: 1.03 }}
-      transition={{ type: "spring", stiffness: 400, damping: 25 }}
     >
       {!hideIcon && (
-        <motion.div
-          className="shrink-0"
-          initial={{ scale: 0.3, opacity: 0, rotate: -20 }}
-          animate={{ scale: 1, opacity: 1, rotate: 0 }}
-          transition={{ type: "spring", stiffness: 320, damping: 18, delay: 0.05 }}
-        >
+        <div className="ck-logo-icon-in shrink-0">
           <LogoVideo size={dimensions[size].w} />
-        </motion.div>
+        </div>
       )}
 
       {/* Styled text again, not the shipped asset.
@@ -118,35 +159,21 @@ export function CauseKindLogo({ size = "md", hideIcon = false, seasonal = true }
       ) : (
         <span className={`relative flex items-center font-extrabold ${WORDMARK_SIZE[size]}`} aria-hidden="true">
           {/* "Cause" — stagger letter reveal */}
-          <motion.span
-            className="text-stone-900 dark:text-stone-100 tracking-tight flex"
-            variants={logoStagger}
-            initial="hidden"
-            animate="visible"
-          >
+          <span className="text-stone-900 dark:text-stone-100 tracking-tight flex">
             {"Cause".split("").map((l, i) => (
-              <motion.span
-                key={i}
-                variants={logoLetterVariants}
-                transition={{ duration: 0.28, ease: [0.22, 1, 0.36, 1] }}
-              >
+              <span key={i} className="ck-logo-letter-in" style={{ animationDelay: `${0.08 + i * 0.045}s` }}>
                 {l}
-              </motion.span>
+              </span>
             ))}
-          </motion.span>
+          </span>
 
           {/* "Kind" — slides in as one word after "Cause", then shimmers */}
-          <motion.span
-            className="ck-logo-kind-shimmer"
-            initial={{ opacity: 0, y: 6 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.3, ease: [0.22, 1, 0.36, 1], delay: 0.44 }}
-          >
+          <span className="ck-logo-kind-shimmer ck-logo-kind-in">
             Kind
-          </motion.span>
+          </span>
         </span>
       )}
-    </motion.span>
+    </span>
   );
 }
 
@@ -300,12 +327,9 @@ export function SiteHeader() {
   // Resolved literals for GSAP/canvas colour props — see useRoleColors.
   const roleColors = useRoleColors();
   const router = useRouter();
-  const rawPathname = usePathname();
-  // Rewrites expose /en/contact during prerender and /contact in the browser.
-  // Keep route-dependent markup identical on both sides of hydration.
-  const segments = rawPathname.split("/");
-  const pathname = locales.includes(segments[1] as (typeof locales)[number])
-    ? `/${segments.slice(2).join("/")}` : rawPathname;
+  const pathname = usePathname();
+  const [navPillReady, setNavPillReady] = useState(false);
+  const markNavPillReady = useCallback(() => setNavPillReady(true), []);
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   // The CSS-only menu ships with the header so the first tap never waits for a chunk.
   // Closing the menu makes it inert, which pushes focus out to <body>. Without
@@ -318,8 +342,13 @@ export function SiteHeader() {
     wasSidebarOpen.current = isSidebarOpen;
   }, [isSidebarOpen]);
   const [logoutDialogOpen, setLogoutDialogOpen] = useState(false);
+  // Mount the dialog on first use, then keep it so its close animation runs.
+  const logoutDialogUsed = useRef(false);
+  if (logoutDialogOpen) logoutDialogUsed.current = true;
   const [profile, setProfile] = useState<UserProfile | null>(null);
   const [matches, setMatches] = useState<ItemMatch[]>([]);
+  /** Completed handovers outside item matches: a donor's drive gifts, or an NGO's received drive handovers. */
+  const [driveHandoversDone, setDriveHandoversDone] = useState(0);
   const [avatarDataUrl, setAvatarDataUrl] = useState<string | null>(null);
 
   // Desktop mega-menu hover state and timers.
@@ -494,18 +523,43 @@ export function SiteHeader() {
     roRef.current = ro;
   }, []);
 
+  // NGO accounts: warm up the pages their buttons open (dashboard, Start a Drive, profile, handovers),
+  // so a click opens them at once instead of waiting for the page to load after the click.
+  useEffect(() => {
+    if (!user || !(user.role === "NGO" || user.role === "NGO_PARTNER")) return;
+    const id = window.setTimeout(() => {
+      for (const href of ["/dashboard/ngo", "/ngo/drives/new", "/profile/ngo-details", "/profile", "/ngo/handovers"]) {
+        try { router.prefetch(href); } catch { /* prefetch is best effort */ }
+      }
+    }, 1500);
+    return () => window.clearTimeout(id);
+  }, [user, router]);
+
+  // The name is needed before the menu opens (it showed the email prefix, e.g. "asha.kiran.audit").
+  useEffect(() => {
+    if (!user) { setProfile(null); return; }
+    getMyProfile().then(setProfile).catch(() => {});
+  }, [user]);
+
   useEffect(() => {
     if (user && isSidebarOpen) {
       const savedAvatar = localStorage.getItem(`ck_profile_image_${user.email}`);
       setAvatarDataUrl(savedAvatar);
 
-      getMyProfile()
-        .then(setProfile)
-        .catch(() => {});
-
       getMyMatches()
         .then(setMatches)
         .catch(() => {});
+
+      const ngo = user.role === "NGO" || user.role === "NGO_PARTNER";
+      if (ngo) {
+        getNgoOverview()
+          .then((o) => setDriveHandoversDone((o?.handovers ?? []).filter((h) => h.received).length))
+          .catch(() => {});
+      } else if (user.role === "DONOR") {
+        getMyNgoDriveOffers()
+          .then((list) => setDriveHandoversDone(list.filter((o) => ["COMPLETED", "ISSUE_WINDOW_OPEN"].includes(o.status)).length))
+          .catch(() => {});
+      }
     }
   }, [user, isSidebarOpen]);
 
@@ -576,9 +630,12 @@ export function SiteHeader() {
   const ui = useUiText();
 
   // ── Derived panel data (all real, no hardcoded values) ────────────────────
+  const isNgoUser = user?.role === "NGO" || user?.role === "NGO_PARTNER";
+  const displayName = ((isNgoUser ? profile?.organizationName : null) || profile?.fullName || user?.fullName
+    || user?.email?.split("@")[0] || "").trim() || "?";
   const livesTouched = matches.filter(
     m => m.status === "COMPLETED" || m.status === "FULFILLED"
-  ).length;
+  ).length + driveHandoversDone;
 
   const profileCompletion = (() => {
     let score = 0;
@@ -645,6 +702,7 @@ export function SiteHeader() {
   const isNgoDashboard = isNgo;
 
   const [ngoApplicationState, setNgoApplicationState] = useState("CHECKING");
+  const ngoSnapshotKey = isNgo && user ? String(user.id ?? user.email ?? "") : "";
   useEffect(() => {
     if (!isNgo || !user) return;
     let active = true;
@@ -653,17 +711,24 @@ export function SiteHeader() {
       const current = ++sequence;
       try {
         const app = await getMyNgoApplication();
-        if (active && current === sequence) setNgoApplicationState(app?.status || "INCOMPLETE");
+        if (active && current === sequence) {
+          setNgoApplicationState(app?.status || "INCOMPLETE");
+          writeNgoStatus(ngoSnapshotKey, { applicationStatus: app?.status || "INCOMPLETE" });
+        }
       } catch {
-        if (active && current === sequence) setNgoApplicationState("UNAVAILABLE");
+        if (active && current === sequence) setNgoApplicationState((prev) => (prev === "CHECKING" ? "UNAVAILABLE" : prev));
       }
     };
-    setNgoApplicationState("CHECKING");
+    // Show the last-known pill at once (it flashed "Checking Application…" on every page change).
+    setNgoApplicationState((prev) => {
+      const known = readNgoStatus(ngoSnapshotKey)?.applicationStatus;
+      return known ?? (prev !== "CHECKING" && prev !== "UNAVAILABLE" ? prev : "CHECKING");
+    });
     void refresh();
     window.addEventListener("ngo-application-submitted", refresh);
     window.addEventListener("focus", refresh);
     return () => { active = false; window.removeEventListener("ngo-application-submitted", refresh); window.removeEventListener("focus", refresh); };
-  }, [isNgo, user, pathname]);
+  }, [isNgo, user, pathname, ngoSnapshotKey]);
   // NGO only: the "NGO Approved" pill shows for two minutes after the NGO first sees its
   // approval (first-seen time kept per account in localStorage), then never again.
   const [ngoApprovedPillExpired, setNgoApprovedPillExpired] = useState(false);
@@ -781,7 +846,7 @@ export function SiteHeader() {
         ngoDriveItem(ui("Post a Drive"), "/ngo/drives/new",
           !ngoStatus.isVerified || ngoStatus.isPhotosDue, !ngoStatus.canStartDrive),
         ngoDriveItem(ui("Live Drives"), "/dashboard/ngo#live-drives", !ngoStatus.isVerified),
-        ngoDriveItem(ui("Handovers & Photos"), "/ngo/handovers", !ngoStatus.isVerified),
+        ngoDriveItem(ui("Handovers & Photos"), "/dashboard/ngo?tab=activity&filter=handovers", !ngoStatus.isVerified),
       ],
     },
     { label: t("nav.blog"), link: "/blog", ariaLabel: t("nav.blog"), active: isActive("/blog") },
@@ -802,25 +867,9 @@ export function SiteHeader() {
   return (
     <>
       {/* ── Logout confirmation dialog ── */}
-      <AlertDialog open={logoutDialogOpen} onOpenChange={setLogoutDialogOpen}>
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>{t("logout.title")}</AlertDialogTitle>
-            <AlertDialogDescription>
-              {t("logout.description")}
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel>{t("logout.cancel")}</AlertDialogCancel>
-            <AlertDialogAction
-              onClick={confirmLogout}
-              className="bg-[var(--ck-role-accent)] hover:bg-[var(--ck-role-hover)] text-white border-0"
-            >
-              {t("logout.confirm")}
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
+      {logoutDialogUsed && (
+        <LogoutConfirmDialog open={logoutDialogOpen} onOpenChange={setLogoutDialogOpen} onConfirm={confirmLogout} />
+      )}
 
       <header data-calm-header
         ref={headerRef}
@@ -914,6 +963,7 @@ export function SiteHeader() {
 
           {/* Center navigation capsule */}
           <nav className="glass-liquid hidden lg:flex flex-nowrap whitespace-nowrap items-center gap-1 lg:max-[1440px]:gap-0.5 bg-white/55 dark:bg-zinc-900/55 backdrop-blur-xl border border-white/60 dark:border-white/10 ring-1 ring-[#e5e2d5]/50 dark:ring-stone-800/60 rounded-full p-1 shadow-[0_4px_20px_-6px_rgba(28,25,23,0.12),inset_0_1px_0_rgba(255,255,255,0.55)] dark:shadow-[0_4px_20px_-6px_rgba(0,0,0,0.5),inset_0_1px_0_rgba(255,255,255,0.06)]">
+            <NavGlassPill onReady={markNavPillReady} />
             {navLinks.map((link) => {
               // FAQ and Contact live inside the "About Us" dropdown on desktop
               // instead of as separate pills — skip them here.
@@ -937,6 +987,7 @@ export function SiteHeader() {
                       type="button"
                       onClick={() => setOpenMegaMenu((prev) => (prev === "about" ? null : "about"))}
                       aria-expanded={isAboutMegaMenuOpen}
+                      data-pill-on={isAboutMegaMenuOpen || (groupActive && !hoveredHref) ? "true" : undefined}
                       className={`group relative text-sm px-4 py-2 lg:max-[1440px]:px-2.5 whitespace-nowrap transition-all duration-300 rounded-full flex items-center gap-1.5 font-semibold outline-none cursor-pointer ${
                         groupActive || isAboutMegaMenuOpen
                           ? "text-[var(--ck-role-accent)]"
@@ -947,13 +998,7 @@ export function SiteHeader() {
                           exactly one element ever claims `nav-glass-pill`. Two
                           claimants at once make Framer pick a winner and the
                           slide stutters. */}
-                      {(isAboutMegaMenuOpen || (groupActive && !hoveredHref)) && (
-                        <motion.span
-                          layoutId="nav-glass-pill"
-                          transition={{ type: "spring", stiffness: 380, damping: 32 }}
-                          className="glass-pill absolute inset-0 rounded-full"
-                        />
-                      )}
+                      {!navPillReady && (isAboutMegaMenuOpen || (groupActive && !hoveredHref)) && <span className="glass-pill absolute inset-0 rounded-full" />}
                       {groupActive && <span className="relative z-10 w-2.5 h-2.5 rounded-full bg-[var(--ck-role-highlight)] shrink-0" />}
                       <span className="relative z-10">{triggerLabel}</span>
                       <ChevronDown
@@ -998,19 +1043,14 @@ export function SiteHeader() {
                       data-tour="nav-requests"
                       onFocus={handleInKindMouseEnter}
                       aria-expanded={isInKindMegaMenuOpen}
+                      data-pill-on={isInKindMegaMenuOpen || (active && !hoveredHref) ? "true" : undefined}
                       className={`relative text-sm px-4 py-2 lg:max-[1440px]:px-2.5 whitespace-nowrap transition-colors duration-300 rounded-full flex items-center gap-1.5 font-semibold ${
                         active || isInKindMegaMenuOpen
                           ? "text-[var(--ck-role-accent)]"
                           : "text-stone-500 hover:text-[var(--ck-role-accent)] dark:text-stone-400 dark:hover:text-[var(--ck-role-accent)]"
                       }`}
                     >
-                      {(isInKindMegaMenuOpen || (active && !hoveredHref)) && (
-                        <motion.span
-                          layoutId="nav-glass-pill"
-                          transition={{ type: "spring", stiffness: 380, damping: 32 }}
-                          className="glass-pill absolute inset-0 rounded-full"
-                        />
-                      )}
+                      {!navPillReady && (isInKindMegaMenuOpen || (active && !hoveredHref)) && <span className="glass-pill absolute inset-0 rounded-full" />}
                       {active && <span className="relative z-10 w-2.5 h-2.5 rounded-full bg-[var(--ck-role-highlight)] shrink-0" />}
                       <span className="relative z-10">{triggerLabel}</span>
                       <ChevronDown
@@ -1038,6 +1078,7 @@ export function SiteHeader() {
                   onMouseLeave={() => setHoveredHref(null)}
                   onFocus={() => { setHoveredHref(link.href); setOpenMegaMenu(null); }}
                   onBlur={() => setHoveredHref(null)}
+                  data-pill-on={hoveredHref === link.href || (active && !hoveredHref) ? "true" : undefined}
                   className={`relative text-sm px-4 py-2 lg:max-[1440px]:px-2.5 whitespace-nowrap transition-colors duration-300 rounded-full flex items-center gap-2 font-semibold ${active
                       ? "text-[var(--ck-role-accent)]"
                       : "text-stone-500 hover:text-[var(--ck-role-accent)] dark:text-stone-400 dark:hover:text-[var(--ck-role-accent)]"
@@ -1053,13 +1094,7 @@ export function SiteHeader() {
                       `groupActive || isOpen`, and hovering opens the menu, so
                       they got the slide for free. A plain link has no open state,
                       so it needs `hoveredHref` to say the same thing. */}
-                  {(hoveredHref === link.href || (active && !hoveredHref)) && (
-                    <motion.span
-                      layoutId="nav-glass-pill"
-                      transition={{ type: "spring", stiffness: 380, damping: 32 }}
-                      className="glass-pill absolute inset-0 rounded-full"
-                    />
-                  )}
+                  {!navPillReady && (hoveredHref === link.href || (active && !hoveredHref)) && <span className="glass-pill absolute inset-0 rounded-full" />}
                   {active && <span className="relative z-10 w-2.5 h-2.5 rounded-full bg-[var(--ck-role-highlight)] shrink-0" />}
                   <span className="relative z-10">{link.label}</span>
                 </Link>
@@ -1124,7 +1159,8 @@ export function SiteHeader() {
 
             {/* Auth action — login/logout, top-right. Hidden on the auth pages
                 themselves since the page already is the login/register form. */}
-            {!(pathname === "/login" || pathname === "/register") && (
+            {/* Signed in: no top-bar Sign out; it lives in the menu (the three lines). */}
+            {!user && !(pathname === "/login" || pathname === "/register") && (
             <div className="relative">
               <button
                 type="button"
@@ -1144,13 +1180,8 @@ export function SiteHeader() {
 
         {/* Animated Desktop Mega Menu for "In-Kind" — mirrors the About panel's
             chrome, positioning and timing exactly; only the body differs. */}
-        <AnimatePresence>
-          {isInKindMegaMenuOpen && (
-            <motion.div
-              initial={{ opacity: 0, y: -8 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: -8 }}
-              transition={{ duration: 0.22, ease: [0.16, 1, 0.3, 1] }}
+                  {isInKindMegaMenuOpen && (
+            <div
               onMouseEnter={handleInKindMouseEnter}
               onMouseLeave={handleInKindMouseLeave}
               /*
@@ -1174,23 +1205,17 @@ export function SiteHeader() {
                 the honest fix; adding the blur back would need the panel moved
                 out of the header, which is a bigger change than this earns.
               */
-              className="hidden lg:block absolute top-full left-0 right-0 w-full bg-[#faf8f5] dark:bg-stone-900 border-b border-[#e5e2d5] dark:border-stone-800 shadow-[0_25px_60px_-15px_rgba(28,25,23,0.16)] dark:shadow-[0_25px_60px_-15px_rgba(0,0,0,0.65)] z-50 pointer-events-auto"
+              className="ck-nav-panel-in hidden lg:block absolute top-full left-0 right-0 w-full bg-[#faf8f5] dark:bg-stone-900 border-b border-[#e5e2d5] dark:border-stone-800 shadow-[0_25px_60px_-15px_rgba(28,25,23,0.16)] dark:shadow-[0_25px_60px_-15px_rgba(0,0,0,0.65)] z-50 pointer-events-auto"
             >
               <div className="w-full max-w-[1440px] mx-auto px-8 pt-7 pb-6">
                 <DonateMegaMenu onNavigate={() => setOpenMegaMenu(null)} />
               </div>
-            </motion.div>
+            </div>
           )}
-        </AnimatePresence>
 
         {/* Animated Desktop Mega Menu for "About Us" - Full Screen Width & Rich Design */}
-        <AnimatePresence>
-          {isAboutMegaMenuOpen && (
-            <motion.div
-              initial={{ opacity: 0, y: -8 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: -8 }}
-              transition={{ duration: 0.22, ease: [0.16, 1, 0.3, 1] }}
+                  {isAboutMegaMenuOpen && (
+            <div
               onMouseEnter={handleAboutMouseEnter}
               onMouseLeave={handleAboutMouseLeave}
               /*
@@ -1214,7 +1239,7 @@ export function SiteHeader() {
                 the honest fix; adding the blur back would need the panel moved
                 out of the header, which is a bigger change than this earns.
               */
-              className="hidden lg:block absolute top-full left-0 right-0 w-full bg-[#faf8f5] dark:bg-stone-900 border-b border-[#e5e2d5] dark:border-stone-800 shadow-[0_25px_60px_-15px_rgba(28,25,23,0.16)] dark:shadow-[0_25px_60px_-15px_rgba(0,0,0,0.65)] z-50 pointer-events-auto"
+              className="ck-nav-panel-in hidden lg:block absolute top-full left-0 right-0 w-full bg-[#faf8f5] dark:bg-stone-900 border-b border-[#e5e2d5] dark:border-stone-800 shadow-[0_25px_60px_-15px_rgba(28,25,23,0.16)] dark:shadow-[0_25px_60px_-15px_rgba(0,0,0,0.65)] z-50 pointer-events-auto"
             >
               <div className="w-full max-w-[1440px] mx-auto px-8 pt-7 pb-6">
                 <div className="grid grid-cols-12 gap-6">
@@ -1361,9 +1386,8 @@ export function SiteHeader() {
                   </Link>
                 </div>
               </div>
-            </motion.div>
+            </div>
           )}
-        </AnimatePresence>
       </header>
 
       {/* ── Mobile menu — StaggeredMenu (replaces the former rich side drawer).
@@ -1414,13 +1438,13 @@ export function SiteHeader() {
                   <img src={avatarDataUrl} alt="" className="w-full h-full object-cover" />
                 ) : (
                   <div className="w-full h-full bg-[var(--ck-role-accent)]/10 flex items-center justify-center text-lg font-black text-[var(--ck-role-accent)] uppercase">
-                    {user.email[0]}
+                    {displayName[0]}
                   </div>
                 )}
               </div>
               <div className="min-w-0">
                 <p className="text-sm font-bold text-stone-850 dark:text-white truncate">
-                  {profile?.fullName || user.email.split("@")[0]}
+                  {displayName}
                 </p>
                 <p className="text-xs font-semibold text-stone-500 dark:text-stone-400">
                   {roleLabel[user.role] ?? user.role} · {t("nav.livesTouched", { count: livesTouched })}</p>

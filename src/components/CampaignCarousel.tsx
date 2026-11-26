@@ -21,7 +21,8 @@ import type { Campaign } from "@/lib/api";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { TranslatedText } from "@/hooks/useDynamicTranslation";
-import { CAMPAIGN_CATEGORY_IMAGES as CATEGORY_IMAGES } from "@/lib/campaignCategories";
+import { CAMPAIGN_CATEGORY_IMAGES as CATEGORY_IMAGES } from "@/lib/campaignCategories";
+import "./CampaignCarousel.css";
 
 const INTERVAL = 3000; // ms between auto-slides
 

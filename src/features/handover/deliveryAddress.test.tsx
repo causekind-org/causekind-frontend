@@ -214,7 +214,8 @@ describe("courier schedule dialog and summary", () => {
 
     // Fill "When will you dispatch?"
     const whenInput = screen.getByLabelText(/When will you dispatch\?/i);
-    await userEvent.type(whenInput, "2026-10-25T14:30");
+    await userEvent.click(whenInput);
+    await userEvent.click(screen.getByRole("button", { name: "Set time" }));
 
     const saveButton = screen.getByRole("button", { name: "Save" });
     expect(saveButton).toBeEnabled();
@@ -272,7 +273,8 @@ describe("courier schedule dialog and summary", () => {
     expect(screen.getByText(/You're taking it to the recipient, so you don't need to enter an address/i)).toBeInTheDocument();
 
     const whenInput = screen.getByLabelText(/When\?/i);
-    await userEvent.type(whenInput, "2026-10-25T14:30");
+    await userEvent.click(whenInput);
+    await userEvent.click(screen.getByRole("button", { name: "Set time" }));
 
     const saveButton = screen.getByRole("button", { name: "Save" });
     expect(saveButton).toBeEnabled();

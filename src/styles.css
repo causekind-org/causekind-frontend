@@ -879,270 +879,6 @@ section:focus-within {
   transform: translateY(1px) scale(0.98);
 }
 
-/* ── Swipe Carousel Animations ── */
-@keyframes swipe-in-right {
-  0% {
-    opacity: 0;
-    transform: translateX(120px) scale(0.96);
-  }
-
-  100% {
-    opacity: 1;
-    transform: translateX(0) scale(1);
-  }
-}
-
-@keyframes swipe-in-left {
-  0% {
-    opacity: 0;
-    transform: translateX(-120px) scale(0.96);
-  }
-
-  100% {
-    opacity: 1;
-    transform: translateX(0) scale(1);
-  }
-}
-
-@keyframes swipe-out-left {
-  0% {
-    opacity: 1;
-    transform: translateX(0) scale(1);
-  }
-
-  100% {
-    opacity: 0;
-    transform: translateX(-120px) scale(0.96);
-  }
-}
-
-@keyframes swipe-out-right {
-  0% {
-    opacity: 1;
-    transform: translateX(0) scale(1);
-  }
-
-  100% {
-    opacity: 0;
-    transform: translateX(120px) scale(0.96);
-  }
-}
-
-.animate-swipe-in-right {
-  animation: swipe-in-right 0.5s cubic-bezier(0.16, 1, 0.3, 1) both;
-}
-
-.animate-swipe-in-left {
-  animation: swipe-in-left 0.5s cubic-bezier(0.16, 1, 0.3, 1) both;
-}
-
-.animate-swipe-out-left {
-  animation: swipe-out-left 0.5s cubic-bezier(0.16, 1, 0.3, 1) both;
-}
-
-.animate-swipe-out-right {
-  animation: swipe-out-right 0.5s cubic-bezier(0.16, 1, 0.3, 1) both;
-}
-
-/* ── Merry Go Round 3D Rotation Animations ── */
-@keyframes rotating-out-left {
-  0% {
-    opacity: 1;
-    transform: perspective(1000px) translateZ(0) rotateY(0deg) scale(1);
-    z-index: 20;
-  }
-
-  40% {
-    opacity: 0.6;
-    transform: perspective(1000px) translateX(-40%) translateZ(-150px) rotateY(15deg) scale(0.85);
-  }
-
-  100% {
-    opacity: 0;
-    transform: perspective(1000px) translateX(-100%) translateZ(-300px) rotateY(30deg) scale(0.75);
-    z-index: 0;
-  }
-}
-
-@keyframes rotating-out-right {
-  0% {
-    opacity: 1;
-    transform: perspective(1000px) translateZ(0) rotateY(0deg) scale(1);
-    z-index: 20;
-  }
-
-  40% {
-    opacity: 0.6;
-    transform: perspective(1000px) translateX(40%) translateZ(-150px) rotateY(-15deg) scale(0.85);
-  }
-
-  100% {
-    opacity: 0;
-    transform: perspective(1000px) translateX(100%) translateZ(-300px) rotateY(-30deg) scale(0.75);
-    z-index: 0;
-  }
-}
-
-@keyframes rotating-in-right {
-  0% {
-    opacity: 0;
-    transform: perspective(1000px) translateX(100%) translateZ(-300px) rotateY(-30deg) scale(0.75);
-    z-index: 0;
-  }
-
-  60% {
-    opacity: 0.8;
-    transform: perspective(1000px) translateX(25%) translateZ(-100px) rotateY(-12deg) scale(0.88);
-    z-index: 10;
-  }
-
-  100% {
-    opacity: 1;
-    transform: perspective(1000px) translateX(0) translateZ(0) rotateY(0deg) scale(1);
-    z-index: 20;
-  }
-}
-
-@keyframes rotating-in-left {
-  0% {
-    opacity: 0;
-    transform: perspective(1000px) translateX(-100%) translateZ(-300px) rotateY(30deg) scale(0.75);
-    z-index: 0;
-  }
-
-  60% {
-    opacity: 0.8;
-    transform: perspective(1000px) translateX(-25%) translateZ(-100px) rotateY(12deg) scale(0.88);
-    z-index: 10;
-  }
-
-  100% {
-    opacity: 1;
-    transform: perspective(1000px) translateX(0) translateZ(0) rotateY(0deg) scale(1);
-    z-index: 20;
-  }
-}
-
-.animate-rotate-out-left {
-  animation: rotating-out-left 0.7s cubic-bezier(0.25, 1, 0.5, 1) both;
-}
-
-.animate-rotate-out-right {
-  animation: rotating-out-right 0.7s cubic-bezier(0.25, 1, 0.5, 1) both;
-}
-
-.animate-rotate-in-right {
-  animation: rotating-in-right 0.7s cubic-bezier(0.25, 1, 0.5, 1) both;
-}
-
-.animate-rotate-in-left {
-  animation: rotating-in-left 0.7s cubic-bezier(0.25, 1, 0.5, 1) both;
-}
-
-/* ── Card-deck carousel: active card pops out of its slot, then recedes
-      behind the incoming card, which slides in over the top of it.
-      Tuned: 0.7s, gentle pop (1.02), enters from 110% (clears padded stage). ── */
-@keyframes card-pop-behind-left {
-  0% {
-    transform: translate(0, 0) scale(1);
-    opacity: 1;
-    filter: drop-shadow(0 10px 18px rgba(28, 18, 10, 0.10));
-  }
-
-  35% {
-    transform: translate(-1.5%, -1%) scale(1.02);
-    opacity: 1;
-    filter: drop-shadow(0 30px 46px rgba(28, 18, 10, 0.22));
-  }
-
-  /* pop out — shadow lifts */
-  70% {
-    opacity: 0.8;
-  }
-
-  100% {
-    transform: translate(-5%, 1.5%) scale(0.88);
-    opacity: 0;
-    filter: drop-shadow(0 4px 8px rgba(28, 18, 10, 0.04));
-  }
-
-  /* recede — shadow grounds */
-}
-
-@keyframes card-pop-behind-right {
-  0% {
-    transform: translate(0, 0) scale(1);
-    opacity: 1;
-    filter: drop-shadow(0 10px 18px rgba(28, 18, 10, 0.10));
-  }
-
-  35% {
-    transform: translate(1.5%, -1%) scale(1.02);
-    opacity: 1;
-    filter: drop-shadow(0 30px 46px rgba(28, 18, 10, 0.22));
-  }
-
-  70% {
-    opacity: 0.8;
-  }
-
-  100% {
-    transform: translate(5%, 1.5%) scale(0.88);
-    opacity: 0;
-    filter: drop-shadow(0 4px 8px rgba(28, 18, 10, 0.04));
-  }
-}
-
-@keyframes card-cover-from-right {
-  from {
-    transform: translateX(110%) scale(0.97);
-    filter: drop-shadow(-18px 34px 50px rgba(28, 18, 10, 0.26));
-  }
-
-  /* airborne — deep shadow */
-  to {
-    transform: translateX(0) scale(1);
-    filter: drop-shadow(0 0 0 rgba(28, 18, 10, 0));
-  }
-
-  /* landed — shadow settles */
-}
-
-@keyframes card-cover-from-left {
-  from {
-    transform: translateX(-110%) scale(0.97);
-    filter: drop-shadow(18px 34px 50px rgba(28, 18, 10, 0.26));
-  }
-
-  to {
-    transform: translateX(0) scale(1);
-    filter: drop-shadow(0 0 0 rgba(28, 18, 10, 0));
-  }
-}
-
-.animate-card-pop-behind-left,
-.animate-card-pop-behind-right,
-.animate-card-cover-right,
-.animate-card-cover-left {
-  will-change: transform, opacity, filter;
-}
-
-.animate-card-pop-behind-left {
-  animation: card-pop-behind-left 0.7s cubic-bezier(0.45, 0.05, 0.25, 1) both;
-}
-
-.animate-card-pop-behind-right {
-  animation: card-pop-behind-right 0.7s cubic-bezier(0.45, 0.05, 0.25, 1) both;
-}
-
-.animate-card-cover-right {
-  animation: card-cover-from-right 0.7s cubic-bezier(0.32, 0.72, 0, 1) both;
-}
-
-.animate-card-cover-left {
-  animation: card-cover-from-left 0.7s cubic-bezier(0.32, 0.72, 0, 1) both;
-}
-
 /* ── Phone section background blobs ── */
 @keyframes blob-drift-a {
 
@@ -1331,8 +1067,13 @@ section:focus-within {
   /* Every page with the footer after it (drive pages, NGO profiles, dashboards…):
      the dock clearance goes under the footer, so no cream/orange strip shows
      between the page's own background and the footer. */
-  .ck-main-bottom-pad:has(+ #footer) { padding-bottom: 0; }
-  .ck-main-bottom-pad + #footer { padding-bottom: calc(var(--ck-bottom-chrome) + 0.5rem); }
+  /* Pages that cancel the padding themselves (full-screen wizards, sign-in: data-ck-cancels-bottom-pad)
+     keep the old arrangement. */
+  .ck-main-bottom-pad:has(+ #footer):not(:has([data-ck-cancels-bottom-pad])) { padding-bottom: 0; }
+  .ck-main-bottom-pad:not(:has([data-ck-cancels-bottom-pad])) + #footer { padding-bottom: calc(var(--ck-bottom-chrome) + 0.5rem); }
+  /* The donor's give-to-a-drive form is a focused flow on phones: no footer under it, so its
+     sticky Continue bar never sits over the footer (steps 1 and 5 reach the bottom). */
+  .ck-main-bottom-pad:has([data-testid="drive-give-wizard"]) + #footer { display: none; }
   .ck-main-bottom-pad:has(.ck-home-page):has(+ #footer) {
     padding-bottom: 0;
   }
@@ -2969,6 +2710,12 @@ div:not([data-slot]):not([role="dialog"]):not([aria-modal="true"]):has(> .search
   border-left-color: #e07b3a;
 }
 
+/* Tap target: inline padding grows the link's hit box to 24px+ (Lighthouse
+   target-size) without moving the text or the line height. */
+.article-content a {
+  padding-block: 0.3em;
+}
+
 .dark .article-content a {
   color: #fb923c;
 }
@@ -3171,7 +2918,6 @@ div:not([data-slot]):not([role="dialog"]):not([aria-modal="true"]):has(> .search
       color-mix(in srgb, var(--rust-action) 90%, transparent) 50%,
       color-mix(in srgb, var(--rust-action) 55%, transparent) 80%,
       transparent 100%);
-  animation: ck-divider-sweep 6s linear infinite;
 }
 }
 
@@ -3247,7 +2993,6 @@ div:not([data-slot]):not([role="dialog"]):not([aria-modal="true"]):has(> .search
   -webkit-background-clip: text;
   background-clip: text;
   -webkit-text-fill-color: transparent;
-  animation: ck-kind-shine 4s linear 1.4s infinite;
 }
 
 /* ── CauseKind Logo SVG: all animation handled by Web Animations API in LogoSVG.tsx ── */
@@ -3576,46 +3321,6 @@ div:not([data-slot]):not([role="dialog"]):not([aria-modal="true"]):has(> .search
   }
 }
 
-/* ── Donee portrait (donor request-detail "About this need") ────────────────
-   Entrance runs once on mount — `both` fill keeps the end state after the
-   animation finishes, and nothing loops. The image scales 1.04 → 1 inside a
-   fixed 4:5 frame, so the movement is contained and can't shift the facts
-   beside it. */
-.donee-portrait__frame {
-  animation: donee-portrait-rise 620ms cubic-bezier(0.22, 0.68, 0.36, 1) both;
-}
-.donee-portrait__img {
-  animation: donee-portrait-settle 900ms cubic-bezier(0.22, 0.68, 0.36, 1) both;
-  transition: transform 400ms cubic-bezier(0.22, 0.68, 0.36, 1);
-}
-.donee-portrait__frame:hover .donee-portrait__img {
-  transform: scale(1.02);
-}
-/* Badge and the facts beside it trail the portrait slightly, so the group reads
-   as one entrance rather than three separate things appearing. */
-.donee-portrait__badge {
-  animation: donee-portrait-rise 520ms cubic-bezier(0.22, 0.68, 0.36, 1) 140ms both;
-}
-
-@keyframes donee-portrait-rise {
-  from { opacity: 0; transform: translateY(10px); }
-  to   { opacity: 1; transform: none; }
-}
-@keyframes donee-portrait-settle {
-  from { transform: scale(1.04); }
-  to   { transform: scale(1); }
-}
-
-@media (prefers-reduced-motion: reduce) {
-  .donee-portrait__frame,
-  .donee-portrait__img,
-  .donee-portrait__badge {
-    animation: none;
-    transition: none;
-  }
-  .donee-portrait__frame:hover .donee-portrait__img { transform: none; }
-}
-
 /* ═══════════════════════════════════════════════════════════════════════════
    Handover Hub — role-scoped accent tokens
 
@@ -3883,211 +3588,6 @@ div:not([data-slot]):not([role="dialog"]):not([aria-modal="true"]):has(> .search
   --primary: #7fb0e8;
   --primary-foreground: #0b1929;
   --ring: #7fb0e8;
-}
-
-/* ── Independence Day hero (15 August, campaign window only) ──────────────────
-   Three additions, all decorative and all reversible with the campaign flag.
-   Each has a prefers-reduced-motion path — the strip above the hero set that
-   precedent and it is the right one. */
-
-/* 1. Tricolour light sweep.
-      A band of saffron-white-green drifting diagonally across the hero
-      photograph. soft-light rather than normal blending so it reads as light
-      catching the scene rather than a flag laid on top of it — the strip above
-      already carries the literal tricolour, and a second one would be noise. */
-/* The pass is quick and then it waits. Moving the band slowly across the whole
-   cycle meant colour sat on somebody's face for seconds at a time, which reads
-   as a broken colour profile rather than as celebration. Here the sweep crosses
-   in about two seconds and the hero is left alone for the rest. */
-@keyframes ck-tricolour-sweep {
-  0%   { transform: translate3d(-75%, -18%, 0) rotate(12deg); opacity: 0; }
-  3%   { opacity: 1; }
-  22%  { opacity: 1; }
-  26%  { transform: translate3d(210%, 18%, 0) rotate(12deg); opacity: 0; }
-  100% { transform: translate3d(210%, 18%, 0) rotate(12deg); opacity: 0; }
-}
-
-.ck-tricolour-sweep {
-  position: absolute;
-  top: -30%;
-  left: 0;
-  width: 34%;
-  height: 160%;
-  pointer-events: none;
-  /* `screen`, after `soft-light` (invisible) and `overlay` (which recoloured
-     faces orange and green — a colour cast, not a celebration). screen only
-     ever lightens, so it reads as a beam of coloured light crossing the
-     photograph and leaves skin tones alone. */
-  mix-blend-mode: screen;
-  will-change: transform, opacity;
-  /* A bright core with coloured edges, rather than three solid bands. The
-     alphas are low because screen compounds quickly — at full strength the
-     whole band blew out to white and the tricolour was lost inside it. */
-  background: linear-gradient(
-    100deg,
-    transparent 0%,
-    rgba(255, 153, 51, 0.00) 6%,
-    rgba(255, 153, 51, 0.58) 26%,
-    rgba(255, 240, 214, 0.64) 46%,
-    rgba(230, 255, 232, 0.60) 58%,
-    rgba(19, 136, 8, 0.54) 76%,
-    rgba(19, 136, 8, 0.00) 94%,
-    transparent 100%
-  );
-  filter: blur(10px);
-  animation: ck-tricolour-sweep 9s cubic-bezier(0.4, 0, 0.5, 1) infinite;
-  animation-delay: 1.2s;
-}
-
-/* 2. The unfurl — one band sweeping across the headline on first load, then
-      gone. Masked by the headline itself, so it reveals rather than covers. */
-@keyframes ck-unfurl-band {
-  0%   { transform: scaleX(0); transform-origin: left center; opacity: 1; }
-  55%  { transform: scaleX(1); transform-origin: left center; }
-  56%  { transform: scaleX(1); transform-origin: right center; }
-  100% { transform: scaleX(0); transform-origin: right center; opacity: 1; }
-}
-
-/* The text leads, the band trails. An earlier version had the headline reach
-   full strength only as the band finished, which meant the most important words
-   on the page were faint for most of a second — the reveal is meant to draw the
-   eye to them, not withhold them. */
-@keyframes ck-unfurl-text {
-  0%, 12% { opacity: 0; transform: translateY(6px); }
-  55%     { opacity: 1; transform: translateY(0); }
-  100%    { opacity: 1; transform: translateY(0); }
-}
-
-.ck-unfurl { position: relative; display: block; }
-
-.ck-unfurl > .ck-unfurl-band {
-  position: absolute;
-  inset: -0.25em -0.5em;
-  border-radius: 0.35rem;
-  pointer-events: none;
-  background: linear-gradient(
-    90deg,
-    #ff9933 0%, #ff9933 33%,
-    #ffffff 33%, #ffffff 66%,
-    #138808 66%, #138808 100%
-  );
-  animation: ck-unfurl-band 1.15s cubic-bezier(0.65, 0, 0.35, 1) forwards;
-}
-
-.ck-unfurl > .ck-unfurl-text {
-  animation: ck-unfurl-text 1.15s cubic-bezier(0.33, 1, 0.68, 1) forwards;
-}
-
-/* 3. Count-up figure — a quiet rise, not a bounce. */
-@keyframes ck-count-rise {
-  from { opacity: 0; transform: translateY(8px); }
-  to   { opacity: 1; transform: translateY(0); }
-}
-
-.ck-count-rise { animation: ck-count-rise .6s cubic-bezier(0.33, 1, 0.68, 1) both; }
-
-@media (prefers-reduced-motion: reduce) {
-  /* The sweep holds still at a low, even tint rather than vanishing — the
-     colour is the point, the movement is not. */
-  .ck-tricolour-sweep {
-    animation: none;
-    opacity: .35;
-    transform: translate3d(30%, 0, 0) rotate(12deg);
-  }
-  .ck-unfurl > .ck-unfurl-band { display: none; }
-  .ck-unfurl > .ck-unfurl-text { animation: none; opacity: 1; transform: none; }
-  .ck-count-rise { animation: none; }
-}
-
-/* ── Raksha Bandhan: the waiting-need card ────────────────────────────────
-   A quiet rise, matching the hero's other entrances rather than introducing a
-   third easing.
-
-   This block used to also draw a gold thread across the hero, connecting the
-   headline to this card. It was removed: at real hero sizes the line crossed
-   the headline and the photograph rather than reading as a connection between
-   them, so it looked like a stray rule ruled through the copy. The card carries
-   the idea on its own. */
-@keyframes ck-thread-card-in {
-  from { opacity: 0; transform: translateY(10px); }
-  to   { opacity: 1; transform: translateY(0); }
-}
-
-.ck-thread-card {
-  animation: ck-thread-card-in .6s cubic-bezier(0.33, 1, 0.68, 1) both;
-  animation-delay: 0.5s;
-}
-
-@media (prefers-reduced-motion: reduce) {
-  .ck-thread-card { animation: none; }
-}
-
-
-/* ── Raksha Bandhan: the wordmark video ───────────────────────────────────
-   The still and the video are stacked in one box, and EXACTLY ONE is ever
-   shown. That is the whole rule, and breaking it is not subtle: the first
-   version showed both, so a frozen copy of the wordmark sat under the moving
-   one, and because the animation shifts the letters as it plays the logo
-   rendered as two offset copies of itself.
-
-   The video needs no companion. Its `poster` attribute already covers both
-   states the still was wrongly helping with — before playback begins, and when
-   the codec cannot be decoded at all, where the poster simply stays put.
-
-   Doing the choice in CSS rather than with a `useReducedMotion()` hook keeps the
-   logo in the first HTML response: a hook resolves after the first paint, which
-   would flash the wrong one on every page load. */
-
-/* Motion allowed — the default. The video is the logo; the still stays out. */
-.ck-rb-wordmark-video { display: block; }
-.ck-rb-wordmark-static { display: none; }
-
-@media (prefers-reduced-motion: reduce) {
-  /* Reduced motion — the still IS the logo. The video is removed from the box
-     rather than merely paused: a paused video still holds a decode buffer, and
-     `display: none` is also the strongest declarative hint available that its
-     320 KB need not be fetched at all. */
-  .ck-rb-wordmark-video { display: none; }
-  .ck-rb-wordmark-static { display: block; }
-}
-
-/* Landing-page accents inherit the signed-in recipient palette. Fallbacks in
-   shared sections preserve their public appearance outside this page. Tokens
-   live on html while home is mounted so the header and portalled dialogs inherit. */
-[data-ck-role-theme="donee"]:has(.ck-home-page) {
-  --ck-home-accent: #1e3a60;
-  --ck-home-ink: var(--ck-role-accent);
-  --ck-home-hover: #2d5a96;
-  --ck-home-deep: #12253f;
-  --ck-home-highlight: #7fb0e8;
-  --ck-home-soft: #dce8f6;
-  --ck-home-surface: #f3f6fb;
-  --ck-home-shadow-rgb: 30,58,96;
-  --rust-action: #1e3a60;
-  --color-orange-50: #f3f6fb;
-  --color-orange-100: #e7eef8;
-  --color-orange-200: #dce8f6;
-  --color-orange-300: #a3c8f2;
-  --color-orange-400: #7fb0e8;
-  --color-orange-500: #4a7fc1;
-  --color-orange-600: #2d5a96;
-  --color-orange-700: #1e3a60;
-  --color-orange-800: #12253f;
-  --color-orange-900: #12253f;
-  --color-orange-950: #0b1929;
-}
-
-/* Shared home accents track every signed-in palette, including dark mode. */
-[data-ck-role-theme]:has(.ck-home-page) {
-  --ck-home-accent: var(--ck-role-accent);
-  --ck-home-ink: var(--ck-role-accent);
-  --ck-home-hover: var(--ck-role-hover);
-  --ck-home-deep: var(--ck-role-deep);
-  --ck-home-highlight: var(--ck-role-highlight);
-  --ck-home-soft: var(--ck-role-soft);
-  --ck-home-surface: var(--ck-role-soft);
-  --ck-home-shadow-rgb: var(--ck-role-shadow-rgb);
-  --rust-action: var(--ck-role-accent);
 }
 
 /* Category colours are semantic elsewhere; on the home page only, the two
@@ -5264,6 +4764,49 @@ header[data-calm-header] .ck-logo-kind-shimmer {
   }
 }
 
+/* Mail Center rich email editor (tiptap): Tailwind preflight strips these. */
+.mc-rich h1 { font-size: 1.6em; font-weight: 800; margin: .5em 0; }
+.mc-rich h2 { font-size: 1.35em; font-weight: 800; margin: .5em 0; }
+.mc-rich h3 { font-size: 1.15em; font-weight: 700; margin: .5em 0; }
+.mc-rich h4 { font-size: .95em; font-weight: 700; margin: .5em 0; text-transform: uppercase; letter-spacing: .03em; }
+.mc-rich p { margin: .35em 0; }
+.mc-rich ul { list-style: disc; padding-left: 1.5em; }
+.mc-rich ol { list-style: decimal; padding-left: 1.5em; }
+.mc-rich blockquote { border-left: 3px solid currentColor; opacity: .85; padding-left: .8em; margin: .5em 0; }
+.mc-rich a { color: #2563eb; text-decoration: underline; }
+.mc-rich hr { border: 0; border-top: 1px solid #ccc; margin: 1em 0; }
+.mc-rich img { max-width: 100%; height: auto; }
+
+/* ── Header motion (replaces framer-motion in Navbar, 24 Nov 2026) ──────────
+   Same timings as the framer versions. Only transform and opacity animate,
+   so these stay on the compositor. */
+@keyframes ck-logo-icon-in {
+  0%   { opacity: 0; transform: scale(0.3) rotate(-20deg); }
+  60%  { opacity: 1; transform: scale(1.08) rotate(3deg); }
+  100% { opacity: 1; transform: none; }
+}
+@keyframes ck-rise-in {
+  from { opacity: 0; transform: translateY(var(--ck-rise, 8px)); }
+  to   { opacity: 1; transform: none; }
+}
+.ck-logo-hover { transition: transform 0.2s cubic-bezier(0.34, 1.56, 0.64, 1); }
+.ck-logo-hover:hover { transform: scale(1.03); }
+.ck-logo-icon-in { animation: ck-logo-icon-in 0.55s cubic-bezier(0.22, 1, 0.36, 1) 0.05s both; }
+.ck-logo-letter-in { animation: ck-rise-in 0.28s cubic-bezier(0.22, 1, 0.36, 1) both; }
+.ck-logo-kind-in { --ck-rise: 6px; animation: ck-rise-in 0.3s cubic-bezier(0.22, 1, 0.36, 1) 0.44s both; }
+.ck-nav-panel-in { --ck-rise: -8px; animation: ck-rise-in 0.22s cubic-bezier(0.16, 1, 0.3, 1) both; }
+.ck-nav-pill[data-animate="true"] {
+  transition:
+    transform 0.38s cubic-bezier(0.22, 1, 0.36, 1),
+    width 0.38s cubic-bezier(0.22, 1, 0.36, 1),
+    height 0.38s cubic-bezier(0.22, 1, 0.36, 1),
+    opacity 0.2s ease;
+}
+@media (prefers-reduced-motion: reduce) {
+  .ck-logo-icon-in, .ck-logo-letter-in, .ck-logo-kind-in, .ck-nav-panel-in { animation: none; }
+  .ck-logo-hover, .ck-logo-hover:hover { transition: none; transform: none; }
+  .ck-nav-pill[data-animate="true"] { transition: none; }
+}
 /* Home, phones/tablets: one background for every section (owner 2026-11-24).
    The page was #fbf9f4, .ck-home-paper #faf8f5 plus an orange corner glow and
    dot grain, and the Sahas reels #F5F0E8 — three creams that showed as seams.

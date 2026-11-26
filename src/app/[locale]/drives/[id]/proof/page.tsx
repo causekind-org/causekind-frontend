@@ -21,6 +21,11 @@ export default function DriveProofPage() {
   const [proof, setProof] = useState<NgoDriveProofResponse | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  // Opened from the NGO home's Success stories (?from=home): Back returns there, not to the drive.
+  const [fromHome, setFromHome] = useState(false);
+  useEffect(() => { setFromHome(new URLSearchParams(window.location.search).get("from") === "home"); }, []);
+  const backHref = fromHome ? "/" : `/drives/${id}`;
+  const backLabel = fromHome ? ui("Back to home") : ui("Back to Drive");
 
   useEffect(() => {
     if (isNaN(id)) return;
@@ -43,8 +48,8 @@ export default function DriveProofPage() {
     return (
       <div className="flex flex-col items-center justify-center min-h-[50vh] p-8 text-center">
         <h2 className="text-xl font-bold text-stone-700">{error || ui("Impact report not available.")}</h2>
-        <Link href={`/drives/${id}`} className="mt-6 px-6 py-2 bg-stone-200 text-stone-700 font-bold rounded-full hover:bg-stone-300">
-          <UiText>Back to Drive</UiText>
+        <Link href={backHref} className="mt-6 px-6 py-2 bg-stone-200 text-stone-700 font-bold rounded-full hover:bg-stone-300">
+          {backLabel}
         </Link>
       </div>
     );
@@ -64,8 +69,8 @@ export default function DriveProofPage() {
 
       <div className="max-w-2xl mx-auto px-4 -mt-8">
         <div className="bg-white rounded-2xl shadow-sm border border-stone-200 p-6 sm:p-8">
-          <Link href={`/drives/${id}`} className="inline-flex items-center gap-2 text-sm text-stone-500 hover:text-stone-800 mb-6 font-medium">
-            <ArrowLeft className="w-4 h-4" /> <UiText>Back to Drive</UiText>
+          <Link href={backHref} className="inline-flex items-center gap-2 text-sm text-stone-500 hover:text-stone-800 mb-6 font-medium">
+            <ArrowLeft className="w-4 h-4" /> {backLabel}
           </Link>
 
           <div className="mb-8 text-center border-b border-stone-100 pb-8 flex flex-col sm:flex-row gap-4 justify-center items-center">

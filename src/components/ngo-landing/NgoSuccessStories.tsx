@@ -57,7 +57,7 @@ export function NgoSuccessStories({ stories }: { stories?: NgoSuccessStory[] | n
               return (
                 <li key={s.id} data-active={swipe ? String(idx === active) : undefined}
                   className="ngo-stories-item max-md:w-[86%] max-md:shrink-0 max-md:snap-center min-w-0">
-                  <Link href={`/drives/${s.id}/proof`} data-testid="ngo-success-story" aria-label={`Open the distribution proof for ${s.title}`}
+                  <Link href={`/drives/${s.id}/proof?from=home`} data-testid="ngo-success-story" aria-label={`Open the distribution proof for ${s.title}`}
                     className="group relative block aspect-[16/10] w-full overflow-hidden rounded-[24px] bg-stone-200 shadow-[0_18px_40px_-22px_rgba(11,61,46,0.45)] outline-none ring-offset-2 focus-visible:ring-2 focus-visible:ring-[var(--ngo-accent)] dark:bg-white/5 md:rounded-[28px]">
                     {/* eslint-disable-next-line @next/next/no-img-element -- signed storage URL */}
                     <img src={s.photoUrls[0]} alt={`Distribution proof for ${s.title}`} loading="lazy"

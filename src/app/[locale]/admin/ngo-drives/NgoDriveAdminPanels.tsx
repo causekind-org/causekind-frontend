@@ -4,7 +4,8 @@ import { driveDropOffAddress } from "@/features/ngo-drives/driveFormatters";
 
 import { categoryDetailRows } from "@/features/ngo-drives/driveCategoryDetails";
 import { serverDate } from "@/lib/serverTime";
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useState, type MouseEvent as ReactMouseEvent } from "react";
+import { createPortal } from "react-dom";
 import Link from "next/link";
 import {
   ApiError,
@@ -44,6 +45,8 @@ const button = "rounded-lg border border-stone-300 px-4 py-2 text-sm font-semibo
 const primary = `${button} bg-stone-900 text-white dark:bg-stone-100 dark:text-stone-900`;
 const card = "rounded-xl border border-stone-200 bg-white p-5 dark:border-zinc-700 dark:bg-zinc-900 sm:p-7";
 const label = (value?: string | null) => (value ?? "").toLowerCase().replace(/_/g, " ");
+/** As label, capitalised, for standalone values ("High", "Both") rather than units after a number. */
+const labelTitle = (value?: string | null) => label(value).replace(/^\w/, (c) => c.toUpperCase());
 
 /** Error text plus the per-item reasons the server gave (field errors), like the NGO Applications panel. */
 function useErrors() {
@@ -65,10 +68,66 @@ function useErrors() {
   return { fail, clear, view };
 }
 
+/**
+ * A thumbnail that opens a full-screen viewer. The viewer shows every photo in the same
+ * drive / offer / proof (the nearest [data-photo-group], else the card), with Prev/Next,
+ * arrow keys and Escape, so an admin can actually inspect what was uploaded.
+ */
 function Photo({ src, alt }: { src?: string | null; alt: string }) {
+  const [gallery, setGallery] = useState<{ urls: string[]; index: number } | null>(null);
   if (!src) return null;
-  // eslint-disable-next-line @next/next/no-img-element
-  return <img src={src} alt={alt} className="h-32 w-32 rounded-lg border border-stone-200 object-cover dark:border-zinc-700" />;
+  function openViewer(e: ReactMouseEvent<HTMLButtonElement>) {
+    const root = e.currentTarget.closest("[data-photo-group]") ?? e.currentTarget.closest("article") ?? document.body;
+    const urls = [...new Set([...root.querySelectorAll<HTMLImageElement>("img[data-admin-photo]")].map((i) => i.getAttribute("src") || "").filter(Boolean))];
+    setGallery({ urls: urls.length ? urls : [src!], index: Math.max(0, urls.indexOf(src!)) });
+  }
+  return (
+    <>
+      <button type="button" onClick={openViewer} aria-label={`View ${alt} full size`}
+        className="group relative block rounded-lg focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#2d7fd6]">
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        <img data-admin-photo src={src} alt={alt} className="h-32 w-32 cursor-zoom-in rounded-lg border border-stone-200 object-cover transition group-hover:brightness-90 dark:border-zinc-700" />
+      </button>
+      {gallery && <PhotoViewer urls={gallery.urls} start={gallery.index} onClose={() => setGallery(null)} />}
+    </>
+  );
+}
+
+function PhotoViewer({ urls, start, onClose }: { urls: string[]; start: number; onClose: () => void }) {
+  const [i, setI] = useState(start);
+  const n = urls.length;
+  const go = useCallback((d: number) => setI((x) => (x + d + n) % n), [n]);
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === "Escape") onClose();
+      else if (e.key === "ArrowRight") go(1);
+      else if (e.key === "ArrowLeft") go(-1);
+    };
+    window.addEventListener("keydown", onKey);
+    const prev = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    return () => { window.removeEventListener("keydown", onKey); document.body.style.overflow = prev; };
+  }, [go, onClose]);
+  return createPortal(
+    <div role="dialog" aria-modal="true" aria-label="Photo viewer" data-testid="admin-photo-viewer"
+      className="fixed inset-0 z-[100] flex items-center justify-center bg-black/85 p-4" onClick={onClose}>
+      {/* eslint-disable-next-line @next/next/no-img-element -- signed URL */}
+      <img src={urls[i]} alt={`Photo ${i + 1} of ${n}`} onClick={(e) => e.stopPropagation()}
+        className="max-h-[85vh] max-w-[92vw] rounded-lg object-contain shadow-2xl" />
+      <button type="button" aria-label="Close" onClick={onClose}
+        className="absolute right-4 top-4 rounded-full bg-white/90 px-3 py-1.5 text-sm font-semibold text-stone-900 hover:bg-white">Close</button>
+      {n > 1 && (
+        <>
+          <button type="button" aria-label="Previous photo" onClick={(e) => { e.stopPropagation(); go(-1); }}
+            className="absolute left-3 top-1/2 -translate-y-1/2 rounded-full bg-white/90 px-3 py-2 text-lg font-bold text-stone-900 hover:bg-white">‹</button>
+          <button type="button" aria-label="Next photo" onClick={(e) => { e.stopPropagation(); go(1); }}
+            className="absolute right-3 top-1/2 -translate-y-1/2 rounded-full bg-white/90 px-3 py-2 text-lg font-bold text-stone-900 hover:bg-white">›</button>
+          <p className="absolute bottom-4 left-1/2 -translate-x-1/2 rounded-full bg-black/60 px-3 py-1 text-sm text-white">{i + 1} / {n}</p>
+        </>
+      )}
+    </div>,
+    document.body,
+  );
 }
 
 /* ── NGO Drives ──────────────────────────────────────────────────────────── */
@@ -211,10 +270,10 @@ export function NgoDriveReviewPanel({ onChange }: { onChange?: () => void }) {
                   d.requireClean ? "(Washed and clean)" : null,
                 ].filter(Boolean).join(" · "),
                 ...Object.fromEntries(categoryDetailRows(d.category, d.categoryDetails).map(r => [r.label, r.value])),
-                Urgency: label(d.urgency),
+                Urgency: labelTitle(d.urgency),
                 "People who will benefit": `${d.beneficiaryCount} · ${d.beneficiaryGroup}${d.beneficiaryDescription ? ` (${d.beneficiaryDescription})` : ""}`,
                 "Needed by": d.neededBy,
-                "Handover mode": label(d.handoverMode || "BOTH"),
+                "Handover mode": labelTitle(d.handoverMode || "BOTH"),
                 "Available days": (d.availableDays || "").split(",").join(", "),
                 Hours: `${(d.availableFrom || "").slice(0, 5)} – ${(d.availableTo || "").slice(0, 5)}`,
                 Contact: `${d.contactName} · ${d.contactPhone}`,
@@ -247,15 +306,18 @@ export function NgoDriveReviewPanel({ onChange }: { onChange?: () => void }) {
             )}
             {Array.isArray(d.photos) && d.photos.length > 0 ? (
               <div className="mt-4 text-sm">
-                <p className="mb-2 text-stone-500 font-semibold">Photos ({d.photos.length})</p>
+                {/* The cover is stored apart from the reference photos; show it first so the count is right. */}
+                {(() => { const all = [...(d.coverPhotoUrl ? [{ url: d.coverPhotoUrl }] : []), ...d.photos]; return (<>
+                <p className="mb-2 text-stone-500 font-semibold">Photos ({all.length})</p>
                 <div className="flex flex-wrap gap-2">
-                  {d.photos.map((p, idx) => (
+                  {all.map((p, idx) => (
                     <div key={p.url || idx} className="relative">
                       <Photo src={p.url} alt={`Photo ${idx + 1}`} />
                       {idx === 0 && <span className="absolute bottom-1 left-1 bg-ngo-700 text-white text-[9px] px-1 py-0.5 rounded font-bold uppercase">Cover</span>}
                     </div>
                   ))}
                 </div>
+                </>); })()}
               </div>
             ) : d.referencePhotoUrl ? (
               <div className="mt-4 text-sm"><p className="mb-1 text-stone-500">Reference photo</p><Photo src={d.referencePhotoUrl} alt="Reference" /></div>
@@ -443,6 +505,7 @@ export function NgoDriveProofsPanel({ onChange }: { onChange?: () => void }) {
   const [drives, setDrives] = useState<AdminProofDrive[]>([]);
   const [loading, setLoading] = useState(true);
   const [reasons, setReasons] = useState<Record<number, string>>({});
+  const [confirmApprove, setConfirmApprove] = useState<number | null>(null);
   const [busy, setBusy] = useState<number | null>(null);
   const [notice, setNotice] = useState("");
   const { index: statusIndex, setIndex: setStatusIndex, tab, query, setQuery } = useAdminStatusTabs(PROOF_TABS);
@@ -510,10 +573,21 @@ export function NgoDriveProofsPanel({ onChange }: { onChange?: () => void }) {
             <textarea className={field} rows={2} maxLength={500} value={reasons[d.id] ?? ""} disabled={busy === d.id}
               onChange={e => setReasons(prev => ({ ...prev, [d.id]: e.target.value }))} />
           </label>
+          {confirmApprove === d.id ? (
+            // Approving closes the drive as fulfilled and publishes the photos: ask once before it happens.
+            <div className="mt-3 rounded-lg border border-green-300 bg-green-50 p-3 text-sm text-green-900 dark:border-green-800 dark:bg-green-950/30 dark:text-green-100" data-testid="proof-approve-confirm">
+              <p className="font-semibold">Approve this proof? The drive becomes fulfilled and the photos go on its public page.</p>
+              <div className="mt-2 flex gap-3">
+                <button className={primary} disabled={busy === d.id} onClick={() => { setConfirmApprove(null); void decide(d, true); }}>Yes, approve</button>
+                <button className={button} disabled={busy === d.id} onClick={() => setConfirmApprove(null)}>Cancel</button>
+              </div>
+            </div>
+          ) : (
           <div className="mt-3 flex gap-3">
-            <button className={primary} disabled={busy === d.id} onClick={() => void decide(d, true)}>Approve</button>
+            <button className={primary} disabled={busy === d.id} onClick={() => setConfirmApprove(d.id)}>Approve</button>
             <button className={`${button} border-red-300 text-red-700`} disabled={busy === d.id} onClick={() => void decide(d, false)}>Reject</button>
           </div>
+          )}
           </>}
         </article>
       ))}
@@ -554,7 +628,8 @@ export function ProofDetails({ d, onEnlarge }: { d: AdminProofDrive; onEnlarge: 
       <div className="mt-2 flex flex-wrap gap-3">
         {photos.map((url, i) => (
           <button key={url} type="button" aria-label={`Enlarge proof photo ${i + 1}`} onClick={() => onEnlarge(url)}>
-            <Photo src={url} alt={`Proof photo ${i + 1}`} />
+            {/* eslint-disable-next-line @next/next/no-img-element -- signed URL */}
+            <img src={url} alt={`Proof photo ${i + 1}`} className="h-32 w-32 cursor-zoom-in rounded-lg border border-stone-200 object-cover dark:border-zinc-700" />
           </button>
         ))}
       </div>

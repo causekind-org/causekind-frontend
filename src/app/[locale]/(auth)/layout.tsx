@@ -58,7 +58,7 @@ export default function AuthLayout({ children }: { children: React.ReactNode }) 
        inert) before the user had scrolled at all. --ck-bottom-chrome is the single
        source of truth for that height and is already 0 at lg:, where the dock is
        lg:hidden, so desktop needs no override. */
-    <div className="min-h-[calc(100svh-4rem)] -mb-[calc(var(--ck-bottom-chrome)+0.5rem)] flex flex-col lg:flex-row bg-[#faf8f5] dark:bg-zinc-950">
+    <div data-ck-cancels-bottom-pad className="min-h-[calc(100svh-4rem)] -mb-[calc(var(--ck-bottom-chrome)+0.5rem)] flex flex-col lg:flex-row bg-[#faf8f5] dark:bg-zinc-950">
       {/* ── Illustration panel — one persistent element, reorders across the row ── */}
       <motion.div
         layout

@@ -43,7 +43,9 @@ describe("PublicItemRequest carries nothing private", () => {
     "pincode", "postalCode", "address", "locality", "street",
     "doneeId", "doneeName", "fullName",
     "email", "phone", "contact",
-    "verificationTier", "verificationStatus", "verificationDueAt",
+    // verificationTier is allowed: the guest detail page shows it (owner
+    // decision 24 Nov 2026, "All except photo"); the board list never sends it.
+    "verificationStatus", "verificationDueAt",
     "rejectionReason", "adminNotes", "internalNotes",
     "status", "reservedBy", "reservation", "matchedWith",
     "documents", "verificationDocuments", "identityProof", "residenceProof",

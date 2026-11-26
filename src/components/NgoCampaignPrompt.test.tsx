@@ -28,7 +28,8 @@ describe("NgoCampaignPrompt", () => {
     vi.clearAllMocks();
     vi.useFakeTimers();
     mockUseIsDesktop.mockReturnValue(true);
-    mockUsePathname.mockReturnValue("/");
+    // Not "/": the NGO home has its own Start a Drive button, so the toast stays off it.
+    mockUsePathname.mockReturnValue("/dashboard/ngo");
     mockUseNgoStatus.mockReturnValue({
       isVerified: true,
       status: "verified",
