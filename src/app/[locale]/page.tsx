@@ -14,7 +14,7 @@ import { FEATURES } from "@/lib/features";
 // non-www domain redirects to — and stops the two hostnames competing as
 // separate URLs for the same page.
 export const metadata: Metadata = {
-  title: { absolute: "In-Kind Donation Website in India: Donate Items | CauseKind" },
+  title: { absolute: "CauseKind: Donate Items to Verified People & NGOs in India" },
   description:
     "Give clothes, books, electronics and household items directly to verified people and NGOs near you. CauseKind is a simple, local in-kind donation platform in India.",
   alternates: { canonical: "/" },
@@ -23,7 +23,7 @@ export const metadata: Metadata = {
     siteName: "CauseKind",
     locale: "en_IN",
     url: "/",
-    title: "In-Kind Donation Website in India: Donate Items | CauseKind",
+    title: "CauseKind: Donate Items to Verified People & NGOs in India",
     description:
       "Give clothes, books, electronics and household items directly to verified people and NGOs near you. CauseKind is a simple, local in-kind donation platform in India.",
     images: [{ url: "/og-default.png", width: 1200, height: 630, alt: "CauseKind" }],

@@ -52,8 +52,11 @@ export function CauseKindWaySections() {
       {/* 1. Why We Exist / Manifesto */}
       <ManifestoSection />
 
-      {/* 2. The Problem We Solve */}
-      <ProblemSolutionSection />
+      {/* 2. The Problem We Solve — tablet and desktop only (owner, 26 Nov 2026:
+          removed from the phone view). */}
+      <div className="hidden md:block">
+        <ProblemSolutionSection />
+      </div>
 
       {/* 3. Where Your Support Goes */}
       <SupportJourneySection />
