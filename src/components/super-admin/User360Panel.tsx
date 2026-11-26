@@ -482,7 +482,7 @@ function IdentityTab({ profile, t }: { profile: SaUserProfile; t: SaTheme }) {
         />
       </section>
 
-      <PanRevealCard userId={profile.id} t={t} />
+      <PanRevealCard userId={profile.id} t={t} panOnFile={profile.panOnFile} panPhotoOnFile={profile.panPhotoOnFile} />
 
       <section className={`rounded-xl border p-4 ${t.card}`}>
         <h3 className={`mb-3 text-sm font-bold ${t.heading}`}>Account state</h3>
@@ -520,8 +520,13 @@ function IdentityTab({ profile, t }: { profile: SaUserProfile; t: SaTheme }) {
  * (see GovernancePanel). This is the same mechanism, just pre-scoped to this
  * user so an agent doesn't have to leave the page and re-type the id.
  */
-function PanRevealCard({ userId, t }: { userId: number; t: SaTheme }) {
-  const [field, setField] = useState<Extract<SaRevealField, "PAN" | "PAN_PHOTO">>("PAN");
+function PanRevealCard({ userId, t, panOnFile, panPhotoOnFile }: {
+  userId: number; t: SaTheme; panOnFile?: boolean; panPhotoOnFile?: boolean;
+}) {
+  // Undefined = backend didn't say (older build): offer both, as before.
+  const hasNumber = panOnFile !== false;
+  const hasPhoto = panPhotoOnFile !== false;
+  const [field, setField] = useState<Extract<SaRevealField, "PAN" | "PAN_PHOTO">>(hasNumber ? "PAN" : "PAN_PHOTO");
   const [justification, setJustification] = useState("");
   const [revealing, setRevealing] = useState(false);
   const [revealed, setRevealed] = useState<{ field: string; value: string } | null>(null);
@@ -542,6 +547,18 @@ function PanRevealCard({ userId, t }: { userId: number; t: SaTheme }) {
     }
   }
 
+  if (!hasNumber && !hasPhoto) {
+    return (
+      <section className={`rounded-xl border p-4 ${t.card}`}>
+        <h3 className={`mb-3 text-sm font-bold ${t.heading}`}>PAN</h3>
+        <p className={`text-sm font-semibold ${t.heading}`}>PAN not given</p>
+        <p className={`mt-1 text-xs ${t.muted}`}>
+          This user hasn&apos;t entered a PAN on any donation, so there is nothing to reveal.
+        </p>
+      </section>
+    );
+  }
+
   return (
     <section className={`rounded-xl border p-4 ${t.card}`}>
       <h3 className={`mb-3 text-sm font-bold ${t.heading}`}>PAN</h3>
@@ -556,8 +573,8 @@ function PanRevealCard({ userId, t }: { userId: number; t: SaTheme }) {
           onChange={(e) => setField(e.target.value as "PAN" | "PAN_PHOTO")}
           className={`rounded-lg border px-2.5 py-1.5 text-xs ${t.input}`}
         >
-          <option value="PAN">PAN number</option>
-          <option value="PAN_PHOTO">PAN photo</option>
+          {hasNumber && <option value="PAN">PAN number</option>}
+          {hasPhoto && <option value="PAN_PHOTO">PAN photo</option>}
         </select>
       </div>
 
