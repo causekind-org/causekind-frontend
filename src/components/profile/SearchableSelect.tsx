@@ -18,6 +18,9 @@ interface SearchableSelectProps {
   placeholder?: string;
   /** Direction of the options panel relative to the field. */
   direction?: "up" | "down";
+  /** "inline" puts the panel in the normal flow under the field, pushing the
+   *  content below it down, so a scrolling parent (a dialog body) cannot clip it. */
+  placement?: "overlay" | "inline";
   disabled?: boolean;
   /** Shown inside the trigger when disabled */
   disabledPlaceholder?: string;
@@ -35,6 +38,7 @@ export function SearchableSelect({
   onChange,
   placeholder = "Select...",
   direction = "down",
+  placement = "overlay",
   disabled = false,
   disabledPlaceholder,
   searchPlaceholder = "Search...",
@@ -154,8 +158,10 @@ export function SearchableSelect({
       {open && (
         <div
           className={[
-            "absolute z-[100] w-full min-w-[200px]",
-            direction === "up" ? "bottom-full mb-1" : "top-full mt-1",
+            placement === "inline"
+              ? "relative mt-1 w-full"
+              : "absolute z-[100] w-full min-w-[200px]",
+            placement === "inline" ? "" : direction === "up" ? "bottom-full mb-1" : "top-full mt-1",
             "rounded-xl border border-[var(--ck-role-accent)]/15 dark:border-stone-700",
             "bg-white dark:bg-zinc-900 shadow-lg",
           ].join(" ")}
