@@ -4,7 +4,6 @@ import { LandingText, LandingAttributes } from "@/components/LandingTranslation"
 
 import { useEffect, useRef, useState } from "react";
 import Image, { getImageProps } from "next/image";
-import { Anton } from "next/font/google";
 import Link from "@/components/AppLink";
 import { NewRequestLink } from "@/components/NewRequestLink";
 import { DonateNowButton } from "@/components/donate/DonateNowButton";
@@ -19,7 +18,6 @@ import { useNavratriCampaign } from "@/hooks/useNavratriCampaign";
 import { registerUrlPreserving } from "@/lib/postAuthDestination";
 
 const HERO_IMAGE = "/images/causekind-hero-handoff.webp";
-const mobileDisplay = Anton({ weight: "400", subsets: ["latin"], display: "swap", variable: "--font-hero-mobile" });
 const HERO_FOREGROUND = "/images/causekind-hero-foreground.webp";
 /** Navratri hero copy (11–20 Oct 2026, see src/lib/navratri.ts). Same for every role. */
 const NAVRATRI_COPY = {
@@ -336,7 +334,6 @@ export function HeroSection() {
     <MotionConfig reducedMotion="user">
       <section
         data-tour="guest-hero"
-        style={{ "--font-hero-mobile": mobileDisplay.style.fontFamily } as React.CSSProperties}
         aria-labelledby="causekind-hero-title"
         className={`${navratri ? "ck-hero-navratri" : ""} ck-showcase-hero relative isolate overflow-hidden bg-[var(--surface-cream)] px-3 pb-3 pt-3 text-[#100c06] dark:text-stone-100 sm:px-5 sm:pb-4 sm:pt-4 lg:px-[clamp(2rem,3.4vw,5.5rem)] lg:pt-0`}
       >

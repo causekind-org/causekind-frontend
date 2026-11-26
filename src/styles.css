@@ -2012,17 +2012,18 @@ body.mobile-menu-open {
 }
 
 .ck-hero-headline {
-  font-family: Impact, Haettenschweiler, "Arial Narrow Bold", "Arial Narrow", sans-serif;
-  font-size: clamp(1.55rem, 7.2vw, 3rem);
-  font-stretch: condensed;
+  /* Site heading face (2026-11-26, owner: one font pair site-wide). Was Impact. */
+  font-family: var(--font-source-serif-4), Georgia, serif;
+  font-size: clamp(1.4rem, 6.2vw, 2.6rem);
+  font-stretch: normal;
   /* 400, not 700. Impact ships exactly one weight — measured in the browser,
      `400 48px Impact` and `700 48px Impact` set to the same 454.8px, so the 700
      was never selecting a bold face. It was asking the rasteriser to SYNTHESISE
      one, smearing every stem thicker on a display face that is already heavy.
      Dropping to 400 renders Impact as drawn. */
-  font-weight: 400;
-  letter-spacing: -0.018em;
-  line-height: 0.98;
+  font-weight: 600;
+  letter-spacing: -0.03em;
+  line-height: 1;
   /* No `-webkit-text-stroke`. It used to paint a background-coloured hairline
      around every glyph (cream on light, #1a1512 on dark) to shave weight off
      Impact, but at these sizes it read as a white outline traced around the
@@ -2245,10 +2246,12 @@ body.mobile-menu-open {
     backdrop-filter: blur(10px);
   }
   .ck-showcase-hero .ck-hero-headline {
-    font-family: var(--font-hero-mobile), Impact, "Arial Narrow", sans-serif;
-    font-size: clamp(2.35rem, 10.6vw, 4.5rem);
-    line-height: 1.02;
-    letter-spacing: -0.025em;
+    /* Was Anton. Serif sets ~25% wider, so the clamp is ~20% smaller. */
+    font-family: var(--font-source-serif-4), Georgia, serif;
+    font-weight: 600;
+    font-size: clamp(1.95rem, 8.6vw, 3.6rem);
+    line-height: 1.04;
+    letter-spacing: -0.03em;
     overflow-wrap: anywhere;
     text-shadow: 0 2px 22px rgb(0 0 0 / 0.24);
   }
@@ -4824,4 +4827,43 @@ header[data-calm-header] .ck-logo-kind-shimmer {
   .dark .ck-home-page .ck-sahas-reels {
     background: #09090b !important;
   }
+}
+
+/* One font pair site-wide (2026-11-26, owner). The home sections used to load
+   their own faces (Fraunces, Caveat, IBM Plex Mono, Archivo, Big Shoulders)
+   through these variables; they now resolve to the two site faces. The class
+   is applied where the old next/font variable classes were (galleryFonts,
+   wordFonts, cineFonts). */
+.ck-font-alias {
+  --font-sg-serif: var(--font-source-serif-4), Georgia, serif;
+  --font-sg-hand: var(--font-plus-jakarta-sans), system-ui, sans-serif;
+  --font-sg-mono: var(--font-plus-jakarta-sans), system-ui, sans-serif;
+  --font-wk-grotesk: var(--font-plus-jakarta-sans), system-ui, sans-serif;
+  --font-cine-display: var(--font-source-serif-4), Georgia, serif;
+  --font-cine-serif: var(--font-source-serif-4), Georgia, serif;
+  --font-cine-mono: var(--font-plus-jakarta-sans), system-ui, sans-serif;
+}
+
+/* The site pair as plain classes (2026-11-26), for components that used to
+   load their own next/font faces. Unlayered, so .ck-font-heading's 600 beats
+   a Tailwind font-extrabold on the same element — the /fundraisers weight. */
+.ck-font-heading {
+  font-family: var(--font-source-serif-4), Georgia, serif;
+  font-weight: 600;
+  letter-spacing: -0.01em;
+}
+.ck-font-body {
+  font-family: var(--font-plus-jakarta-sans), system-ui, sans-serif;
+}
+
+/* Retired faces (2026-11-26): Nunito, Inter, Lora and Roboto Mono are no longer
+   loaded (app/[locale]/layout.tsx). Their variables now resolve to the site
+   pair, so every inline style, CSS module and blog reading mode that still
+   names them renders in Source Serif 4 / Plus Jakarta Sans. Declared on body,
+   where next/font sets the two real variables. */
+body {
+  --font-nunito: var(--font-plus-jakarta-sans);
+  --font-inter: var(--font-plus-jakarta-sans);
+  --font-lora: var(--font-source-serif-4);
+  --font-roboto-mono: var(--font-plus-jakarta-sans);
 }

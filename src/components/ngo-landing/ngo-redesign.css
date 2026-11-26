@@ -8,8 +8,9 @@
    the faces under these same family names, so the tokens below are unchanged. */
 
 :root {
-  --ngo-font-heading: 'Fraunces', Georgia, serif;
-  --ngo-font-body: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  /* 2026-11-26 (owner: one font pair site-wide): was Fraunces / Inter. */
+  --ngo-font-heading: 'Source Serif 4', Georgia, serif;
+  --ngo-font-body: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
 
   /* Theme Tokens: Light */
   --ngo-bg: #F6F1E4;
@@ -42,8 +43,9 @@
   /* CLS: use next/font's own family names. They carry a size-adjusted local
      fallback ("Fraunces Fallback" / "Inter Fallback"), so text no longer
      reflows when the web font swaps in. Same faces once loaded. */
-  --ngo-font-heading: var(--font-ngo-heading-face, 'Fraunces'), Georgia, serif;
-  --ngo-font-body: var(--font-inter, 'Inter'), -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  /* The site pair (2026-11-26), via the root layout's next/font variables. */
+  --ngo-font-heading: var(--font-source-serif-4), Georgia, serif;
+  --ngo-font-body: var(--font-plus-jakarta-sans), -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
   background-color: var(--ngo-bg);
   color: var(--ngo-ink);
   font-family: var(--ngo-font-body);
