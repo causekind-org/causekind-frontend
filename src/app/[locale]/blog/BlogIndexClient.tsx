@@ -3,7 +3,7 @@
 import React, { useState, useEffect, useMemo, useRef, Suspense } from "react";
 import Link from "@/components/AppLink";
 import Image from "next/image";
-import { useRouter, useSearchParams } from "next/navigation";
+import { useRouter } from "next/navigation";
 import { CategoryDropdown } from "@/components/blog/CategoryDropdown";
 import { motion, AnimatePresence } from "framer-motion";
 import { useLocale, useTranslations } from "next-intl";
@@ -54,8 +54,17 @@ function activityToFeedItem(a: RecentActivity, i: number) {
 
 function BlogListingContent() {
   const router = useRouter();
-  const searchParams = useSearchParams();
-  const categoryFromUrl = searchParams.get("category");
+  // ?category= is read after mount, not with useSearchParams: that hook forced
+  // the page to render per request, which sent Cache-Control: no-store and
+  // blocked the back/forward cache (Audit Report 6, 26 Nov 2026). The page is
+  // now static, with every post in the HTML; the filter applies on mount.
+  const [categoryFromUrl, setCategoryFromUrl] = useState<string | null>(null);
+  useEffect(() => {
+    const read = () => setCategoryFromUrl(new URLSearchParams(window.location.search).get("category"));
+    read();
+    window.addEventListener("popstate", read);
+    return () => window.removeEventListener("popstate", read);
+  }, []);
 
   const locale = useLocale();
   const t = useTranslations("blog_page");
@@ -722,16 +731,24 @@ function BlogListingContent() {
           </div>
 
           {/* Dot indicators */}
-          <div className="flex gap-1.5 mt-6 justify-center sm:hidden">
+          {/* Each dot sits in a 24px-tall tap area (Lighthouse target size,
+              Audit Report 6); the visible dots and their spacing are unchanged. */}
+          <div className="flex mt-6 justify-center sm:hidden">
             {insiderTips.map((_, i) => (
               <button
                 key={i}
+                type="button"
                 onClick={() => goToTip(i)}
                 aria-label={`Go to tip ${i + 1}`}
-                className={`h-1.5 rounded-full transition-all duration-300 cursor-pointer active:scale-90 ${
-                  i === tipIndex ? "w-8 bg-[#b04a15]" : "w-2 bg-stone-300 dark:bg-stone-700 hover:bg-stone-400 dark:hover:bg-stone-600"
-                }`}
-              />
+                className="group flex h-6 min-w-6 cursor-pointer items-center justify-center px-[3px]"
+              >
+                <span
+                  aria-hidden
+                  className={`block h-1.5 rounded-full transition-all duration-300 group-active:scale-90 ${
+                    i === tipIndex ? "w-8 bg-[#b04a15]" : "w-2 bg-stone-300 dark:bg-stone-700 group-hover:bg-stone-400 dark:group-hover:bg-stone-600"
+                  }`}
+                />
+              </button>
             ))}
           </div>
         </section>

@@ -1,9 +1,9 @@
 import type { Metadata } from "next";
 import BlogIndexClient from "./BlogIndexClient";
 
-// The listing reads ?category= with useSearchParams. Rendered per request so
-// search engines still get the posts in the HTML.
-export const dynamic = "force-dynamic";
+// Static (no force-dynamic): the listing reads ?category= in the browser, so
+// the page can be cached and use the back/forward cache. Every post is still
+// in the HTML for search engines.
 
 /**
  * Server wrapper around the client listing UI, so the blog index can carry its

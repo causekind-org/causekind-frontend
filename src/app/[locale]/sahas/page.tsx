@@ -39,6 +39,18 @@ export default function SahasHubPage() {
             </p>
           </SahasIntroCard>
         }
+        // Planned text from Thin-Pages-Text-Drafts (Audit Report 6, 26 Nov 2026):
+        // the hub was still thin (271 words).
+        outro={
+          <SahasIntroCard heading={{ id: "sahas-how-heading", text: "How Sahas campaigns work" }}>
+            <p className="m-0">
+              Each campaign shows what Sahas Charitable Trust needs right now, with a target and an end date. Active campaigns are open for support, upcoming ones will open soon, and completed campaigns show what was achieved.
+            </p>
+            <p className="m-0">
+              You can help in two ways: give items from the campaign&apos;s list, or donate money securely through Razorpay by UPI, cards, net banking or wallet. Every donor receives a donation certificate by email, and money donations are eligible for an 80G receipt when you tick the box and add your PAN and address on the donation form.
+            </p>
+          </SahasIntroCard>
+        }
       />
     </>
   );
