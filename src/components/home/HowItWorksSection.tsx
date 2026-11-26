@@ -19,12 +19,6 @@ import {
   ArrowRight,
 } from "lucide-react";
 import { LANDING_ROUTES } from "@/lib/landingConstants";
-import { useAfterLoadIdle } from "@/hooks/useAfterLoadIdle";
-
-/** Auto-advance interval for the role tabs (give → need help → NGO → give). */
-const AUTO_ROTATE_MS = 3000;
-/** After a tap on touch screens (no hover to pause on), wait this long first. */
-const TOUCH_PAUSE_MS = 8000;
 import mStyles from "./HowItWorksMobile.module.css";
 
 type RoleTab = "donor" | "donee" | "ngo";
@@ -334,50 +328,11 @@ export function HowItWorksSection() {
 
   const activeIndex = TABS.findIndex((t) => t.id === activeTab);
 
-  // ── Auto-rotation ──
-  // Every AUTO_ROTATE_MS the next role is shown, looping. It pauses while the
-  // mouse is over the tabs or the cards, while keyboard focus is inside the
-  // section, while the browser tab is hidden and while the section is off
-  // screen. A click restarts the countdown from that tab; a tap pauses for
-  // TOUCH_PAUSE_MS. No rotation at all with reduced motion. The timer starts
-  // only after load + idle; the server HTML always shows the first tab.
-  const reduceRotation = useReducedMotion();
-  const rotationReady = useAfterLoadIdle();
-  const onScreen = useInView(sectionRef, { amount: 0.2 });
-  const [hovering, setHovering] = useState(false);
-  const [focusInside, setFocusInside] = useState(false);
-  const [pageHidden, setPageHidden] = useState(false);
-  const [restartKey, setRestartKey] = useState(0);
-  const pausedUntil = useRef(0);
-
-  useEffect(() => {
-    const sync = () => setPageHidden(document.hidden);
-    sync();
-    document.addEventListener("visibilitychange", sync);
-    return () => document.removeEventListener("visibilitychange", sync);
-  }, []);
-
-  useEffect(() => {
-    if (!rotationReady || reduceRotation || hovering || focusInside || pageHidden || !onScreen) return;
-    const wait = Math.max(AUTO_ROTATE_MS, pausedUntil.current - Date.now());
-    const id = window.setTimeout(() => {
-      setActiveTab((cur) => TABS[(TABS.findIndex((t) => t.id === cur) + 1) % TABS.length].id);
-    }, wait);
-    return () => window.clearTimeout(id);
-  }, [activeTab, restartKey, rotationReady, reduceRotation, hovering, focusInside, pageHidden, onScreen]);
-
-  const pauseForTouch = () => {
-    pausedUntil.current = Date.now() + TOUCH_PAUSE_MS;
-    setRestartKey((k) => k + 1);
-  };
-  const hoverHandlers = {
-    onMouseEnter: () => setHovering(true),
-    onMouseLeave: () => setHovering(false),
-  };
-
+  // No auto-rotation (2026-11-26, landing audit): the role a visitor reads
+  // only changes when they pick another tab or swipe. It used to advance every
+  // 3 s, which switched the steps and the signup button mid-read.
   const selectTab = (id: RoleTab) => {
     setActiveTab(id);
-    setRestartKey((k) => k + 1);
   };
 
   const go = (dir: 1 | -1) => {
@@ -421,9 +376,6 @@ export function HowItWorksSection() {
   return (
     <section
       ref={sectionRef}
-      onFocus={() => setFocusInside(true)}
-      onBlur={(ev) => { if (!ev.currentTarget.contains(ev.relatedTarget as Node | null)) setFocusInside(false); }}
-      onTouchStartCapture={pauseForTouch}
       id="how-it-works"
       aria-labelledby="how-it-works-heading"
       className="ck-m-section relative w-full min-h-[calc(100svh-4rem)] lg:min-h-[calc(100svh-4.5rem)] flex flex-col justify-center py-6 sm:py-8 lg:py-6 bg-[#FAF8F5] dark:bg-[#140E0B] text-[#1C1410] dark:text-[#F5EEE8] overflow-hidden transition-colors duration-500"
@@ -484,7 +436,6 @@ export function HowItWorksSection() {
             ref={tabListRef}
             role="tablist"
             aria-label="User role journey selector"
-            {...hoverHandlers}
             onKeyDown={handleKeyDown}
             className="inline-flex p-1 rounded-full bg-stone-200/70 dark:bg-stone-900/90 border border-stone-300/60 dark:border-stone-800 shadow-inner max-w-full overflow-x-auto scrollbar-none"
           >
@@ -537,7 +488,6 @@ export function HowItWorksSection() {
           id={`tabpanel-${activeTab}`}
           aria-labelledby={`tab-${activeTab}`}
           aria-live="off"
-          {...hoverHandlers}
           className="relative w-full"
         >
           {/* Connecting SVG Path (Desktop Horizontal Line, placed at z-0 behind solid cards) */}
