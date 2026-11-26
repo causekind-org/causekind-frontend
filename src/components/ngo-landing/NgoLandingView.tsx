@@ -7,8 +7,15 @@ import { ErrorIdNote } from "@/components/ErrorIdNote";
 import "./ngo-redesign.css";
 import { ngoFonts } from "./fonts";
 
+// PreApprovalLanding (guests and unverified NGOs — almost every visitor) is a
+// static import on purpose. As a lazy() it became its own streamed Suspense
+// boundary: the server sent an empty green fallback first and the real hero in
+// a hidden block revealed only after the rest of the page streamed (+ React's
+// reveal throttle). Measured on live /ngo, 26 Nov: load 2.6 s, hero LCP 5.4 s
+// (Lighthouse: hero downloaded in 240 ms, painted 3.4 s later).
+// PostApprovalLanding is only for verified NGOs, so it can stay split out.
+import PreApprovalLanding from "./PreApprovalLanding";
 const PostApprovalLanding = lazy(() => import("./PostApprovalLanding"));
-const PreApprovalLanding = lazy(() => import("./PreApprovalLanding"));
 
 function NgoLandingViewContent() {
   const status = useNgoStatus();
@@ -48,9 +55,7 @@ function NgoLandingViewContent() {
           <PostApprovalLanding status={status} />
         </Suspense>
       ) : (
-        <Suspense fallback={<div className="min-h-screen bg-[#0B3D2E]" />}>
-          <PreApprovalLanding status={status} />
-        </Suspense>
+        <PreApprovalLanding status={status} />
       )}
     </div>
   );

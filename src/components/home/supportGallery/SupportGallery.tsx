@@ -443,8 +443,12 @@ function Pile({
               key={p.id}
               type="button"
               className={styles.card2}
-              tabIndex={visible ? 0 : -1}
+              // Only the top print is a target (Lighthouse target-size, 26 Nov
+              // report): the prints under it showed a sliver each, five
+              // overlapping tap targets. Swipe or tap the top one to move on.
+              tabIndex={rel === 0 ? 0 : -1}
               aria-hidden={!visible}
+              data-top={rel === 0 ? "true" : undefined}
               aria-label={
                 rel === 0
                   ? `Photo ${i + 1} of ${n}, on top: ${p.category}. Tap for the next.`

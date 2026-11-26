@@ -507,6 +507,10 @@
     transform 520ms var(--sg-ease),
     opacity 380ms ease;
 }
+/* Prints under the top one are not tap targets (see SupportGallery.tsx). */
+.card2:not([data-top]) {
+  pointer-events: none;
+}
 .card2:focus-visible {
   outline: 3px solid var(--sg-accent);
   outline-offset: 5px;
