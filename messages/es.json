@@ -392,6 +392,18 @@
     "useGps": "Usar GPS",
     "getting": "Conseguir…",
     "saveProfileChanges": "Guardar cambios de perfil",
+    "settingsTitle": "Ajustes",
+    "settingsDone": "Listo",
+    "settingsDescription": "Actualiza tu nombre, teléfono y ubicación.",
+    "tapToChangePhoto": "Toca para cambiar la foto",
+    "sectionAccount": "CUENTA",
+    "sectionLocation": "UBICACIÓN",
+    "rowsSaveHint": "Cambia algo y aparecerá un botón Guardar arriba.",
+    "emailLocked": "No se puede cambiar",
+    "backLabel": "Atrás",
+    "profilePhoto": "Foto de perfil",
+    "photoSavesInstantly": "Tu foto se guarda en cuanto la eliges.",
+    "editFieldDescription": "Editar {field}",
     "saving": "Ahorro…",
     "badgeFirstGiver": "primer dador",
     "badgeCommunityHero": "Héroe de la comunidad",
@@ -1243,12 +1255,12 @@
   },
   "trustBand": {
     "label": "Por qué CauseKind es seguro",
-    "trustedTitle": "Comunidad de confianza",
-    "trustedBody": "Seguro. Verificado. Fiable.",
-    "impactTitle": "Impacto local",
-    "impactBody": "Ayudando a personas de tu barrio.",
-    "togetherTitle": "Más fuertes juntos",
-    "togetherBody": "Mejor comunidad. Mejor mañana."
+    "trustedTitle": "Las necesidades se revisan",
+    "trustedBody": "Nuestro equipo revisa cada solicitud antes de publicarla.",
+    "impactTitle": "De mano en mano",
+    "impactBody": "Los artículos llegan directamente a alguien cerca de ti.",
+    "togetherTitle": "Entrega confirmada",
+    "togetherBody": "Un código de un solo uso confirma cada entrega."
   },
   "NgoLanding": {
     "HeroStateA": {

@@ -58,7 +58,7 @@ const TABS: TabConfig[] = [
       {
         number: "01",
         title: "Sign up for free",
-        description: "Create your account in a minute.",
+        description: "Create your free account.",
         icon: UserCheck,
         microAnimation: "pulse",
       },
@@ -99,7 +99,7 @@ const TABS: TabConfig[] = [
       {
         number: "01",
         title: "Sign up for free",
-        description: "Create your account in a minute.",
+        description: "Create your free account.",
         icon: UserCheck,
         microAnimation: "pulse",
       },

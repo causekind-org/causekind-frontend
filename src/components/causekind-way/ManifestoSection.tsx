@@ -509,9 +509,9 @@ export function ManifestoSection() {
               <div className="dignified-copy opacity-0 translate-y-6 max-w-md text-left mb-2">
                 <div className="w-8 h-px bg-[#B5480F] mb-3" />
                 <p className="font-serif text-lg lg:text-xl text-stone-700 dark:text-stone-300 leading-snug">
-                  People ask for exactly what they need, without public begging or{" "}
+                  People ask for exactly what they need. Their{" "}
                   <span className="relative inline-block whitespace-nowrap">
-                    <span className="relative z-10">sharing their story.</span>
+                    <span className="relative z-10">photo and address stay private.</span>
                     {/* Soft orange privacy bar */}
                     <span
                       className="privacy-bar absolute inset-y-0 -inset-x-1 bg-[#B5480F]/25 dark:bg-[#F4A25B]/30 rounded-sm z-0 pointer-events-none"
@@ -702,9 +702,9 @@ export function ManifestoSection() {
             DIGNIFIED.
           </h3>
           <p className="font-serif text-base sm:text-lg text-stone-700 dark:text-stone-300 leading-relaxed max-w-md">
-            People ask for exactly what they need, without public begging or{" "}
+            People ask for exactly what they need. Their{" "}
             <span className="bg-[#B5480F]/20 dark:bg-[#F4A25B]/25 px-1 py-0.5 rounded-sm">
-              sharing their story.
+              photo and address stay private.
             </span>
           </p>
         </div>

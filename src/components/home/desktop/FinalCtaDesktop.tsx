@@ -135,7 +135,7 @@ export function FinalCtaDesktop({
             {/* Small Top Eyebrow */}
             <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[11px] sm:text-xs font-bold tracking-widest uppercase bg-white/10 text-amber-200 border border-white/15 mb-3 backdrop-blur-xs">
               <Sparkles className="w-3.5 h-3.5 text-[#F4A25B]" aria-hidden="true" />
-              <span>START IN 60 SECONDS</span>
+              <span>FREE TO JOIN</span>
             </div>
 
             {/* Heading with Word-by-Word Reveal */}
@@ -156,7 +156,7 @@ export function FinalCtaDesktop({
 
             {/* Subtext */}
             <p className="mt-2.5 text-xs sm:text-sm text-stone-300 max-w-xl leading-relaxed font-normal">
-              Join free in a minute. Give, ask, or help your community — whichever side you&apos;re on.
+              Create a free account. Give, ask, or help your community — whichever side you&apos;re on.
             </p>
 
             {/* ════════ 3 ACTION BUTTONS (1 Row on Desktop, Stacked on Mobile) ════════ */}

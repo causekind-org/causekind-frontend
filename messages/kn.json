@@ -392,6 +392,18 @@
     "useGps": "ಜಿಪಿಎಸ್ ಬಳಸಿ",
     "getting": "ಪಡೆಯಲಾಗುತ್ತಿದೆ...",
     "saveProfileChanges": "ಪ್ರೊಫೈಲ್ ಬದಲಾವಣೆಗಳನ್ನು ಉಳಿಸಿ",
+    "settingsTitle": "ಸೆಟ್ಟಿಂಗ್‌ಗಳು",
+    "settingsDone": "ಮುಗಿದಿದೆ",
+    "settingsDescription": "ನಿಮ್ಮ ಹೆಸರು, ಫೋನ್ ಸಂಖ್ಯೆ ಮತ್ತು ಸ್ಥಳವನ್ನು ನವೀಕರಿಸಿ.",
+    "tapToChangePhoto": "ಫೋಟೋ ಬದಲಿಸಲು ಟ್ಯಾಪ್ ಮಾಡಿ",
+    "sectionAccount": "ಖಾತೆ",
+    "sectionLocation": "ಸ್ಥಳ",
+    "rowsSaveHint": "ಏನಾದರೂ ಬದಲಿಸಿದರೆ ಮೇಲೆ ಉಳಿಸು ಬಟನ್ ಕಾಣಿಸುತ್ತದೆ.",
+    "emailLocked": "ಬದಲಾಯಿಸಲು ಸಾಧ್ಯವಿಲ್ಲ",
+    "backLabel": "ಹಿಂದೆ",
+    "profilePhoto": "ಪ್ರೊಫೈಲ್ ಫೋಟೋ",
+    "photoSavesInstantly": "ಫೋಟೋ ಆಯ್ಕೆ ಮಾಡಿದ ತಕ್ಷಣ ಉಳಿಯುತ್ತದೆ.",
+    "editFieldDescription": "{field} ಸಂಪಾದಿಸಿ",
     "saving": "ಉಳಿಸಲಾಗುತ್ತಿದೆ...",
     "badgeFirstGiver": "ಮೊದಲ ಕೊಡುವವರು",
     "badgeCommunityHero": "ಸಮುದಾಯ ಹೀರೋ",
@@ -1243,12 +1255,12 @@
   },
   "trustBand": {
     "label": "CauseKind ಏಕೆ ಸುರಕ್ಷಿತ",
-    "trustedTitle": "ವಿಶ್ವಾಸಾರ್ಹ ಸಮುದಾಯ",
-    "trustedBody": "ಸುರಕ್ಷಿತ. ಪರಿಶೀಲಿತ. ನಂಬಿಕಾರ್ಹ.",
-    "impactTitle": "ಸ್ಥಳೀಯ ಪರಿಣಾಮ",
-    "impactBody": "ನಿಮ್ಮ ಸುತ್ತಮುತ್ತಲಿನ ಜನರಿಗೇ ನೆರವು.",
-    "togetherTitle": "ಜೊತೆಗೂಡಿ ಬಲಿಷ್ಠ",
-    "togetherBody": "ಉತ್ತಮ ಸಮುದಾಯ. ಉತ್ತಮ ನಾಳೆ."
+    "trustedTitle": "ಅಗತ್ಯಗಳನ್ನು ಪರಿಶೀಲಿಸಲಾಗುತ್ತದೆ",
+    "trustedBody": "ಪ್ರತಿ ವಿನಂತಿ ಪ್ರಕಟವಾಗುವ ಮೊದಲು ನಮ್ಮ ತಂಡ ಪರಿಶೀಲಿಸುತ್ತದೆ.",
+    "impactTitle": "ನೇರವಾಗಿ ಕೈಯಿಂದ ಕೈಗೆ",
+    "impactBody": "ವಸ್ತುಗಳು ನೇರವಾಗಿ ನಿಮ್ಮ ಹತ್ತಿರದ ವ್ಯಕ್ತಿಗೆ ತಲುಪುತ್ತವೆ.",
+    "togetherTitle": "ಹಸ್ತಾಂತರ ದೃಢೀಕರಣ",
+    "togetherBody": "ಪ್ರತಿ ಹಸ್ತಾಂತರವನ್ನು ಒಂದು ಬಾರಿಯ ಕೋಡ್ (OTP) ಮೂಲಕ ದೃಢೀಕರಿಸಲಾಗುತ್ತದೆ."
   },
   "NgoLanding": {
     "HeroStateA": {

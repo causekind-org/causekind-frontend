@@ -271,10 +271,10 @@ function Table({
 
 
       <h2 className={styles.title}>
-        <span><LandingText>Where does</LandingText></span>
-        <span><LandingText>my support</LandingText></span>
+        <span><LandingText>From our</LandingText></span>
+        <span><LandingText>community</LandingText></span>
         <span>
-          <em><LandingText>go?</LandingText></em>
+          <em><LandingText>drives</LandingText></em>
         </span>
       </h2>
 
@@ -408,10 +408,10 @@ function Pile({
     <div ref={rootRef}>
 
       <h2 className={`${styles.mTitle} mt-3`}>
-        <span><LandingText>Where does</LandingText></span>
-        <span><LandingText>my support</LandingText></span>
+        <span><LandingText>From our</LandingText></span>
+        <span><LandingText>community</LandingText></span>
         <span>
-          <em><LandingText>go?</LandingText></em>
+          <em><LandingText>drives</LandingText></em>
         </span>
       </h2>
 
@@ -443,8 +443,12 @@ function Pile({
               key={p.id}
               type="button"
               className={styles.card2}
-              tabIndex={visible ? 0 : -1}
+              // Only the top print is a target (Lighthouse target-size, 26 Nov
+              // report): the prints under it showed a sliver each, five
+              // overlapping tap targets. Swipe or tap the top one to move on.
+              tabIndex={rel === 0 ? 0 : -1}
               aria-hidden={!visible}
+              data-top={rel === 0 ? "true" : undefined}
               aria-label={
                 rel === 0
                   ? `Photo ${i + 1} of ${n}, on top: ${p.category}. Tap for the next.`
@@ -509,7 +513,7 @@ export function SupportGallery({ photos = PHOTOS }: { photos?: Photo[] }) {
     <LandingAttributes><section
       ref={sectionRef}
       id="where-support-goes"
-      aria-label="Where does my support go? Photographs from CauseKind drives"
+      aria-label="From our community drives: photographs from CauseKind drives"
       className={`${styles.section} ck-m-section`}
     >
       <div className="relative hidden px-4 py-14 md:block lg:px-8 lg:py-20">

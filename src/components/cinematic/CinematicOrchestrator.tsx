@@ -263,7 +263,14 @@ export function CinematicOrchestrator({
   return (
     // The pre-paint script may add display:none before hydration.
     <div ref={rootRef} className="ck-cinematic relative w-full" suppressHydrationWarning>
-      <script dangerouslySetInnerHTML={{ __html: RESTORE_COLLAPSED_SCRIPT }} />
+      {/* Runs from the server HTML before paint. On a client render React 19
+          warns about (and never runs) script tags, so the client copy is
+          marked inert text — the server-rendered one has already done its job. */}
+      <script
+        type={typeof window === "undefined" ? "text/javascript" : "text/plain"}
+        suppressHydrationWarning
+        dangerouslySetInnerHTML={{ __html: RESTORE_COLLAPSED_SCRIPT }}
+      />
       {/* Without JavaScript the chapters never load: collapse the tracks so
           the page is not screens of an unchanging stand-in. */}
       <noscript>

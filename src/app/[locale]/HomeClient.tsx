@@ -274,7 +274,7 @@ export default function HomeClient({
   const showGuestDesktopTree = isRestoring || !isDonorOrDonee || isDesktop === false;
   // Signed-in donors and donees: on desktop they get RoleHome instead of the
   // guest page; on mobile they share the guest sections, minus the two that
-  // pitch signing up ("How it works" and the "Start in 60 seconds" CTA).
+  // pitch signing up ("How it works" and the "Free to join" CTA).
   const isRoleHome = isDonorOrDonee && !isRestoring;
   // The donee page has no lines between its sections (desktop RoleHome and this phone column).
   const isDoneeHome = roleStr === "DONEE" && !isRestoring;

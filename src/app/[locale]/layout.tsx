@@ -2,7 +2,7 @@ import { StartDriveChoice } from "@/components/ngo-landing/StartDriveChoice";
 import { StoredImageFallback } from "@/components/media/StoredImageFallback";
 import type { Metadata } from "next";
 import { Suspense } from "react";
-import { Plus_Jakarta_Sans, Nunito, Source_Serif_4, Inter, Lora, Roboto_Mono } from "next/font/google";
+import { Plus_Jakarta_Sans, Source_Serif_4 } from "next/font/google";
 import Script from "next/script";
 import { RouteProgressBar } from "@/components/RouteProgressBar";
 import "@/styles.css";
@@ -64,49 +64,17 @@ const plusJakarta = Plus_Jakarta_Sans({
 });
 
 /**
- * Only the two fonts the site actually renders with on every page are
- * preloaded: Source Serif 4 (headings) and Plus Jakarta Sans (body). The other
- * four are used on a handful of surfaces each.
- *
- * <p>`next/font` emits a `<link rel="preload">` for every declared family by
- * default, on every page. Six families' worth of font files were therefore
- * preloaded everywhere and mostly never used, which is exactly what Chrome's
- * "resource was preloaded using link preload but not used within a few seconds"
- * warning is reporting — hundreds of times, once per family per navigation and
- * again after every hot reload.
- *
- * <p>`preload: false` does NOT stop these loading. The font still downloads the
- * moment something uses it; it just stops the browser being told to fetch it
- * eagerly on pages that never will.
+ * The site's only two faces (owner, 2026-11-26): Source Serif 4 for headings,
+ * Plus Jakarta Sans for everything else. Nunito, Inter, Lora and Roboto Mono
+ * are no longer loaded; styles.css maps their old variables (--font-nunito,
+ * --font-inter, --font-lora, --font-roboto-mono) onto these two, so existing
+ * callers keep working.
  */
-const nunito = Nunito({
-  variable: "--font-nunito",
-  subsets: ["latin"],
-  weight: ["700", "800", "900"],
-  preload: false,
-});
-
 const sourceSerif4 = Source_Serif_4({
   variable: "--font-source-serif-4",
   subsets: ["latin"],
-});
-
-const inter = Inter({
-  variable: "--font-inter",
-  subsets: ["latin"],
-  preload: false,
-});
-
-const lora = Lora({
-  variable: "--font-lora",
-  subsets: ["latin"],
-  preload: false,
-});
-
-const robotoMono = Roboto_Mono({
-  variable: "--font-roboto-mono",
-  subsets: ["latin"],
-  preload: false,
+  // Italic too: the home sections' italic serif lines (formerly Fraunces) use it.
+  style: ["normal", "italic"],
 });
 
 // Cold translation misses have bounded queue/provider deadlines. Cache warming
@@ -171,7 +139,7 @@ export default async function RootLayout({
             the blog reader used are inline SVGs in BlogPostClient.tsx
             (MaterialIcon), so no route pays for a third-party font request. */}
       </head>
-      <body className={`${plusJakarta.variable} ${nunito.variable} ${sourceSerif4.variable} ${inter.variable} ${lora.variable} ${robotoMono.variable} antialiased`} suppressHydrationWarning>
+      <body className={`${plusJakarta.variable} ${sourceSerif4.variable} antialiased`} suppressHydrationWarning>
         {/* Skip link: first focusable element, hidden until focused. */}
         <a href="#main" className="sr-only focus:not-sr-only focus:fixed focus:left-3 focus:top-3 focus:z-[2147483647] focus:rounded-full focus:bg-white focus:px-4 focus:py-2 focus:text-sm focus:font-bold focus:text-stone-900 focus:shadow-lg focus:outline-none focus:ring-2 focus:ring-[#b04a15]">Skip to content</a>
         <StoredImageFallback />

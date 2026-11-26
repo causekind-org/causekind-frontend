@@ -392,6 +392,18 @@
     "useGps": "استخدم نظام تحديد المواقع",
     "getting": "الحصول…",
     "saveProfileChanges": "حفظ تغييرات الملف الشخصي",
+    "settingsTitle": "الإعدادات",
+    "settingsDone": "تم",
+    "settingsDescription": "حدّث اسمك ورقم هاتفك وموقعك.",
+    "tapToChangePhoto": "انقر لتغيير الصورة",
+    "sectionAccount": "الحساب",
+    "sectionLocation": "الموقع",
+    "rowsSaveHint": "غيّر أي شيء وسيظهر زر الحفظ في الأعلى.",
+    "emailLocked": "لا يمكن تغييره",
+    "backLabel": "رجوع",
+    "profilePhoto": "صورة الملف الشخصي",
+    "photoSavesInstantly": "تُحفظ صورتك فور اختيارها.",
+    "editFieldDescription": "تعديل {field}",
     "saving": "توفير…",
     "badgeFirstGiver": "المانح الأول",
     "badgeCommunityHero": "بطل المجتمع",
@@ -1243,12 +1255,12 @@
   },
   "trustBand": {
     "label": "لماذا CauseKind آمنة",
-    "trustedTitle": "مجتمع موثوق",
-    "trustedBody": "آمن. موثّق. جدير بالثقة.",
-    "impactTitle": "أثر محلي",
-    "impactBody": "مساعدة الناس في حيّك نفسه.",
-    "togetherTitle": "معًا أقوى",
-    "togetherBody": "مجتمع أفضل. غد أفضل."
+    "trustedTitle": "تتم مراجعة الاحتياجات",
+    "trustedBody": "يراجع فريقنا كل طلب قبل نشره.",
+    "impactTitle": "من يد إلى يد",
+    "impactBody": "تصل الأغراض مباشرة إلى شخص قريب منك.",
+    "togetherTitle": "تأكيد التسليم",
+    "togetherBody": "يُؤكَّد كل تسليم برمز يُستخدم مرة واحدة (OTP)."
   },
   "NgoLanding": {
     "HeroStateA": {

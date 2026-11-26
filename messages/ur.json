@@ -392,6 +392,18 @@
     "useGps": "GPS استعمال کریں۔",
     "getting": "حاصل ہو رہا ہے…",
     "saveProfileChanges": "پروفائل کی تبدیلیاں محفوظ کریں۔",
+    "settingsTitle": "ترتیبات",
+    "settingsDone": "ہو گیا",
+    "settingsDescription": "اپنا نام، فون نمبر اور مقام اپ ڈیٹ کریں۔",
+    "tapToChangePhoto": "تصویر بدلنے کے لیے ٹیپ کریں",
+    "sectionAccount": "اکاؤنٹ",
+    "sectionLocation": "مقام",
+    "rowsSaveHint": "کچھ بھی بدلیں، اوپر محفوظ کریں بٹن آ جائے گا۔",
+    "emailLocked": "تبدیل نہیں کیا جا سکتا",
+    "backLabel": "واپس",
+    "profilePhoto": "پروفائل تصویر",
+    "photoSavesInstantly": "تصویر منتخب کرتے ہی محفوظ ہو جاتی ہے۔",
+    "editFieldDescription": "{field} میں ترمیم کریں",
     "saving": "محفوظ کر رہا ہے…",
     "badgeFirstGiver": "پہلا دینے والا",
     "badgeCommunityHero": "کمیونٹی ہیرو",
@@ -1243,12 +1255,12 @@
   },
   "trustBand": {
     "label": "CauseKind کیوں محفوظ ہے",
-    "trustedTitle": "قابلِ اعتماد برادری",
-    "trustedBody": "محفوظ۔ تصدیق شدہ۔ قابلِ بھروسا۔",
-    "impactTitle": "مقامی اثر",
-    "impactBody": "آپ کے اپنے محلے کے لوگوں کی مدد۔",
-    "togetherTitle": "مل کر زیادہ مضبوط",
-    "togetherBody": "بہتر برادری۔ بہتر کل۔"
+    "trustedTitle": "ضرورتوں کی جانچ ہوتی ہے",
+    "trustedBody": "ہر درخواست لائیو ہونے سے پہلے ہماری ٹیم اسے جانچتی ہے۔",
+    "impactTitle": "براہِ راست ہاتھوں ہاتھ",
+    "impactBody": "سامان براہِ راست آپ کے قریب کسی شخص تک پہنچتا ہے۔",
+    "togetherTitle": "حوالگی کی تصدیق",
+    "togetherBody": "ہر حوالگی کی تصدیق ایک بار کے کوڈ (OTP) سے ہوتی ہے۔"
   },
   "NgoLanding": {
     "HeroStateA": {

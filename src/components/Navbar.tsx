@@ -5,7 +5,8 @@ import { UiText, useUiText } from "@/components/UiText";
 import { serverDate } from "@/lib/serverTime";
 import { useState, useEffect, useLayoutEffect, useRef, useCallback } from "react";
 import dynamic from "next/dynamic";
-import type { ComponentType } from "react";
+// @ts-expect-error -- hand-maintained JSX component has no declaration file.
+import StaggeredMenu from "@/components/StaggeredMenu";
 import Link from "@/components/AppLink";
 import { RakshaBandhanWordmark } from "@/components/brand/RakshaBandhanWordmark";
 import { isRakshaBandhanCampaignActive } from "@/lib/raksha-bandhan";
@@ -115,17 +116,11 @@ function NavGlassPill({ onReady }: { onReady: () => void }) {
 const NGO_APPROVED_PILL_MS = 2 * 60 * 1000;
 
 /** The wordmark per size; md is the header's (small on phones). The icon scales with it via `dimensions`. */
-const WORDMARK_SIZE = { sm: "text-base", md: "text-base sm:text-xl", lg: "text-xl sm:text-2xl" } as const;
+const WORDMARK_SIZE = { sm: "text-base", md: "text-base sm:text-xl", lg: "text-xl sm:text-2xl", xl: "text-[1.625rem]" } as const;
 
-/** Calls `onMount` once its own effects run, i.e. after the earlier siblings'. */
-function AfterMount({ onMount }: { onMount: () => void }) {
-  useEffect(() => { onMount(); }, [onMount]);
-  return null;
-}
-
-export function CauseKindLogo({ size = "md", hideIcon = false, seasonal = true }: { size?: "sm" | "md" | "lg"; hideIcon?: boolean; seasonal?: boolean }) {
-  const sizes = { sm: "text-base", md: "text-xl", lg: "text-2xl" };
-  const dimensions = { sm: { w: 24, h: 24 }, md: { w: 32, h: 32 }, lg: { w: 40, h: 40 } };
+export function CauseKindLogo({ size = "md", hideIcon = false, seasonal = true }: { size?: "sm" | "md" | "lg" | "xl"; hideIcon?: boolean; seasonal?: boolean }) {
+  const sizes = { sm: "text-base", md: "text-xl", lg: "text-2xl", xl: "text-[1.625rem]" };
+  const dimensions = { sm: { w: 24, h: 24 }, md: { w: 32, h: 32 }, lg: { w: 40, h: 40 }, xl: { w: 44, h: 44 } };
 
   // Gated on the same switch as every other Raksha Bandhan surface, so the tie
   // cannot outlive its window — which is exactly how the Independence Day
@@ -161,7 +156,7 @@ export function CauseKindLogo({ size = "md", hideIcon = false, seasonal = true }
         /* The supplied rakhi artwork spells the whole word, so it replaces the
            wordmark outright rather than decorating it. Gated on the campaign
            switch, unlike the flag asset it is standing in for. */
-        <RakshaBandhanWordmark size={size} />
+        <RakshaBandhanWordmark size={size === "xl" ? "lg" : size} />
       ) : (
         <span className={`relative flex items-center font-extrabold ${WORDMARK_SIZE[size]}`} aria-hidden="true">
           {/* "Cause" — stagger letter reveal */}
@@ -184,7 +179,7 @@ export function CauseKindLogo({ size = "md", hideIcon = false, seasonal = true }
 }
 
 // Keep CareNestLogo exported and map it to CauseKindLogo to prevent any broken imports in other files
-export function CareNestLogo({ size = "md", hideIcon = false, seasonal = true }: { size?: "sm" | "md" | "lg"; hideIcon?: boolean; seasonal?: boolean }) {
+export function CareNestLogo({ size = "md", hideIcon = false, seasonal = true }: { size?: "sm" | "md" | "lg" | "xl"; hideIcon?: boolean; seasonal?: boolean }) {
   return <CauseKindLogo size={size} hideIcon={hideIcon} seasonal={seasonal} />;
 }
 
@@ -337,31 +332,7 @@ export function SiteHeader() {
   const [navPillReady, setNavPillReady] = useState(false);
   const markNavPillReady = useCallback(() => setNavPillReady(true), []);
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
-  // The mobile menu (StaggeredMenu + gsap) is code-split out of the shared
-  // bundle and fetched once the browser is idle, so it is ready before the
-  // first tap. It mounts closed and only then receives the real `open` value:
-  // StaggeredMenu ignores `open` on its first mount, so mounting it already
-  // open (a tap before the code arrived) would leave the panel hidden.
-  const [StaggeredMenu, setStaggeredMenu] = useState<ComponentType<any> | null>(null);
-  const [menuMounted, setMenuMounted] = useState(false);
-  useEffect(() => {
-    let cancelled = false;
-    // @ts-expect-error — StaggeredMenu is the JS/CSS React Bits variant (no types shipped)
-    const load = () => import("@/components/StaggeredMenu").then((m) => { if (!cancelled) setStaggeredMenu(() => m.default); });
-    const w = window as Window & { requestIdleCallback?: (cb: () => void, o?: { timeout: number }) => number; cancelIdleCallback?: (id: number) => void };
-    let idleId: number | undefined;
-    let timer: ReturnType<typeof setTimeout> | undefined;
-    if (w.requestIdleCallback) idleId = w.requestIdleCallback(load, { timeout: 2000 });
-    else timer = setTimeout(load, 1200);
-    return () => { cancelled = true; if (idleId !== undefined) w.cancelIdleCallback?.(idleId); if (timer) clearTimeout(timer); };
-  }, []);
-  useEffect(() => {
-    // A tap before the idle load fired: fetch now (import() is cached, so this
-    // never downloads twice).
-    // @ts-expect-error — untyped JS module, see above
-    if (isSidebarOpen && !StaggeredMenu) import("@/components/StaggeredMenu").then((m) => setStaggeredMenu(() => m.default));
-  }, [isSidebarOpen, StaggeredMenu]);
-  const markMenuMounted = useCallback(() => setMenuMounted(true), []);
+  // The CSS-only menu ships with the header so the first tap never waits for a chunk.
   // Closing the menu makes it inert, which pushes focus out to <body>. Without
   // this a keyboard user loses their place entirely, so send focus back to the
   // control they opened it with.
@@ -459,7 +430,7 @@ export function SiteHeader() {
       const hero = document.querySelector(".ck-lead-hero-stage")
         ?? (window.matchMedia("(max-width: 767px)").matches ? document.querySelector(".ck-ngo-hero-stage") : null);
       if (hero && hero !== observedHero) {
-        resize.disconnect();
+        if (observedHero) resize.unobserve(observedHero);
         resize.observe(hero);
         crossing.disconnect();
         crossing.observe(hero);
@@ -468,8 +439,10 @@ export function SiteHeader() {
       // `mounted` keeps watching: the NGO landing swaps its hero for a new
       // element once the application status loads, and that must be picked up.
       const bounds = hero?.getBoundingClientRect();
-      // The NGO hero can sit a few px off the top mid-layout; allow for it there.
-      const slack = hero?.classList.contains("ck-ngo-hero-stage") ? 16 : 0;
+      // Either hero can sit a few px off the top mid-layout (it is pulled up by
+      // --ck-nav-h, which lags a header height change); allow for it. Without
+      // this the header could stick in its solid cream state over the photo.
+      const slack = 16;
       setOverMobileHero(mobile.matches && !!bounds && bounds.top <= slack && bounds.bottom > 0);
     };
     const schedule = () => { if (!frame) frame = requestAnimationFrame(update); };
@@ -483,6 +456,9 @@ export function SiteHeader() {
     // The homepage may arrive after the shared header during client navigation.
     const mounted = new MutationObserver(schedule);
     mounted.observe(document.body, { childList: true, subtree: true });
+    // The header's own height moves the hero (its margin is -header height).
+    const headerEl = document.querySelector("header[data-calm-header]");
+    if (headerEl) resize.observe(headerEl);
     update();
     window.addEventListener("resize", schedule);
     mobile.addEventListener("change", schedule);
@@ -955,7 +931,7 @@ export function SiteHeader() {
             <NotificationBell />
           </div>
           <Link href="/" className="flex items-center justify-center">
-            <CareNestLogo size="md" hideIcon={true} />
+            <CareNestLogo size="lg" hideIcon={true} />
           </Link>
           {/* With the bar gone there is nothing behind this button but the
               hero, so it brings its own surface: `glass-pill` is the same
@@ -1420,9 +1396,8 @@ export function SiteHeader() {
           sign-out live in the footer slot; a compact profile line is the header.
           The decorative profile-completion & latest-impact cards were dropped
           in favour of StaggeredMenu's cleaner list. ── */}
-      {StaggeredMenu && !menuMounted && <AfterMount onMount={markMenuMounted} />}
-      {StaggeredMenu && <StaggeredMenu
-        open={menuMounted && isSidebarOpen}
+      <StaggeredMenu
+        open={isSidebarOpen}
         onClose={() => setIsSidebarOpen(false)}
         position="right"
         accentColor={roleColors.accent}
@@ -1505,7 +1480,7 @@ export function SiteHeader() {
             )}
           </div>
         }
-      />}
+      />
     </>
   );
 }

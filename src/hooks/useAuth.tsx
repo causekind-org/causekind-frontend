@@ -126,19 +126,20 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     const controller = typeof AbortController !== "undefined" ? new AbortController() : null;
     const timeoutId = controller ? setTimeout(() => controller.abort(), 2000) : null;
 
-    fetch(`${BASE}/api/v1/users/me`, {
+    // GET /auth/session always answers 200: { authenticated: false } for a guest
+    // or an expired cookie, instead of the 401 /users/me gave, which logged a
+    // console error on every page (Lighthouse 23–26 Nov, all 55 pages).
+    fetch(`${BASE}/api/v1/auth/session`, {
       credentials: "include",
       signal: controller?.signal,
     })
-      .then(res => {
-        if (res.ok) return res.json();
-        if (res.status === 401) {
+      .then(res => (res.ok ? res.json() : null))
+      .then(data => {
+        if (data?.authenticated === false) {
           localStorage.removeItem(USER_KEY);
           setUserState(null);
+          return;
         }
-        return null;
-      })
-      .then(data => {
         if (data?.email && data?.role) {
           const fresh: AuthUser = { id: data.id, userId: data.id, email: data.email, role: data.role, fullName: data.fullName, phone: data.phone };
           localStorage.setItem(USER_KEY, JSON.stringify(fresh));

@@ -1,39 +1,9 @@
-import { Caveat, Fraunces, IBM_Plex_Mono } from "next/font/google";
-
 /**
  * Faces for the "Where does my support go?" photo table.
  *
- * - Fraunces — the editorial headline and captions (same instance options as
- *   the film's serif, so the browser shares the files).
- * - Caveat — the handwritten margin notes beside the photographs.
- * - IBM Plex Mono — the index, counter and category labels.
+ * 2026-11-26 (owner: one font pair site-wide): Fraunces, Caveat and IBM Plex
+ * Mono are no longer loaded. `.ck-font-alias` (styles.css) points this
+ * section's variables at the site faces: --font-sg-serif → Source Serif 4,
+ * --font-sg-hand and --font-sg-mono → Plus Jakarta Sans.
  */
-const serif = Fraunces({
-  subsets: ["latin"],
-  style: ["normal", "italic"],
-  axes: ["SOFT", "opsz"],
-  display: "swap",
-  // Below the fold on every page that uses it: load on use, no preload.
-  preload: false,
-  variable: "--font-sg-serif",
-});
-
-const hand = Caveat({
-  subsets: ["latin"],
-  weight: "variable",
-  display: "swap",
-  // Below the fold on every page that uses it: load on use, no preload.
-  preload: false,
-  variable: "--font-sg-hand",
-});
-
-const mono = IBM_Plex_Mono({
-  subsets: ["latin"],
-  weight: ["500"],
-  display: "swap",
-  // Below the fold on every page that uses it: load on use, no preload.
-  preload: false,
-  variable: "--font-sg-mono",
-});
-
-export const galleryFonts = `${serif.variable} ${hand.variable} ${mono.variable}`;
+export const galleryFonts = "ck-font-alias";

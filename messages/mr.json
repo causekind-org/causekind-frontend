@@ -392,6 +392,18 @@
     "useGps": "जीपीएस वापरा",
     "getting": "मिळवत आहे...",
     "saveProfileChanges": "प्रोफाइल बदल जतन करा",
+    "settingsTitle": "सेटिंग्ज",
+    "settingsDone": "झाले",
+    "settingsDescription": "तुमचे नाव, फोन नंबर आणि ठिकाण अपडेट करा.",
+    "tapToChangePhoto": "फोटो बदलण्यासाठी टॅप करा",
+    "sectionAccount": "खाते",
+    "sectionLocation": "ठिकाण",
+    "rowsSaveHint": "काहीही बदला, वर जतन बटण दिसेल.",
+    "emailLocked": "बदलता येत नाही",
+    "backLabel": "मागे",
+    "profilePhoto": "प्रोफाइल फोटो",
+    "photoSavesInstantly": "फोटो निवडताच जतन होतो.",
+    "editFieldDescription": "{field} संपादित करा",
     "saving": "सेव्ह करत आहे...",
     "badgeFirstGiver": "प्रथम देणारा",
     "badgeCommunityHero": "समुदाय नायक",
@@ -1243,12 +1255,12 @@
   },
   "trustBand": {
     "label": "CauseKind सुरक्षित का आहे",
-    "trustedTitle": "विश्वासार्ह समुदाय",
-    "trustedBody": "सुरक्षित. पडताळलेले. भरवशाचे.",
-    "impactTitle": "स्थानिक परिणाम",
-    "impactBody": "तुमच्याच परिसरातील लोकांना मदत.",
-    "togetherTitle": "एकत्र अधिक बळकट",
-    "togetherBody": "उत्तम समुदाय. उत्तम उद्या."
+    "trustedTitle": "गरजांची तपासणी होते",
+    "trustedBody": "प्रत्येक विनंती लाइव्ह होण्यापूर्वी आमची टीम तपासते.",
+    "impactTitle": "थेट हातोहात",
+    "impactBody": "वस्तू थेट तुमच्या जवळच्या व्यक्तीपर्यंत पोहोचतात.",
+    "togetherTitle": "हस्तांतरणाची पुष्टी",
+    "togetherBody": "प्रत्येक हस्तांतरणाची पुष्टी एकवेळ कोडने (OTP) होते."
   },
   "NgoLanding": {
     "HeroStateA": {
