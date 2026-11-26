@@ -93,7 +93,7 @@ export const OFFER_CONDITIONS = [
 ] as const;
 
 export const OFFER_AGE_RANGES = [
-  "Less than 1 year", "1–3 years", "3–5 years", "5–10 years", "10+ years", "Unknown",
+  "Brand new", "Less than 1 year", "1–3 years", "3–5 years", "5–10 years", "10+ years",
 ] as const;
 
 /** Backend values, with the friendly labels the old form used. */
