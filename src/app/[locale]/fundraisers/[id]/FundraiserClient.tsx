@@ -152,7 +152,7 @@ export default function FundraiserPage() {
           </section>
         </article>
 
-        <aside className={s.card} style={{ padding: 24, display: "flex", flexDirection: "column", gap: 14 }} aria-label={ui("Donate")}>
+        <aside className={`${s.card} ${s.stickyAside}`} style={{ padding: 24, display: "flex", flexDirection: "column", gap: 14 }} aria-label={ui("Donate")}>
           <span className={`${s.chip} ${d.acceptingDonations ? s.cOk : d.status === "PAUSED" ? s.cW : s.cM}`} style={{ alignSelf: "flex-start" }}>{d.acceptingDonations ? ui("Live", "campaign status") : d.status === "PAUSED" ? ui("Paused", "campaign status") : d.outcome ? ui("Outcome published", "campaign status") : d.remaining === 0 ? ui("Target reached", "campaign status") : ui("Collections closed", "campaign status")}</span>
           {d.status === "PAUSED" && <p className={s.small} role="status" style={{ padding: "10px 12px", borderRadius: 8, background: "#fdf3e1" }}>{d.pauseNotice || ui("Donations are paused while we review some information.")}</p>}
           <p className={s.tabular}><strong style={{ fontSize: 30 }}>{formatINR(c.raised)}</strong><br /><span className={s.muted}>{t("confirmedOfTarget", { target: formatINR(c.target) })}</span></p>
