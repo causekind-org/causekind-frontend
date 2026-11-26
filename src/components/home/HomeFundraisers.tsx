@@ -185,7 +185,7 @@ export function HomeFundraisers() {
             {diwali ? (
               <><LandingText>Light a diya</LandingText> <em><LandingText>for someone&apos;s need</LandingText></em></>
             ) : (
-              <><LandingText>Give someone</LandingText> <em><LandingText>a reason to smile again</LandingText></em></>
+              <><LandingText>Help fund</LandingText> <em><LandingText>a specific need</LandingText></em></>
             )}
           </h2>
 
@@ -193,7 +193,7 @@ export function HomeFundraisers() {
             {diwali ? (
               <LandingText>Money raised for a specific person&apos;s need. Each one was reviewed by our team before it went public.</LandingText>
             ) : (
-              <LandingText>Don&apos;t let their hope go quiet. Every fundraiser here was reviewed by our team before it went public.</LandingText>
+              <LandingText>Each fundraiser raises money for one person&apos;s need. Every one was reviewed by our team before it went public.</LandingText>
             )}
           </p>
         </div>

@@ -15,7 +15,7 @@ export const HOME_ROLE_COLORS = {
     id: "donor",
     label: "I want to give",
     roleTitle: "FOR DONORS",
-    roleSubtitle: "Give with absolute confidence",
+    roleSubtitle: "Know who you are giving to",
     main: "#B5480F",
     hover: "#C95413",
     secondary: "#E07B3A",

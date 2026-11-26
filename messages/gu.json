@@ -1255,12 +1255,12 @@
   },
   "trustBand": {
     "label": "CauseKind સુરક્ષિત કેમ છે",
-    "trustedTitle": "વિશ્વસનીય સમુદાય",
-    "trustedBody": "સુરક્ષિત. ચકાસાયેલ. ભરોસાપાત્ર.",
-    "impactTitle": "સ્થાનિક અસર",
-    "impactBody": "તમારા જ વિસ્તારના લોકોને મદદ.",
-    "togetherTitle": "સાથે મળીને મજબૂત",
-    "togetherBody": "સારો સમુદાય. સારી આવતીકાલ."
+    "trustedTitle": "જરૂરિયાતોની ચકાસણી થાય છે",
+    "trustedBody": "દરેક વિનંતી લાઇવ થાય તે પહેલાં અમારી ટીમ તેને તપાસે છે.",
+    "impactTitle": "સીધું હાથોહાથ",
+    "impactBody": "વસ્તુઓ સીધી તમારી નજીકની વ્યક્તિ સુધી પહોંચે છે.",
+    "togetherTitle": "સોંપણીની પુષ્ટિ",
+    "togetherBody": "દરેક સોંપણીની પુષ્ટિ એક વખતના કોડ (OTP)થી થાય છે."
   },
   "NgoLanding": {
     "HeroStateA": {

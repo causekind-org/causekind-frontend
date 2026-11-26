@@ -1255,12 +1255,12 @@
   },
   "trustBand": {
     "label": "Pourquoi CauseKind est sûr",
-    "trustedTitle": "Communauté de confiance",
-    "trustedBody": "Sûr. Vérifié. Fiable.",
-    "impactTitle": "Impact local",
-    "impactBody": "Aider les gens de votre quartier.",
-    "togetherTitle": "Plus forts ensemble",
-    "togetherBody": "Meilleure communauté. Meilleur demain."
+    "trustedTitle": "Les besoins sont vérifiés",
+    "trustedBody": "Notre équipe vérifie chaque demande avant sa publication.",
+    "impactTitle": "De la main à la main",
+    "impactBody": "Les objets vont directement à quelqu'un près de chez vous.",
+    "togetherTitle": "Remise confirmée",
+    "togetherBody": "Un code à usage unique confirme chaque remise."
   },
   "NgoLanding": {
     "HeroStateA": {

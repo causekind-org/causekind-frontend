@@ -1696,12 +1696,12 @@
   },
   "trustBand": {
     "label": "Why CauseKind is safe to use",
-    "trustedTitle": "Trusted Community",
-    "trustedBody": "Safe. Verified. Reliable.",
-    "impactTitle": "Local Impact",
-    "impactBody": "Helping people in your neighborhood.",
-    "togetherTitle": "Stronger Together",
-    "togetherBody": "Better community. Better tomorrow."
+    "trustedTitle": "Needs are reviewed",
+    "trustedBody": "Our team checks each request before it goes live.",
+    "impactTitle": "Given hand to hand",
+    "impactBody": "Items go straight to someone near you.",
+    "togetherTitle": "Handover confirmed",
+    "togetherBody": "A one-time code confirms each handover."
   },
   "needProfileGate": {
     "incompleteTitle": "Finish your profile first",

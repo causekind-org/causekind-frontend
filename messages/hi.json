@@ -1255,12 +1255,12 @@
   },
   "trustBand": {
     "label": "CauseKind सुरक्षित क्यों है",
-    "trustedTitle": "भरोसेमंद समुदाय",
-    "trustedBody": "सुरक्षित। सत्यापित। विश्वसनीय।",
-    "impactTitle": "स्थानीय असर",
-    "impactBody": "आपके अपने मोहल्ले के लोगों की मदद।",
-    "togetherTitle": "साथ मिलकर मज़बूत",
-    "togetherBody": "बेहतर समुदाय। बेहतर कल।"
+    "trustedTitle": "ज़रूरतों की जाँच होती है",
+    "trustedBody": "हर अनुरोध लाइव होने से पहले हमारी टीम जाँचती है।",
+    "impactTitle": "सीधे हाथों-हाथ",
+    "impactBody": "सामान सीधे आपके पास के किसी व्यक्ति तक पहुँचता है।",
+    "togetherTitle": "हैंडओवर की पुष्टि",
+    "togetherBody": "हर हैंडओवर की पुष्टि एक बार के कोड (OTP) से होती है।"
   },
   "NgoLanding": {
     "HeroStateA": {

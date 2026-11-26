@@ -1255,12 +1255,12 @@
   },
   "trustBand": {
     "label": "CauseKind کیوں محفوظ ہے",
-    "trustedTitle": "قابلِ اعتماد برادری",
-    "trustedBody": "محفوظ۔ تصدیق شدہ۔ قابلِ بھروسا۔",
-    "impactTitle": "مقامی اثر",
-    "impactBody": "آپ کے اپنے محلے کے لوگوں کی مدد۔",
-    "togetherTitle": "مل کر زیادہ مضبوط",
-    "togetherBody": "بہتر برادری۔ بہتر کل۔"
+    "trustedTitle": "ضرورتوں کی جانچ ہوتی ہے",
+    "trustedBody": "ہر درخواست لائیو ہونے سے پہلے ہماری ٹیم اسے جانچتی ہے۔",
+    "impactTitle": "براہِ راست ہاتھوں ہاتھ",
+    "impactBody": "سامان براہِ راست آپ کے قریب کسی شخص تک پہنچتا ہے۔",
+    "togetherTitle": "حوالگی کی تصدیق",
+    "togetherBody": "ہر حوالگی کی تصدیق ایک بار کے کوڈ (OTP) سے ہوتی ہے۔"
   },
   "NgoLanding": {
     "HeroStateA": {

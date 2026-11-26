@@ -163,7 +163,7 @@ function FinalCtaCard({
             {/* Small Top Eyebrow */}
             <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[11px] sm:text-xs font-bold tracking-widest uppercase bg-white/10 text-amber-200 border border-white/15 mb-3 backdrop-blur-xs">
               <Sparkles className="w-3.5 h-3.5 text-[#F4A25B]" aria-hidden="true" />
-              <span><LandingText>START IN 60 SECONDS</LandingText></span>
+              <span><LandingText>FREE TO JOIN</LandingText></span>
             </div>
 
             {/* Heading with Word-by-Word Reveal */}
@@ -278,7 +278,7 @@ function FinalCtaSplit({ variant }: { variant: "desktop" | "mobile" }) {
           <div className="flex flex-col items-start text-left min-w-0">
             <div className={`${TRUST_PILL_EYEBROW} mb-3 sm:mb-4`}>
               <Sparkles className="w-3.5 h-3.5" aria-hidden="true" />
-              <span><LandingText>Start in 60 seconds</LandingText></span>
+              <span><LandingText>Free to join</LandingText></span>
             </div>
 
             <h2 className="text-2xl sm:text-3xl lg:text-4xl font-extrabold text-stone-900 dark:text-stone-100 tracking-tight"><LandingText>
@@ -287,7 +287,7 @@ function FinalCtaSplit({ variant }: { variant: "desktop" | "mobile" }) {
             </h2>
 
             <p className="mt-2 text-xs sm:text-sm text-stone-600 dark:text-stone-400 max-w-xl"><LandingText>
-              Join free in a minute. Give, ask, or help your community — whichever side you&apos;re on.
+              Create a free account. Give, ask, or help your community — whichever side you&apos;re on.
             </LandingText></p>
 
             <LandingAttributes><ul className="mt-4 sm:mt-5 flex flex-wrap items-center gap-x-5 gap-y-2" aria-label="Why join">
