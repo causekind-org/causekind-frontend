@@ -7241,7 +7241,7 @@ export type FundraiserCard = {
 export type FundraiserDetail = {
   card: FundraiserCard; story: string | null; beneficiary: string | null;
   costs: { expense: string; amount: number | null }[]; totalCosts: number; otherHelp: number;
-  acceptingDonations: boolean; platformFeePercent: number; supporters: { name: string; at: string }[];
+  acceptingDonations: boolean; platformFeePercent: number; supporters: { name: string; at: string; amount: number | null }[]; // biggest donation first (leaderboard, 2026-11-26)
   status: CampaignFlowStatus; updates: FundraiserUpdate[]; pauseNotice: string | null;
   outcome: { moneyUsed: string | null; currentSituation: string | null; publishedAt: string | null; evidence: { label: string; explanation: string | null; url: string | null }[] } | null;
   /** Every current document except identity and family ones; links are signed and expire after ~10 minutes. */
