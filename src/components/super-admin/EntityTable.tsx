@@ -214,8 +214,14 @@ function BulkDeleteConfirm({
 }
 
 /* ── Main table ──────────────────────────────────────────────────────────── */
+export type TableFilter = {
+  key: string;
+  label: string;
+  options: { value: string; label: string; match: (row: SuperAdminRow) => boolean }[];
+};
+
 export function EntityTable({
-  entity, title, columns, canCreate = false, createColumns, isDark = true, onView, onRowClick, enrich,
+  entity, title, columns, canCreate = false, createColumns, isDark = true, onView, onRowClick, enrich, filters,
 }: {
   entity: SuperAdminEntity;
   title: string;
@@ -239,10 +245,19 @@ export function EntityTable({
    * render as "—" for every row, not just ones actually missing data.
    */
   enrich?: (rows: SuperAdminRow[]) => Promise<SuperAdminRow[]>;
+  /** Dropdown filters applied to the loaded rows (client-side). */
+  filters?: TableFilter[];
 }) {
-  const [rows, setRows] = useState<SuperAdminRow[]>([]);
+  const [allRows, setRows] = useState<SuperAdminRow[]>([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
+  const [filterValues, setFilterValues] = useState<Record<string, string>>({});
+  const activeFilters = (filters ?? []).filter(f => filterValues[f.key]);
+  const rows = activeFilters.length === 0 ? allRows : allRows.filter(r =>
+    activeFilters.every(f => {
+      const opt = f.options.find(o => o.value === filterValues[f.key]);
+      return opt ? opt.match(r) : true;
+    }));
   const [editRow, setEditRow] = useState<SuperAdminRow | null>(null);
   const [creating, setCreating] = useState(false);
   const [deleteRow, setDeleteRow] = useState<SuperAdminRow | null>(null);
@@ -425,9 +440,26 @@ export function EntityTable({
       <div className="flex flex-wrap items-center gap-3">
         <div>
           <h2 className={`ck-page-title ${t.title}`}>{title}</h2>
-          <p className={`text-xs ${t.subtitle}`}>{rows.length} row{rows.length !== 1 ? "s" : ""}</p>
+          <p className={`text-xs ${t.subtitle}`}>{rows.length}{activeFilters.length > 0 ? ` of ${allRows.length}` : ""} row{rows.length !== 1 ? "s" : ""}</p>
         </div>
-        <div className="flex items-center gap-2 ml-auto">
+        <div className="flex flex-wrap items-center gap-2 ml-auto">
+          {filters?.map(f => (
+            <select
+              key={f.key}
+              aria-label={f.label}
+              value={filterValues[f.key] ?? ""}
+              onChange={e => { setFilterValues(v => ({ ...v, [f.key]: e.target.value })); setSelected(new Set()); }}
+              className={`py-2 pl-3 pr-8 rounded-lg border text-sm focus:outline-none transition-colors cursor-pointer ${t.search}`}
+            >
+              <option value="">{f.label}: All</option>
+              {f.options.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
+            </select>
+          ))}
+          {activeFilters.length > 0 && (
+            <button type="button" onClick={() => setFilterValues({})} className={`text-xs font-semibold underline ${t.subtitle}`}>
+              Clear
+            </button>
+          )}
           <form onSubmit={e => { e.preventDefault(); load(search); }} className="relative">
             <Search className={`absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 ${t.iconMuted}`} />
             <input

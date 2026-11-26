@@ -9,7 +9,7 @@ import {
   superAdminOverview, type SuperAdminOverview,
   adminGetAllDonations, type SuperAdminRow,
 } from "@/lib/api";
-import { EntityTable, type Column } from "@/components/super-admin/EntityTable";
+import { EntityTable, type Column, type TableFilter } from "@/components/super-admin/EntityTable";
 import { SqlConsole } from "@/components/super-admin/SqlConsole";
 import { AdminPermissionsPanel } from "@/components/super-admin/AdminPermissionsPanel";
 import { DisputesPanel } from "@/components/super-admin/DisputesPanel";
@@ -162,10 +162,42 @@ const USER_COLS: Column[] = [
   { key: "email", label: "Email", editable: true },
   { key: "phone", label: "Phone", editable: true },
   { key: "city", label: "City", editable: true },
-  { key: "role", label: "Role", editable: true, type: "select", options: ROLES },
+  { key: "role", label: "Role" },
   { key: "active", label: "Active", editable: true, type: "boolean" },
   { key: "createdAt", label: "Joined" },
   { key: "password", label: "Reset password", editable: true, type: "text", inTable: false },
+];
+const DAY = 86_400_000;
+const joinedWithin = (days: number) => (r: Record<string, unknown>) => {
+  const t = r.createdAt ? new Date(String(r.createdAt)).getTime() : NaN;
+  return !Number.isNaN(t) && Date.now() - t <= days * DAY;
+};
+const USER_FILTERS: TableFilter[] = [
+  { key: "role", label: "Role", options: [
+    { value: "DONOR", label: "Donor" }, { value: "DONEE", label: "Donee" },
+    { value: "NGO_PARTNER", label: "NGO" }, { value: "REPRESENTATIVE", label: "Representative" },
+    { value: "ADMIN", label: "Admin" }, { value: "SUPER_ADMIN", label: "Super admin" },
+  ].map(o => ({ ...o, match: (r: Record<string, unknown>) => r.role === o.value })) },
+  { key: "active", label: "Status", options: [
+    { value: "active", label: "Active", match: (r) => r.active === true },
+    { value: "inactive", label: "Inactive", match: (r) => r.active !== true },
+  ] },
+  { key: "pan", label: "PAN", options: [
+    { value: "given", label: "PAN given", match: (r) => r.hasPan === true },
+    { value: "missing", label: "PAN not given", match: (r) => r.hasPan !== true },
+  ] },
+  { key: "joined", label: "Joined", options: [
+    { value: "1", label: "Today", match: joinedWithin(1) },
+    { value: "7", label: "Last 7 days", match: joinedWithin(7) },
+    { value: "30", label: "Last 30 days", match: joinedWithin(30) },
+  ] },
+];
+const DONATION_FILTERS: TableFilter[] = [
+  { key: "pan", label: "PAN", options: [
+    { value: "given", label: "PAN given", match: (r) => r.hasPan === true },
+    { value: "missing", label: "PAN not given", match: (r) => r.hasPan !== true },
+    { value: "80g-missing", label: "Wants 80G, no PAN", match: (r) => r.wants80g === true && r.hasPan !== true },
+  ] },
 ];
 const USER_CREATE_COLS: Column[] = [
   { key: "fullName", label: "Name", editable: true },
@@ -643,10 +675,11 @@ export default function SuperAdminPage() {
       case "operations": return <OperationsPanel isDark={isDark} />;
       case "fundraisers": return <FundraisersPanel isDark={isDark} />;
       case "money":       return <MoneyPanel isDark={isDark} />;
-      case "users":         return <EntityTable entity="users"         title="Users"         columns={USER_COLS}    canCreate createColumns={USER_CREATE_COLS} isDark={isDark}
-                              onView={(row) => router.push(`/admin/dashboard?journeyUser=${row.id}`)} />;
+      case "users":         return <EntityTable entity="users"         title="Users"         columns={USER_COLS}    filters={USER_FILTERS} canCreate createColumns={USER_CREATE_COLS} isDark={isDark}
+                              onView={(row) => router.push(`/admin/dashboard?journeyUser=${row.id}`)}
+                              onRowClick={(row) => openUser(Number(row.id))} />;
       case "campaigns":     return <EntityTable entity="campaigns"     title="Campaigns"     columns={CAMPAIGN_COLS} isDark={isDark} />;
-      case "donations":     return <EntityTable entity="donations"     title="Donations"     columns={DONATION_COLS} isDark={isDark} enrich={enrichDonations}
+      case "donations":     return <EntityTable entity="donations"     title="Donations"     columns={DONATION_COLS} filters={DONATION_FILTERS} isDark={isDark} enrich={enrichDonations}
                               onRowClick={(row) => setViewingDonation(row)} />;
       case "item-requests": return <EntityTable entity="item-requests" title="Item Requests" columns={REQUEST_COLS}   isDark={isDark}
                               onRowClick={(row) => setViewingRequest(row)} />;
