@@ -4480,6 +4480,9 @@ export type SaUserProfile = {
   registeredAt: string | null;
   accountState: SaAccountState;
   counts: Record<string, number>;
+  /** Whether a PAN / PAN photo exists to reveal. Absent from older backends. */
+  panOnFile?: boolean;
+  panPhotoOnFile?: boolean;
 };
 
 export type SaRecordType = "REQUEST" | "LISTING" | "OFFER" | "OFFER_RECEIVED" | "MATCH";
