@@ -261,40 +261,14 @@ function TrustSafetyFull({
         }
       );
 
-      // Step D: Cards Fan Out / Deal - START MUCH EARLIER
-      cardsRef.current.forEach((card, index) => {
-        if (!card) return;
-        const rotOffset = index === 0 ? -4 : index === 2 ? 4 : 0;
-        const xOffset = index === 0 ? -30 : index === 2 ? 30 : 0;
-
-        tl.fromTo(
-          card,
-          {
-            opacity: 0,
-            y: 40,
-            x: xOffset,
-            rotation: rotOffset,
-            scale: 0.92,
-          },
-          {
-            opacity: 1,
-            y: 0,
-            x: 0,
-            rotation: 0,
-            scale: 1,
-            duration: 0.65,
-            ease: "power3.out",
-          },
-          0.3 + (index * 0.1) // Start at 0.3s, stagger by 0.1s
-        );
-      });
-
-      // Step E: Stagger checkmarks inside cards
+      // Cards: a plain fade in (2026-11-26, redesign step 6b). They used to be
+      // "dealt" like playing cards — tilted, slid in from the sides and scaled —
+      // with each checkmark popping in after. One visual language: plain cards.
       tl.fromTo(
-        ".card-point-check",
-        { scale: 0, opacity: 0 },
-        { scale: 1, opacity: 1, duration: 0.25, stagger: 0.04, ease: "back.out(2)" },
-        0.7
+        cardsRef.current.filter(Boolean),
+        { opacity: 0 },
+        { opacity: 1, duration: 0.4, ease: "power1.out" },
+        0.2
       );
 
       // Step F: Animate Counter Stats
