@@ -21,13 +21,6 @@ const SMALL = [10, 20, 50, 100];
  * to switch a campaign over.
  */
 const BUNDLE_CAMPAIGNS = new Set(["feed-stray-animals"]);
-/**
- * Campaigns where PAN and address are asked only from a donor who ticks 80G (owner, 2026-11-13).
- * Every other campaign takes PAN and address from every donor. Keep in step with the backend's
- * DonationService.SAHAS_PAN_ONLY_FOR_80G.
- */
-const PAN_ONLY_FOR_80G = new Set(["feed-stray-animals", "diwali-feed-hungry01"]);
-
 export type SahasBundle = { value: number; text: string };
 
 /** Clickable amounts from the admin's "How your contribution helps" list; rows without a rupee number are skipped. */
@@ -116,16 +109,14 @@ export function SahasDonateForm({ slug, onClose }: { slug: string; onClose?: () 
   const total = value + tipValue;
   const panOk = /^[A-Z]{5}[0-9]{4}[A-Z]$/.test(pan);
   const detailsOk = (user ? true : nameOk && emailOk) && phoneOk;
-  // Most campaigns take PAN and address from every donor; on PAN_ONLY_FOR_80G campaigns only an 80G donor gives them.
-  const panOnly80g = PAN_ONLY_FOR_80G.has(c.slug);
-  const needTax = !panOnly80g || wants80g;
-  const taxOk = !needTax || (panOk && address.trim().length >= 10);
+  // Only a donor who wants the 80G receipt gives PAN and address (owner, 2026-11-27).
+  const taxOk = !wants80g || (panOk && address.trim().length >= 10);
   const bundles = bundlesOf(data).filter((b) => b.value <= remaining);
   const amountError = amount === "" ? null : value < MIN ? ui("Enter an amount of ₹1 or more.")
     : value > remaining ? `${ui("This campaign needs only")} ₹${remaining.toLocaleString("en-IN")}.` : null;
   // Says what's left to do, so a disabled button is never a mystery.
   const todo = !valid ? ui("Enter an amount") : !user && !nameOk ? ui("Add your full name") : !user && !emailOk ? ui("Add a valid email")
-    : !phoneOk ? ui("Check your phone number") : needTax && !panOk ? ui("Check your PAN") : needTax && address.trim().length < 10 ? ui("Add your full address")
+    : !phoneOk ? ui("Check your phone number") : wants80g && !panOk ? ui("Check your PAN") : wants80g && address.trim().length < 10 ? ui("Add your full address")
       : null;
   const hint = "m-0 text-xs font-normal text-red-700";
 
@@ -152,7 +143,7 @@ export function SahasDonateForm({ slug, onClose }: { slug: string; onClose?: () 
       if (!(await loadCheckout())) { setError(ui("Couldn't load the payment window. Check your connection.")); return; }
       const start = await sahasCampaigns.donate(data.campaignId, {
         amount: value, fullName: name.trim(), email: email.trim(), mobileNumber: cleanPhone, tipAmount: tipValue, anonymous,
-        panNumber: needTax ? pan.trim() : "", address: needTax ? address.trim() : "", wants80g, utm: captureUtm(window.location.search),
+        panNumber: wants80g ? pan.trim() : "", address: wants80g ? address.trim() : "", wants80g, utm: captureUtm(window.location.search),
       });
       const token = start.panUploadToken ?? "";
       const order = await sahasCampaigns.donationCheckout(start.donationId, token);
@@ -197,13 +188,8 @@ export function SahasDonateForm({ slug, onClose }: { slug: string; onClose?: () 
 
   const box = onClose ? "flex flex-col gap-3" : "flex flex-col gap-3 rounded-2xl border border-[#EADFD3] bg-white p-5 dark:border-zinc-800 dark:bg-zinc-900";
   const short = !!onClose && wants80g;
-  // One small question at a time: amount and support, who you are, tax details, then review and pay.
-  const STEPS = [ui("Your donation"), ui("Your details"), panOnly80g ? ui("80G receipt (optional)") : ui("PAN and address")];
-  const panFields = <>
-    <label className="flex flex-col gap-1.5 text-sm font-semibold">PAN<input className={`${field} uppercase`} value={pan} maxLength={10} placeholder="ABCDE1234F" onChange={(e) => setPan(e.target.value.toUpperCase().replace(/[^A-Z0-9]/g, ""))} /></label>
-    {pan.length === 10 && !panOk && <p className={hint}><UiText>That PAN doesn&apos;t look right. It should be like ABCDE1234F.</UiText></p>}
-    <label className="flex flex-col gap-1 text-xs sm:text-sm font-semibold text-[#3a0716] dark:text-stone-200"><UiText>Address</UiText><input className={field} value={address} maxLength={300} onChange={(e) => setAddress(e.target.value)} autoComplete="street-address" /></label>
-  </>;
+  // One small question at a time: amount and support, who you are, then the optional 80G receipt and pay.
+  const STEPS = [ui("Your donation"), ui("Your details"), ui("80G receipt (optional)")];
   const stepOk = [valid, detailsOk, taxOk][step];
   const stepHead = <p className="m-0 text-xs font-semibold text-[#6B5A4E] dark:text-stone-400">{ui("Step")} {step + 1} {ui("of")} {STEPS.length} · {STEPS[step]}</p>;
   const fields = <>
@@ -258,11 +244,12 @@ export function SahasDonateForm({ slug, onClose }: { slug: string; onClose?: () 
       <label className="flex items-center gap-2 text-sm"><input type="checkbox" checked={anonymous} onChange={(e) => setAnonymous(e.target.checked)} /> <UiText>Don&apos;t show my name publicly</UiText></label>
     </section>}
     {step === 2 && <section className={box}>
-      {!panOnly80g && panFields}
       <label className="flex items-center gap-2 text-sm"><input type="checkbox" checked={wants80g} onChange={(e) => setWants80g(e.target.checked)} /> <UiText>I want an 80G receipt</UiText></label>
-      {panOnly80g && !wants80g && <p className="m-0 text-xs text-[#6B5A4E] dark:text-stone-400"><UiText>You&apos;ll get a donation certificate. Tick this only if you want an 80G receipt; it needs your PAN and address.</UiText></p>}
-      {wants80g && panOnly80g && <div className={`flex flex-col gap-3 ${onClose ? "rounded-xl bg-[#FBF7F2] p-3.5 dark:bg-zinc-900" : ""}`}>
-        {panFields}
+      {!wants80g && <p className="m-0 text-xs text-[#6B5A4E] dark:text-stone-400"><UiText>You&apos;ll get a donation certificate. Tick this only if you want an 80G receipt; it needs your PAN and address.</UiText></p>}
+      {wants80g && <div className={`flex flex-col gap-3 ${onClose ? "rounded-xl bg-[#FBF7F2] p-3.5 dark:bg-zinc-900" : ""}`}>
+      <label className="flex flex-col gap-1.5 text-sm font-semibold">PAN<input className={`${field} uppercase`} value={pan} maxLength={10} placeholder="ABCDE1234F" onChange={(e) => setPan(e.target.value.toUpperCase().replace(/[^A-Z0-9]/g, ""))} /></label>
+      {pan.length === 10 && !panOk && <p className={hint}><UiText>That PAN doesn&apos;t look right. It should be like ABCDE1234F.</UiText></p>}
+      <label className="flex flex-col gap-1 text-xs sm:text-sm font-semibold text-[#3a0716] dark:text-stone-200"><UiText>Address</UiText><input className={field} value={address} maxLength={300} onChange={(e) => setAddress(e.target.value)} autoComplete="street-address" /></label>
       </div>}
     </section>}
   </>;
