@@ -9,6 +9,7 @@ import { ApiError, sahasCampaigns, type SahasCampaignDetail } from "@/lib/api";
 import { UiText, useUiText } from "@/components/UiText";
 import { PageSkeleton } from "@/components/skeletons";
 import { SAHAS_NAME, formatDate, serif } from "@/features/sahas/sahasUi";
+import { SahasThankYou, type SahasDocs } from "@/features/sahas/SahasThankYou";
 import { loadRazorpayCheckout } from "@/lib/razorpayLoader";
 
 const MIN = 1;
@@ -64,7 +65,7 @@ export function SahasDonateForm({ slug, onClose }: { slug: string; onClose?: () 
   const [error, setError] = useState<string | null>(null);
   const [result, setResult] = useState<Result | null>(null);
   const poll = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const [docs, setDocs] = useState<{ certificate: string | null; receipt: string | null; receiptOwed: boolean } | null>(null);
+  const [docs, setDocs] = useState<SahasDocs | null>(null);
 
   useEffect(() => {
     sahasCampaigns.detail(slug).then((d) => {
@@ -161,25 +162,22 @@ export function SahasDonateForm({ slug, onClose }: { slug: string; onClose?: () 
     }
   };
 
-  const docButton = "flex min-h-[48px] items-center justify-center rounded-xl bg-[#b04a15] px-5 text-[15px] font-semibold text-white no-underline";
+  if (result === "success") {
+    return <SahasThankYou donorName={user?.fullName ?? name} amount={value} tip={tipValue} title={c.title}
+      imageUrl={c.imageUrl} imageAlt={c.coverAltText ?? ""} shareUrl={`${window.location.origin}/sahas/${slug}`}
+      docs={docs} popup={!!onClose} leave={leave} />;
+  }
 
   if (result) {
     return shell(
-      <div role="status" className={`flex flex-col gap-2 rounded-2xl border p-6 ${result === "success" ? "border-[#CFE5D8] bg-[#F2F8F4]" : result === "failed" ? "border-[#F0CFC8] bg-[#FDF1EF]" : "border-[#F1DDB8] bg-[#FFF8EC]"} dark:bg-zinc-900`}>
+      <div role="status" className={`flex flex-col gap-2 rounded-2xl border p-6 ${result === "failed" ? "border-[#F0CFC8] bg-[#FDF1EF]" : "border-[#F1DDB8] bg-[#FFF8EC]"} dark:bg-zinc-900`}>
         <h1 className={`${serif} m-0 text-2xl`}>
-          {result === "success" ? <UiText>Thank you. Your donation is confirmed.</UiText>
-            : result === "failed" ? <UiText>Payment didn&apos;t go through</UiText>
-              : <UiText>Waiting for confirmation</UiText>}
+          {result === "failed" ? <UiText>Payment didn&apos;t go through</UiText> : <UiText>Waiting for confirmation</UiText>}
         </h1>
         <p className="m-0 text-sm">
-          {result === "success" ? (docs?.certificate ? <UiText>Download your documents below. They are also emailed to you.</UiText> : <UiText>Preparing your documents. They will appear here and reach you by email.</UiText>)
-            : result === "failed" ? <UiText>No money was taken. You can try again.</UiText>
-              : <UiText>We&apos;re confirming your payment. You can leave this page; we&apos;ll email you.</UiText>}
+          {result === "failed" ? <UiText>No money was taken. You can try again.</UiText>
+            : <UiText>We&apos;re confirming your payment. You can leave this page; we&apos;ll email you.</UiText>}
         </p>
-        {result === "success" && docs?.certificate && <a href={docs.certificate} className={docButton}><UiText>Download certificate</UiText></a>}
-        {result === "success" && docs?.receipt && <a href={docs.receipt} className={docButton}><UiText>Download 80G receipt</UiText></a>}
-        {result === "success" && docs?.receiptOwed && !docs.receipt && <p className="m-0 text-sm"><UiText>Your 80G receipt is being prepared.</UiText></p>}
-        {result === "success" && docs?.certificate && /FBAN|FBAV|Instagram/.test(navigator.userAgent) && <p className="m-0 text-sm"><UiText>Trouble downloading? Your documents are in your email, or open this page in Chrome.</UiText></p>}
         {error && <p role="alert" className="m-0 text-sm text-red-700">{error}</p>}
         {leave}
       </div>,

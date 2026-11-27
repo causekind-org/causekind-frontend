@@ -17,6 +17,7 @@ export default function FundraiserPage() {
   const docLabel = (type: string): string => ({
     MEDICAL_REPORT: ui("Medical report"), TREATMENT_ESTIMATE: ui("Treatment estimate"),
     ENROLMENT_PROOF: ui("Admission or enrolment letter"), FEE_STATEMENT: ui("Fee demand"),
+    NEED_PROOF: ui("Proof of need"), INSTITUTION_LETTER: ui("Letter from school or college"),
     EVENT_EVIDENCE: ui("Proof of what happened"), COST_PROOF: ui("Cost proof"), OTHER: ui("Supporting document"),
   } as Record<string, string>)[type] ?? ui("Document");
   const t = useTranslations("fundraiserFlow");

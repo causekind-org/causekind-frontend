@@ -25,6 +25,7 @@ import {
   analyzeIdProof,
   type UpdateRequestPayload,
   type RequestVerification,
+  type EducationPurpose,
   type VerificationDocumentType,
   type VerificationDocument,
 } from "@/lib/api";
@@ -166,6 +167,32 @@ function useRequiredDocsCopy(): Record<Tier, { type: VerificationDocumentType; l
     { type: "SCENE_SELFIE", label: ui("Selfie at the affected location") },
   ],
 };
+}
+
+/** Mirrors backend TierService.isMedical(): medical requests must carry medical proof (2026-11-27). */
+const isMedicalCategory = (category: string | null | undefined) => (category ?? "").trim().toLowerCase() === "medical aid";
+
+/**
+ * Tier 3 spans Medical aid, Livelihood and Relief, so its slots name what that category should upload
+ * (2026-11-27 — every Tier 3 donee used to be asked for a hospital discharge). Medical proof is labelled
+ * the same on every tier, because the medical rule follows the category, not the tier.
+ */
+function useCategoryDocLabel() {
+  const ui = useUiText();
+  return (category: string | null | undefined, type: VerificationDocumentType, fallback: string): string => {
+    const c = (category ?? "").trim().toLowerCase();
+    if (type === "PROOF_OF_NEED") {
+      if (c === "medical aid") return ui("Medical proof: doctor's prescription, medical report or discharge summary (any one; an older document is fine for a long-term illness or disability)");
+      if (c === "livelihood") return ui("Proof of work or livelihood (job letter, trade or shop licence, or photos of past work)");
+      if (c === "relief") return ui("Proof of what happened (FIR, panchnama, relief letter or news report)");
+    }
+    if (type === "SITUATION_PHOTO") {
+      if (c === "medical aid") return ui("Photo of the patient or situation");
+      if (c === "livelihood") return ui("Photo of your work setting or tools");
+      if (c === "relief") return ui("Photo of the damage");
+    }
+    return fallback;
+  };
 }
 
 // Only these actually block submission — everything else in REQUIRED_DOCS above
@@ -545,6 +572,17 @@ function NewRequestForm() {
   const showCityFreeText = noStateOptions || noCityOptions || forceFreeTextCity;
 
   const tier = mapCategoryToTier(category, isEmergency);
+  // Tier lists plus the medical rule (backend TierService.mandatoryDocuments(request)). Emergency medical
+  // requests (Tier 4) get the medical slot too, so the emergency flag can't skip it.
+  const categoryDocLabel = useCategoryDocLabel();
+  const medical = isMedicalCategory(category);
+  const mandatoryDocs: VerificationDocumentType[] = medical && !MANDATORY_DOC_TYPES[tier].includes("PROOF_OF_NEED")
+    ? [...MANDATORY_DOC_TYPES[tier], "PROOF_OF_NEED"] : MANDATORY_DOC_TYPES[tier];
+  const docSlots = [
+    ...REQUIRED_DOCS[tier],
+    ...(medical && !REQUIRED_DOCS[tier].some((d) => d.type === "PROOF_OF_NEED") ? [{ type: "PROOF_OF_NEED" as VerificationDocumentType, label: "" }] : []),
+  ].map((d) => ({ ...d, label: categoryDocLabel(category, d.type, d.label) }));
+
 
   // Step 2 — household & situation (RequestVerification form)
   const [verification, setVerification] = useState<Partial<RequestVerification>>({});
@@ -576,6 +614,38 @@ function NewRequestForm() {
   useEffect(() => {
     setVerification((v) => ({ ...v, referrerContact: refPhone ? `${refDialCode}${refPhone}` : "" }));
   }, [refPhone, refDialCode]);
+
+  // Education: the evidence follows what the items are for (2026-11-27). Mirrors backend
+  // TierService.educationEvidenceGap — keep the two in step.
+  const education = (category ?? "").trim().toLowerCase() === "education";
+  const educationPurpose: EducationPurpose | null = verification.educationPurpose ?? null;
+  const educationSlots: { type: VerificationDocumentType; label: string }[] =
+    educationPurpose === "STUDENT" ? [{ type: "PROOF_OF_NEED", label: ui("Student proof: school or college ID, fee receipt, admission letter or this year's marksheet (any one)") }]
+    : educationPurpose === "SELF_STUDY" ? [{ type: "PROOF_OF_NEED", label: ui("Exam form or admit card, or a coaching fee receipt (any one)") }]
+    : educationPurpose === "COMMUNITY_LIBRARY" ? [
+        { type: "OFFICIAL_LETTER", label: ui("Library registration certificate") },
+        { type: "SITUATION_PHOTO", label: ui("Photo of the library") },
+        { type: "REFERENCE_LETTER", label: ui("Letter from a local authority (sarpanch, ward member, panchayat or school principal)") },
+      ]
+    : [];
+  const slots = education ? [...docSlots.filter((d) => REUSABLE_PROFILE_DOCS.includes(d.type)), ...educationSlots] : docSlots;
+  const slotRequired = (t: VerificationDocumentType) =>
+    education ? (educationPurpose === "STUDENT" || educationPurpose === "SELF_STUDY") && t === "PROOF_OF_NEED" : mandatoryDocs.includes(t);
+  function educationGap(): string | null {
+    if (!education) return null;
+    if (!educationPurpose) return ui("Tell us what the educational items are for.");
+    if (educationPurpose === "STUDENT") return isDocComplete("PROOF_OF_NEED") ? null : ui("Please upload one student proof: school or college ID, fee receipt, admission letter or this year's marksheet.");
+    if (educationPurpose === "SELF_STUDY") return isDocComplete("PROOF_OF_NEED") ? null : ui("Please upload your exam form or admit card, or a coaching fee receipt.");
+    if (educationPurpose === "COMMUNITY_LIBRARY") {
+      return isDocComplete("OFFICIAL_LETTER") || (isDocComplete("SITUATION_PHOTO") && isDocComplete("REFERENCE_LETTER")) ? null
+        : ui("Please upload the library's registration certificate, or both a photo of the library and a letter from a local authority.");
+    }
+    if (!verification.detailedStory?.trim()) return ui("Please explain why the items are needed.");
+    if (!verification.referrerName?.trim() || !refComplete) return ui("Please give a reference's name and phone number.");
+    if (isSelfReference) return refLiveError;
+    if (!verification.referrerContactConsent) return ui("Please confirm we may contact your reference.");
+    return null;
+  }
 
   // Default the reference dial country to the GPS-detected country (until the user types)
   useEffect(() => {
@@ -675,6 +745,8 @@ function NewRequestForm() {
           .then((v) => {
             if (!v) return;
             if (v.addressLandmark) setAddressLine(v.addressLandmark);
+            // Show a saved reference number again (stored as "+<dial><digits>"; India is the default dial code).
+            if (v.referrerContact) setRefPhone(v.referrerContact.replace(/^\+91/, "").replace(/\D/g, ""));
             const filled = Object.fromEntries(
               Object.entries(v).filter(([, value]) => value !== null && value !== undefined)
             ) as Partial<RequestVerification>;
@@ -882,7 +954,9 @@ function NewRequestForm() {
     }
     if (s === "household-situation" && verification.requestingForSomeoneElse && !verification.beneficiaryDetails?.trim()) e.beneficiaryDetails = ui("Describe the person you are requesting for");
     if (s === "household-situation") {
-      const missing = MANDATORY_DOC_TYPES[tier].filter((t) => !REUSABLE_PROFILE_DOCS.includes(t) && !isDocComplete(t));
+      const eduGap = educationGap();
+      if (eduGap) e.educationPurpose = eduGap;
+      const missing = (education ? mandatoryDocs.filter((t) => t !== "PROOF_OF_NEED") : mandatoryDocs).filter((t) => !REUSABLE_PROFILE_DOCS.includes(t) && !isDocComplete(t));
       if (missing.length > 0) {
         // Call out an unscreened photo specifically — "1 document still missing"
         // is baffling when the donee can plainly see a photo sitting there.
@@ -1448,14 +1522,50 @@ function NewRequestForm() {
    * step two — so the donee could reach Declarations with nothing persisted and
    * submit a request the server has never seen the details of.
    */
+  const educationBlock = (
+    <div className="space-y-3">
+      <fieldset className="space-y-2">
+        <legend className="text-sm font-bold"><UiText>What are these educational items for?</UiText> <span className="text-red-600">*</span></legend>
+        {([
+          ["STUDENT", ui("Studies: I or my child am a student")],
+          ["COMMUNITY_LIBRARY", ui("A community library or study centre")],
+          ["SELF_STUDY", ui("Self-study or a competitive exam")],
+          ["NO_DOCUMENTS", ui("I don't have any of these documents")],
+        ] as [EducationPurpose, string][]).map(([value, label]) => (
+          <label key={value} className="flex items-center gap-2 text-sm">
+            <input type="radio" name="educationPurpose" checked={educationPurpose === value} onChange={() => setV("educationPurpose", value)} />{label}
+          </label>
+        ))}
+      </fieldset>
+      <p className="text-xs text-slate-500"><UiText>Asking for a registered NGO, trust or school? Please request from an NGO account instead.</UiText></p>
+      {educationPurpose === "COMMUNITY_LIBRARY" && <p className="text-sm text-slate-600"><UiText>Upload the registration certificate, or both a photo of the library and a letter from a local authority.</UiText></p>}
+      {educationPurpose === "NO_DOCUMENTS" && <div className="space-y-3 rounded-lg border border-slate-200 p-4 dark:border-slate-700">
+        <p className="text-sm text-slate-600"><UiText>That's okay. Our team will review your request personally and may call your reference.</UiText></p>
+        <WizardField label={ui("Why are these items needed?")} required>{({id}) => <Textarea id={id} value={verification.detailedStory || ""} maxLength={10000} onChange={e => setV("detailedStory", e.target.value)} />}</WizardField>
+        <WizardField label={ui("Reference's name (teacher, sarpanch or social worker)")} required>{({id}) => <Input id={id} value={verification.referrerName || ""} maxLength={150} onChange={e => setV("referrerName", e.target.value)} />}</WizardField>
+        <WizardField label={ui("Reference's phone number")} required error={refLiveError || undefined}>{({id}) => (
+          <div className="flex items-center gap-2"><span className="text-sm text-slate-500">{refDialCode}</span>
+            <Input id={id} inputMode="numeric" value={refPhone} maxLength={refMaxLength} onChange={e => setRefPhone(e.target.value.replace(/\D/g, ""))} /></div>
+        )}</WizardField>
+        <p className="text-xs text-slate-500"><UiText>Only our review team sees this number. It is never shown publicly.</UiText></p>
+        <label className="flex items-start gap-2 text-sm">
+          <input type="checkbox" className="mt-1" checked={Boolean(verification.referrerContactConsent)} onChange={e => setV("referrerContactConsent", e.target.checked)} />
+          <UiText>I agree that CauseKind may contact this person to confirm my need.</UiText>
+        </label>
+      </div>}
+      {fieldErrors.educationPurpose && <p role="alert" className="text-sm text-red-600">{fieldErrors.educationPurpose}</p>}
+    </div>
+  );
+
   const step3 = (
     <section className="mt-5 space-y-4 rounded-xl border border-slate-200 bg-white p-5 dark:border-slate-700 dark:bg-slate-900">
       <h3 className="font-bold"><UiText>Supporting evidence for this request</UiText></h3>
       <p className="text-sm text-slate-500"><UiText>Your identity documents will be included from your profile. Add evidence specific to this need below.</UiText></p>
-      {REQUIRED_DOCS[tier].filter(d => !REUSABLE_PROFILE_DOCS.includes(d.type)).map(d => (
-        <DocSlot key={d.type} label={d.label} required={MANDATORY_DOC_TYPES[tier].includes(d.type)} doc={uploadedDocs.get(d.type)} uploading={uploadingDoc === d.type} screening={docScreening.get(d.type)} complete={isDocComplete(d.type)} onUpload={file => void handleDocUpload(d.type, file)} onRemove={() => void handleDocRemove(d.type)} />
+      {education && educationBlock}
+      {slots.filter(d => !REUSABLE_PROFILE_DOCS.includes(d.type)).map(d => (
+        <DocSlot key={d.type} label={d.label} required={slotRequired(d.type)} doc={uploadedDocs.get(d.type)} uploading={uploadingDoc === d.type} screening={docScreening.get(d.type)} complete={isDocComplete(d.type)} onUpload={file => void handleDocUpload(d.type, file)} onRemove={() => void handleDocRemove(d.type)} />
       ))}
-      {REQUIRED_DOCS[tier].every(d => REUSABLE_PROFILE_DOCS.includes(d.type)) && <p className="text-sm"><UiText>No additional documents are required for this need.</UiText></p>}
+      {!education && slots.every(d => REUSABLE_PROFILE_DOCS.includes(d.type)) && <p className="text-sm"><UiText>No additional documents are required for this need.</UiText></p>}
     </section>
   );
 
