@@ -168,6 +168,32 @@ function useRequiredDocsCopy(): Record<Tier, { type: VerificationDocumentType; l
 };
 }
 
+/** Mirrors backend TierService.isMedical(): medical requests must carry medical proof (2026-11-27). */
+const isMedicalCategory = (category: string | null | undefined) => (category ?? "").trim().toLowerCase() === "medical aid";
+
+/**
+ * Tier 3 spans Medical aid, Livelihood and Relief, so its slots name what that category should upload
+ * (2026-11-27 — every Tier 3 donee used to be asked for a hospital discharge). Medical proof is labelled
+ * the same on every tier, because the medical rule follows the category, not the tier.
+ */
+function useCategoryDocLabel() {
+  const ui = useUiText();
+  return (category: string | null | undefined, type: VerificationDocumentType, fallback: string): string => {
+    const c = (category ?? "").trim().toLowerCase();
+    if (type === "PROOF_OF_NEED") {
+      if (c === "medical aid") return ui("Medical proof: doctor's prescription, medical report or discharge summary (any one; an older document is fine for a long-term illness or disability)");
+      if (c === "livelihood") return ui("Proof of work or livelihood (job letter, trade or shop licence, or photos of past work)");
+      if (c === "relief") return ui("Proof of what happened (FIR, panchnama, relief letter or news report)");
+    }
+    if (type === "SITUATION_PHOTO") {
+      if (c === "medical aid") return ui("Photo of the patient or situation");
+      if (c === "livelihood") return ui("Photo of your work setting or tools");
+      if (c === "relief") return ui("Photo of the damage");
+    }
+    return fallback;
+  };
+}
+
 // Only these actually block submission — everything else in REQUIRED_DOCS above
 // is shown as a helpful (optional) upload but isn't mandatory. Tier 4 Emergency
 // keeps all three of its docs mandatory (unchanged, separate concern).
@@ -545,6 +571,16 @@ function NewRequestForm() {
   const showCityFreeText = noStateOptions || noCityOptions || forceFreeTextCity;
 
   const tier = mapCategoryToTier(category, isEmergency);
+  // Tier lists plus the medical rule (backend TierService.mandatoryDocuments(request)). Emergency medical
+  // requests (Tier 4) get the medical slot too, so the emergency flag can't skip it.
+  const categoryDocLabel = useCategoryDocLabel();
+  const medical = isMedicalCategory(category);
+  const mandatoryDocs: VerificationDocumentType[] = medical && !MANDATORY_DOC_TYPES[tier].includes("PROOF_OF_NEED")
+    ? [...MANDATORY_DOC_TYPES[tier], "PROOF_OF_NEED"] : MANDATORY_DOC_TYPES[tier];
+  const docSlots = [
+    ...REQUIRED_DOCS[tier],
+    ...(medical && !REQUIRED_DOCS[tier].some((d) => d.type === "PROOF_OF_NEED") ? [{ type: "PROOF_OF_NEED" as VerificationDocumentType, label: "" }] : []),
+  ].map((d) => ({ ...d, label: categoryDocLabel(category, d.type, d.label) }));
 
   // Step 2 — household & situation (RequestVerification form)
   const [verification, setVerification] = useState<Partial<RequestVerification>>({});
@@ -882,7 +918,7 @@ function NewRequestForm() {
     }
     if (s === "household-situation" && verification.requestingForSomeoneElse && !verification.beneficiaryDetails?.trim()) e.beneficiaryDetails = ui("Describe the person you are requesting for");
     if (s === "household-situation") {
-      const missing = MANDATORY_DOC_TYPES[tier].filter((t) => !REUSABLE_PROFILE_DOCS.includes(t) && !isDocComplete(t));
+      const missing = mandatoryDocs.filter((t) => !REUSABLE_PROFILE_DOCS.includes(t) && !isDocComplete(t));
       if (missing.length > 0) {
         // Call out an unscreened photo specifically — "1 document still missing"
         // is baffling when the donee can plainly see a photo sitting there.
@@ -1452,10 +1488,10 @@ function NewRequestForm() {
     <section className="mt-5 space-y-4 rounded-xl border border-slate-200 bg-white p-5 dark:border-slate-700 dark:bg-slate-900">
       <h3 className="font-bold"><UiText>Supporting evidence for this request</UiText></h3>
       <p className="text-sm text-slate-500"><UiText>Your identity documents will be included from your profile. Add evidence specific to this need below.</UiText></p>
-      {REQUIRED_DOCS[tier].filter(d => !REUSABLE_PROFILE_DOCS.includes(d.type)).map(d => (
-        <DocSlot key={d.type} label={d.label} required={MANDATORY_DOC_TYPES[tier].includes(d.type)} doc={uploadedDocs.get(d.type)} uploading={uploadingDoc === d.type} screening={docScreening.get(d.type)} complete={isDocComplete(d.type)} onUpload={file => void handleDocUpload(d.type, file)} onRemove={() => void handleDocRemove(d.type)} />
+      {docSlots.filter(d => !REUSABLE_PROFILE_DOCS.includes(d.type)).map(d => (
+        <DocSlot key={d.type} label={d.label} required={mandatoryDocs.includes(d.type)} doc={uploadedDocs.get(d.type)} uploading={uploadingDoc === d.type} screening={docScreening.get(d.type)} complete={isDocComplete(d.type)} onUpload={file => void handleDocUpload(d.type, file)} onRemove={() => void handleDocRemove(d.type)} />
       ))}
-      {REQUIRED_DOCS[tier].every(d => REUSABLE_PROFILE_DOCS.includes(d.type)) && <p className="text-sm"><UiText>No additional documents are required for this need.</UiText></p>}
+      {docSlots.every(d => REUSABLE_PROFILE_DOCS.includes(d.type)) && <p className="text-sm"><UiText>No additional documents are required for this need.</UiText></p>}
     </section>
   );
 
