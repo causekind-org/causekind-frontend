@@ -220,7 +220,7 @@ export const IN_KIND_CATEGORIES: InKindCategory[] = [
     name: "Furniture",
     slug: "furniture",
     seoTitle: "Furniture Donation: Sofas, Beds & Chairs Near You",
-    seoDescription: "Donate beds, tables, chairs, cupboards and other usable furniture directly to verified families and NGOs near you. See current requests on CauseKind.",
+    seoDescription: "Donate a sofa, couch, bed, dining table or chairs to verified families and NGOs near you. See current furniture requests on CauseKind.",
     tagline: "Beds, chairs, tables and storage that still have decades left.",
     guideIntro:
       "Donate Furniture Near You: furniture requests are for beds, chairs, tables and storage that still have years of use left. People ask for beds, cots and mattresses that are clean and structurally sound, chairs, tables and desks with all legs true, and wardrobes, cupboards and shelving units. Sofas are welcome when the frame is intact and the upholstery is unstained, and flat-pack items are useful if you still have the fittings. Please avoid anything with woodworm, termite damage or signs of pests, water-damaged particleboard that will not survive another move, mattresses with stains, tears or a bed-bug history, and glass tops with chips or edge cracks. Be clear about size and weight so the receiver can plan how to collect it.",
@@ -255,8 +255,8 @@ export const IN_KIND_CATEGORIES: InKindCategory[] = [
   {
     name: "Clothing",
     slug: "clothing",
-    seoTitle: "Donate Clothes Near You",
-    seoDescription: "Donate clean, wearable clothes for children, women and men directly to verified people and NGOs near you. See current clothing requests on CauseKind.",
+    seoTitle: "Donate Old Clothes Near You: Clothes Donation in India",
+    seoDescription: "Donate old clothes near you to verified people and NGOs. Clean, wearable clothes for children, women and men, handed over locally. See requests on CauseKind.",
     tagline: "Clean, wearable clothes for every age and season.",
     guideIntro:
       "Donate Clothes Near You: clothing requests are for clean, wearable clothes for every age and season. Everyday wear in good repair, washed and folded, is always useful, and children's and infant clothing is needed often. Season-appropriate outerwear such as sweaters, jackets and shawls helps in colder months, and footwear with life left in the sole should be paired and tied together. Uniforms, workwear and modest-wear in common sizes are also requested. Please avoid torn, stained, faded or stretched-out garments, underwear and swimwear unless they are brand new and sealed, odd shoes or shoes with worn-through soles, and heavily seasonal items sent long before or after their season.",

@@ -9,7 +9,7 @@ import { SeoLinkSection } from "@/components/SeoLinkSection";
 // entry, so the page has its own text even when few requests are live.
 const CATEGORY_GUIDES: Record<string, { heading?: string; intro: string; links: { name: string; href: string }[] }> = {
   clothing: {
-    intro: "Donate clean, wearable clothes for children, women and men directly to verified people and NGOs near you. See the current clothing requests above, or read a guide first.",
+    intro: "Want to donate old clothes near you? Give clean, wearable clothes for children, women and men directly to verified people and NGOs nearby. You and the receiver agree a handover time and place in the app. See the current clothing requests above, or read a guide first.",
     links: [
       { name: "Complete guide to donating clothes in India", href: "/blog/complete-guide-donating-clothes-india" },
       { name: "Where to donate clothes near you", href: "/blog/where-to-donate-clothes-near-me-india" },
@@ -20,7 +20,7 @@ const CATEGORY_GUIDES: Record<string, { heading?: string; intro: string; links: 
   },
   furniture: {
     heading: "Donating furniture",
-    intro: "Donate furniture that still has years of use left, such as chairs, tables, beds and wardrobes. Transport decides everything with furniture, so be clear about size and weight in your listing; it helps a family or NGO near you collect it.",
+    intro: "Donate a sofa or couch, bed frame, dining table or chairs that still have years of use left. Transport decides everything with furniture, so be clear about size and weight in your listing; it helps a family or NGO near you collect it.",
     links: [
       { name: "How to donate furniture in India", href: "/blog/how-to-donate-furniture-india" },
       { name: "What to do with old items", href: "/blog/what-to-do-with-old-items-india" },

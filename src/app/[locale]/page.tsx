@@ -16,7 +16,7 @@ import { FEATURES } from "@/lib/features";
 export const metadata: Metadata = {
   title: { absolute: "CauseKind: Donate Items to Verified People & NGOs in India" },
   description:
-    "Give clothes, books, electronics and household items directly to verified people and NGOs near you. CauseKind is a simple, local in-kind donation platform in India.",
+    "Donate old clothes, books, electronics & household items to verified people and NGOs near you. CauseKind is a simple, local in-kind donation platform in India.",
   alternates: { canonical: "/" },
   openGraph: {
     type: "website",
@@ -25,7 +25,7 @@ export const metadata: Metadata = {
     url: "/",
     title: "CauseKind: Donate Items to Verified People & NGOs in India",
     description:
-      "Give clothes, books, electronics and household items directly to verified people and NGOs near you. CauseKind is a simple, local in-kind donation platform in India.",
+      "Donate old clothes, books, electronics & household items to verified people and NGOs near you. CauseKind is a simple, local in-kind donation platform in India.",
     images: [{ url: "/og-default.png", width: 1200, height: 630, alt: "CauseKind" }],
   },
 };
