@@ -524,24 +524,40 @@ export default function BlogPostClient({ slug, content }: BlogPostClientProps) {
 
             {/* Related guides: sibling posts and the matching requests page. */}
             {(relatedCategory || relatedPosts.length > 0) && (
-              <nav aria-labelledby="related-guides" className="mt-10 border-t border-stone-200 dark:border-stone-800 pt-6">
-                <h2 id="related-guides" className="font-display-lg text-xl text-[#b04a15] dark:text-[#e07b3a] mb-3 font-bold">Related guides</h2>
-                <ul className="space-y-2 text-stone-700 dark:text-stone-300">
-                  {relatedCategory && (
-                    <li>
-                      <Link href={`/requests/category/${relatedCategory.slug}`} className="font-semibold text-[#b04a15] dark:text-orange-400 hover:underline">
-                        See live {relatedCategory.name.toLowerCase()} requests near you
-                      </Link>
-                    </li>
-                  )}
-                  {relatedPosts.map((p) => (
-                    <li key={p.slug}>
-                      <Link href={`/blog/${p.slug}`} className="hover:text-[#b04a15] dark:hover:text-[#e07b3a] hover:underline">
-                        {p.title}
-                      </Link>
-                    </li>
-                  ))}
-                </ul>
+              <nav aria-labelledby="related-guides" className="mt-12 rounded-3xl border border-[#b04a15]/15 dark:border-[#e07b3a]/20 bg-white/70 dark:bg-stone-900/60 p-5 sm:p-7 shadow-sm">
+                <h2 id="related-guides" className="font-sans text-xs font-bold uppercase tracking-[0.18em] text-[#b04a15] dark:text-[#e07b3a]">
+                  Related guides
+                </h2>
+                {relatedCategory && (
+                  <Link
+                    href={`/requests/category/${relatedCategory.slug}`}
+                    className="group mt-4 flex items-center justify-between gap-4 rounded-2xl bg-[#b04a15] dark:bg-[#c2571c] px-5 py-4 text-white transition-colors hover:bg-[#93390c] dark:hover:bg-[#a8481a] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-[#b04a15]"
+                  >
+                    <span className="font-sans">
+                      <span className="block text-[11px] font-semibold uppercase tracking-wider text-white/75">Ready to give?</span>
+                      <span className="block text-base sm:text-lg font-bold leading-snug">See live {relatedCategory.name.toLowerCase()} requests near you</span>
+                    </span>
+                    <span aria-hidden="true" className="shrink-0 text-xl transition-transform group-hover:translate-x-1">&rarr;</span>
+                  </Link>
+                )}
+                {relatedPosts.length > 0 && (
+                  <ul className="mt-3 divide-y divide-stone-200/80 dark:divide-stone-800">
+                    {relatedPosts.map((p) => (
+                      <li key={p.slug}>
+                        <Link
+                          href={`/blog/${p.slug}`}
+                          className="group flex items-center justify-between gap-4 py-4 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#b04a15] rounded-lg"
+                        >
+                          <span className="min-w-0">
+                            <span className="block font-sans text-[11px] font-semibold uppercase tracking-wider text-stone-500 dark:text-stone-400">{p.category}</span>
+                            <span className="mt-0.5 block text-base sm:text-[17px] font-semibold leading-snug text-stone-900 dark:text-stone-100 group-hover:text-[#b04a15] dark:group-hover:text-[#e07b3a] transition-colors">{p.title}</span>
+                          </span>
+                          <span aria-hidden="true" className="shrink-0 flex h-9 w-9 items-center justify-center rounded-full border border-stone-300 dark:border-stone-700 text-stone-500 transition-all group-hover:border-[#b04a15] group-hover:bg-[#b04a15] group-hover:text-white">&rarr;</span>
+                        </Link>
+                      </li>
+                    ))}
+                  </ul>
+                )}
               </nav>
             )}
 

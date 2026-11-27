@@ -143,6 +143,7 @@ export default async function CategoryPage({ params }: Params) {
           heading={CATEGORY_GUIDES[cat.slug]!.heading ?? "Guides"}
           intro={CATEGORY_GUIDES[cat.slug]!.intro}
           links={CATEGORY_GUIDES[cat.slug]!.links}
+          card
         />
       )}
     </>
