@@ -286,6 +286,7 @@ const REQUIREMENT_LABEL: Record<string, string> = {
   identity: "Organiser ID", consent: "Beneficiary's consent", relationship: "Proof of relationship", connection: "Proof of connection (non-family)",
   medicalReport: "Medical report", treatmentEstimate: "Treatment estimate",
   enrolment: "Admission or enrolment letter", fees: "Fee demand",
+  studentId: "School / college ID", marksheet: "Marksheet", needProof: "Proof of need", institutionLetter: "Letter from school or college",
   event: "Proof of what happened", cost: "Cost proof", supporting: "Supporting document",
 };
 const typeWords = (t: string) => t.replace(/_/g, " ").toLowerCase();

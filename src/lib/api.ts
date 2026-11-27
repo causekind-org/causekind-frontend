@@ -7039,7 +7039,8 @@ export type FundraisingStatus =
 export type FundraisingCategory = "MEDICAL" | "EDUCATION" | "EMERGENCY_HOUSEHOLD" | "OTHER";
 export type FundraisingEvidenceType =
   | "ORGANISER_ID" | "ADDRESS_PROOF" | "MEDICAL_REPORT" | "TREATMENT_ESTIMATE" | "ENROLMENT_PROOF"
-  | "FEE_STATEMENT" | "EVENT_EVIDENCE" | "CONSENT" | "RELATIONSHIP_PROOF" | "COST_PROOF" | "OTHER";
+  | "FEE_STATEMENT" | "EVENT_EVIDENCE" | "CONSENT" | "RELATIONSHIP_PROOF" | "COST_PROOF"
+  | "STUDENT_ID" | "MARKSHEET" | "NEED_PROOF" | "INSTITUTION_LETTER" | "OTHER";
 /**
  * One document requirement from the server (FundraisingEvidenceRules): met by any one of anyOf.
  * MISSING: needed now. NEXT_SUBMISSION: needed before resubmitting (sent under the old rule).
