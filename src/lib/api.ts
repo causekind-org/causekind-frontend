@@ -1523,6 +1523,8 @@ export function getMyRequestVerificationDetails(id: number) {
   return request<RequestVerification | undefined>(`/api/v1/item-requests/${id}/verification-details`);
 }
 
+export type EducationPurpose = "STUDENT" | "COMMUNITY_LIBRARY" | "SELF_STUDY" | "NO_DOCUMENTS";
+
 export type RequestVerification = {
   requestingForSomeoneElse?: boolean;
   householdSize: number | null;
@@ -1542,6 +1544,10 @@ export type RequestVerification = {
   medicalCondition: string | null;
   referrerName: string | null;
   referrerContact: string | null;
+  /** Education requests only (2026-11-27): what the items are for — backend EducationPurpose. */
+  educationPurpose?: EducationPurpose | null;
+  /** Donee agreed CauseKind may contact the reference. */
+  referrerContactConsent?: boolean | null;
   altContactName: string | null;
   altContactPhone: string | null;
   detailedStory: string | null;
