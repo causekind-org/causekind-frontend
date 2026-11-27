@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState, useCallback } from "react";
+import { useEffect, useState, useCallback } from "react";
 import { ChevronLeft, ChevronRight, MapPin, ArrowRight, ShieldCheck, Heart, Smile } from "lucide-react";
 
 // Empty-state tile icon. Swap to Sparkles to match the NGO drives page.
@@ -107,31 +107,6 @@ function SpotlightCard({ card, diwali }: { card: FundraiserCard; diwali: boolean
   );
 }
 
-/** A compact card in the "More fundraisers" rail under the spotlight. */
-function RailCard({ card }: { card: FundraiserCard }) {
-  const pct = card.target ? Math.min(100, Math.round((card.raised / card.target) * 100)) : 0;
-  return (
-    <Link href={`/fundraisers/${card.id}`}
-      className="grid w-[300px] shrink-0 snap-start grid-cols-[72px_minmax(0,1fr)] items-center gap-3 rounded-2xl border border-[#ece4da] bg-white p-2.5 text-[#1c1917] no-underline transition-colors hover:border-[#b04a15]/50 dark:border-zinc-800 dark:bg-zinc-900 dark:text-stone-100">
-      <span className="relative h-[72px] overflow-hidden rounded-xl bg-[#d8cdbf] dark:bg-zinc-800">
-        {card.coverUrl && (
-          // eslint-disable-next-line @next/next/no-img-element
-          <img src={card.coverUrl} alt="" loading="lazy" className="absolute inset-0 h-full w-full object-cover" />
-        )}
-      </span>
-      <span className="flex min-w-0 flex-col gap-1">
-        <span className="text-xs font-bold text-[#b04a15] dark:text-[#ff8a4c]">
-          <LandingText>{card.category ? CATEGORY[card.category] : "Fundraiser"}</LandingText>
-        </span>
-        <span className="line-clamp-2 text-[15px] font-bold leading-snug">{card.title && <TranslatedText text={card.title} />}</span>
-        <span className="h-1 overflow-hidden rounded-full bg-[#f1e7dc] dark:bg-zinc-800">
-          <span className="block h-full bg-[#b04a15]" style={{ width: `${Math.max(pct, 1)}%` }} />
-        </span>
-      </span>
-    </Link>
-  );
-}
-
 /**
  * Verified Fundraisers section on the home page. One spotlight fundraiser,
  * then a scrollable "More fundraisers" rail when there are more; with just
@@ -142,7 +117,6 @@ export function HomeFundraisers() {
   const diwali = false; // Diwali theme removed on staging 2026-11-17 (c1b82263)
   const isDonee = user?.role?.replace(/^ROLE_/, "") === "DONEE";
   const [cards, setCards] = useState<FundraiserCard[] | null>(null);
-  const railRef = useRef<HTMLDivElement>(null);
   const previousLabel = useLandingTranslation("Previous fundraisers");
   const nextLabel = useLandingTranslation("More fundraisers");
   /** Which fundraiser the big card shows; the arrows and dots below it move it. */
@@ -157,16 +131,8 @@ export function HomeFundraisers() {
     return () => { live = false; };
   }, [isDonee]);
 
-  const scrollRail = (direction: 1 | -1) => {
-    const rail = railRef.current;
-    if (!rail) return;
-    const reduced = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
-    rail.scrollBy({ left: direction * 314, behavior: reduced ? "auto" : "smooth" });
-  };
-
   if (isDonee) return null;
   const count = cards?.length ?? 0;
-  const rest = cards ? cards.slice(1) : [];
   const current = Math.min(active, Math.max(count - 1, 0));
 
   return (
@@ -244,32 +210,9 @@ export function HomeFundraisers() {
               </nav>
             )}
           </div>
-          {rest.length > 0 ? (
-            // Phones page through the big card instead; the rail stays on md and up.
-            <div className="hidden flex-col gap-3 md:flex">
-              <div className="flex items-center justify-between gap-3">
-                <span className="text-xs font-bold uppercase tracking-[0.14em] text-stone-600 dark:text-stone-400">
-                  <LandingText>More fundraisers</LandingText>
-                </span>
-                {rest.length > 2 && (
-                  <span className="hidden gap-2 sm:flex">
-                    <button type="button" aria-label={previousLabel} onClick={() => scrollRail(-1)}
-                      className="flex size-10 cursor-pointer items-center justify-center rounded-full border border-[#e2d6c8] bg-white text-stone-900 dark:border-zinc-700 dark:bg-zinc-900 dark:text-stone-100">
-                      <ChevronLeft className="size-4" aria-hidden="true" />
-                    </button>
-                    <button type="button" aria-label={nextLabel} onClick={() => scrollRail(1)}
-                      className="flex size-10 cursor-pointer items-center justify-center rounded-full border border-[#e2d6c8] bg-white text-stone-900 dark:border-zinc-700 dark:bg-zinc-900 dark:text-stone-100">
-                      <ChevronRight className="size-4" aria-hidden="true" />
-                    </button>
-                  </span>
-                )}
-              </div>
-              <div ref={railRef}
-                className="flex snap-x snap-mandatory gap-3.5 overflow-x-auto pb-1 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
-                {rest.map((card) => <RailCard key={card.id} card={card} />)}
-              </div>
-            </div>
-          ) : (
+          {/* The "More fundraisers" rail is gone (owner, 27 Nov 2026): the arrows
+              and dots above page through every fundraiser on all screens. */}
+          {count === 1 && (
             <Link href="/fundraising/start"
               className="flex flex-wrap items-center justify-between gap-3 rounded-2xl border-[1.5px] border-dashed border-[#d6c6b4] px-5 py-4 text-stone-900 no-underline hover:border-[#b04a15] dark:border-zinc-700 dark:text-stone-100">
               <span>
