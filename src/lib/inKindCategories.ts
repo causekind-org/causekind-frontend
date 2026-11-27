@@ -36,7 +36,7 @@ export const IN_KIND_CATEGORIES: InKindCategory[] = [
   {
     name: "Medical aid",
     slug: "medical-aid",
-    seoTitle: "Medical Aid Donation: Donate for Healthcare Near You",
+    seoTitle: "Medical Aid Donation: Donate for Healthcare",
     seoDescription: "Donate wheelchairs, walkers, BP monitors and in-date medical consumables directly to verified people and NGOs near you. See current requests on CauseKind.",
     tagline: "Mobility, comfort and health-related support.",
     guideIntro:
@@ -72,7 +72,7 @@ export const IN_KIND_CATEGORIES: InKindCategory[] = [
   {
     name: "Education",
     slug: "education",
-    seoTitle: "Book Donation: Donate Books & Stationery Near You",
+    seoTitle: "Book Donation: Donate Books Near You",
     seoDescription: "Donate for education: give books, textbooks, stationery and school bags directly to verified students, families and NGOs near you. See requests on CauseKind.",
     tagline: "Books, stationery and the tools of a school day.",
     guideIntro:
@@ -219,7 +219,7 @@ export const IN_KIND_CATEGORIES: InKindCategory[] = [
   {
     name: "Furniture",
     slug: "furniture",
-    seoTitle: "Furniture Donation: Sofas, Beds & Chairs Near You",
+    seoTitle: "Furniture Donation: Sofas, Beds & Chairs",
     seoDescription: "Donate a sofa, couch, bed, dining table or chairs to verified families and NGOs near you. See current furniture requests on CauseKind.",
     tagline: "Beds, chairs, tables and storage that still have decades left.",
     guideIntro:
@@ -255,7 +255,7 @@ export const IN_KIND_CATEGORIES: InKindCategory[] = [
   {
     name: "Clothing",
     slug: "clothing",
-    seoTitle: "Donate Old Clothes Near You: Clothes Donation in India",
+    seoTitle: "Donate Old Clothes Near You in India",
     seoDescription: "Donate old clothes near you to verified people and NGOs. Clean, wearable clothes for children, women and men, handed over locally. See requests on CauseKind.",
     tagline: "Clean, wearable clothes for every age and season.",
     guideIntro:
@@ -291,7 +291,7 @@ export const IN_KIND_CATEGORIES: InKindCategory[] = [
   {
     name: "Electronics",
     slug: "electronics",
-    seoTitle: "Laptop Donation: Donate Laptops & Phones Near You",
+    seoTitle: "Laptop Donation: Donate Laptops & Phones",
     seoDescription: "Donate working laptops, phones and tablets to verified students and NGOs near you. See current requests and how to wipe your data first on CauseKind.",
     tagline: "Working phones, laptops and appliances with real life left.",
     guideIntro:

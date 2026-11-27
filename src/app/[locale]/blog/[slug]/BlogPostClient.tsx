@@ -332,7 +332,7 @@ export default function BlogPostClient({ slug, content }: BlogPostClientProps) {
 
   // Recommend other stories in the same category first, so "Read Next"
   // helps readers stay within the kind of story they're already engaged with.
-  const otherPosts = blogPosts.filter((p) => p.slug !== slug);
+  const otherPosts = blogPosts.filter((p) => p.slug !== slug && !p.canonicalSlug);
   const sameCategoryPosts = otherPosts.filter((p) => p.category === post.category);
   const otherCategoryPosts = otherPosts.filter((p) => p.category !== post.category);
   const recommendedPosts = [...sameCategoryPosts, ...otherCategoryPosts].slice(0, 3);
