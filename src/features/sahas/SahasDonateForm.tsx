@@ -9,6 +9,7 @@ import { ApiError, sahasCampaigns, type SahasCampaignDetail } from "@/lib/api";
 import { UiText, useUiText } from "@/components/UiText";
 import { PageSkeleton } from "@/components/skeletons";
 import { SAHAS_NAME, formatDate, serif } from "@/features/sahas/sahasUi";
+import { SahasThankYou, type SahasDocs } from "@/features/sahas/SahasThankYou";
 import { loadRazorpayCheckout } from "@/lib/razorpayLoader";
 
 const MIN = 1;
@@ -21,13 +22,6 @@ const SMALL = [10, 20, 50, 100];
  * to switch a campaign over.
  */
 const BUNDLE_CAMPAIGNS = new Set(["feed-stray-animals"]);
-/**
- * Campaigns where PAN and address are asked only from a donor who ticks 80G (owner, 2026-11-13).
- * Every other campaign takes PAN and address from every donor. Keep in step with the backend's
- * DonationService.SAHAS_PAN_ONLY_FOR_80G.
- */
-const PAN_ONLY_FOR_80G = new Set(["feed-stray-animals", "diwali-feed-hungry01"]);
-
 export type SahasBundle = { value: number; text: string };
 
 /** Clickable amounts from the admin's "How your contribution helps" list; rows without a rupee number are skipped. */
@@ -71,7 +65,7 @@ export function SahasDonateForm({ slug, onClose }: { slug: string; onClose?: () 
   const [error, setError] = useState<string | null>(null);
   const [result, setResult] = useState<Result | null>(null);
   const poll = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const [docs, setDocs] = useState<{ certificate: string | null; receipt: string | null; receiptOwed: boolean } | null>(null);
+  const [docs, setDocs] = useState<SahasDocs | null>(null);
 
   useEffect(() => {
     sahasCampaigns.detail(slug).then((d) => {
@@ -116,16 +110,14 @@ export function SahasDonateForm({ slug, onClose }: { slug: string; onClose?: () 
   const total = value + tipValue;
   const panOk = /^[A-Z]{5}[0-9]{4}[A-Z]$/.test(pan);
   const detailsOk = (user ? true : nameOk && emailOk) && phoneOk;
-  // Most campaigns take PAN and address from every donor; on PAN_ONLY_FOR_80G campaigns only an 80G donor gives them.
-  const panOnly80g = PAN_ONLY_FOR_80G.has(c.slug);
-  const needTax = !panOnly80g || wants80g;
-  const taxOk = !needTax || (panOk && address.trim().length >= 10);
+  // Only a donor who wants the 80G receipt gives PAN and address (owner, 2026-11-27).
+  const taxOk = !wants80g || (panOk && address.trim().length >= 10);
   const bundles = bundlesOf(data).filter((b) => b.value <= remaining);
   const amountError = amount === "" ? null : value < MIN ? ui("Enter an amount of ₹1 or more.")
     : value > remaining ? `${ui("This campaign needs only")} ₹${remaining.toLocaleString("en-IN")}.` : null;
   // Says what's left to do, so a disabled button is never a mystery.
   const todo = !valid ? ui("Enter an amount") : !user && !nameOk ? ui("Add your full name") : !user && !emailOk ? ui("Add a valid email")
-    : !phoneOk ? ui("Check your phone number") : needTax && !panOk ? ui("Check your PAN") : needTax && address.trim().length < 10 ? ui("Add your full address")
+    : !phoneOk ? ui("Check your phone number") : wants80g && !panOk ? ui("Check your PAN") : wants80g && address.trim().length < 10 ? ui("Add your full address")
       : null;
   const hint = "m-0 text-xs font-normal text-red-700";
 
@@ -152,7 +144,7 @@ export function SahasDonateForm({ slug, onClose }: { slug: string; onClose?: () 
       if (!(await loadCheckout())) { setError(ui("Couldn't load the payment window. Check your connection.")); return; }
       const start = await sahasCampaigns.donate(data.campaignId, {
         amount: value, fullName: name.trim(), email: email.trim(), mobileNumber: cleanPhone, tipAmount: tipValue, anonymous,
-        panNumber: needTax ? pan.trim() : "", address: needTax ? address.trim() : "", wants80g, utm: captureUtm(window.location.search),
+        panNumber: wants80g ? pan.trim() : "", address: wants80g ? address.trim() : "", wants80g, utm: captureUtm(window.location.search),
       });
       const token = start.panUploadToken ?? "";
       const order = await sahasCampaigns.donationCheckout(start.donationId, token);
@@ -170,25 +162,22 @@ export function SahasDonateForm({ slug, onClose }: { slug: string; onClose?: () 
     }
   };
 
-  const docButton = "flex min-h-[48px] items-center justify-center rounded-xl bg-[#b04a15] px-5 text-[15px] font-semibold text-white no-underline";
+  if (result === "success") {
+    return <SahasThankYou donorName={user?.fullName ?? name} amount={value} tip={tipValue} title={c.title}
+      imageUrl={c.imageUrl} imageAlt={c.coverAltText ?? ""} shareUrl={`${window.location.origin}/sahas/${slug}`}
+      docs={docs} popup={!!onClose} leave={leave} />;
+  }
 
   if (result) {
     return shell(
-      <div role="status" className={`flex flex-col gap-2 rounded-2xl border p-6 ${result === "success" ? "border-[#CFE5D8] bg-[#F2F8F4]" : result === "failed" ? "border-[#F0CFC8] bg-[#FDF1EF]" : "border-[#F1DDB8] bg-[#FFF8EC]"} dark:bg-zinc-900`}>
+      <div role="status" className={`flex flex-col gap-2 rounded-2xl border p-6 ${result === "failed" ? "border-[#F0CFC8] bg-[#FDF1EF]" : "border-[#F1DDB8] bg-[#FFF8EC]"} dark:bg-zinc-900`}>
         <h1 className={`${serif} m-0 text-2xl`}>
-          {result === "success" ? <UiText>Thank you. Your donation is confirmed.</UiText>
-            : result === "failed" ? <UiText>Payment didn&apos;t go through</UiText>
-              : <UiText>Waiting for confirmation</UiText>}
+          {result === "failed" ? <UiText>Payment didn&apos;t go through</UiText> : <UiText>Waiting for confirmation</UiText>}
         </h1>
         <p className="m-0 text-sm">
-          {result === "success" ? (docs?.certificate ? <UiText>Download your documents below. They are also emailed to you.</UiText> : <UiText>Preparing your documents. They will appear here and reach you by email.</UiText>)
-            : result === "failed" ? <UiText>No money was taken. You can try again.</UiText>
-              : <UiText>We&apos;re confirming your payment. You can leave this page; we&apos;ll email you.</UiText>}
+          {result === "failed" ? <UiText>No money was taken. You can try again.</UiText>
+            : <UiText>We&apos;re confirming your payment. You can leave this page; we&apos;ll email you.</UiText>}
         </p>
-        {result === "success" && docs?.certificate && <a href={docs.certificate} className={docButton}><UiText>Download certificate</UiText></a>}
-        {result === "success" && docs?.receipt && <a href={docs.receipt} className={docButton}><UiText>Download 80G receipt</UiText></a>}
-        {result === "success" && docs?.receiptOwed && !docs.receipt && <p className="m-0 text-sm"><UiText>Your 80G receipt is being prepared.</UiText></p>}
-        {result === "success" && docs?.certificate && /FBAN|FBAV|Instagram/.test(navigator.userAgent) && <p className="m-0 text-sm"><UiText>Trouble downloading? Your documents are in your email, or open this page in Chrome.</UiText></p>}
         {error && <p role="alert" className="m-0 text-sm text-red-700">{error}</p>}
         {leave}
       </div>,
@@ -197,13 +186,8 @@ export function SahasDonateForm({ slug, onClose }: { slug: string; onClose?: () 
 
   const box = onClose ? "flex flex-col gap-3" : "flex flex-col gap-3 rounded-2xl border border-[#EADFD3] bg-white p-5 dark:border-zinc-800 dark:bg-zinc-900";
   const short = !!onClose && wants80g;
-  // One small question at a time: amount and support, who you are, tax details, then review and pay.
-  const STEPS = [ui("Your donation"), ui("Your details"), panOnly80g ? ui("80G receipt (optional)") : ui("PAN and address")];
-  const panFields = <>
-    <label className="flex flex-col gap-1.5 text-sm font-semibold">PAN<input className={`${field} uppercase`} value={pan} maxLength={10} placeholder="ABCDE1234F" onChange={(e) => setPan(e.target.value.toUpperCase().replace(/[^A-Z0-9]/g, ""))} /></label>
-    {pan.length === 10 && !panOk && <p className={hint}><UiText>That PAN doesn&apos;t look right. It should be like ABCDE1234F.</UiText></p>}
-    <label className="flex flex-col gap-1 text-xs sm:text-sm font-semibold text-[#3a0716] dark:text-stone-200"><UiText>Address</UiText><input className={field} value={address} maxLength={300} onChange={(e) => setAddress(e.target.value)} autoComplete="street-address" /></label>
-  </>;
+  // One small question at a time: amount and support, who you are, then the optional 80G receipt and pay.
+  const STEPS = [ui("Your donation"), ui("Your details"), ui("80G receipt (optional)")];
   const stepOk = [valid, detailsOk, taxOk][step];
   const stepHead = <p className="m-0 text-xs font-semibold text-[#6B5A4E] dark:text-stone-400">{ui("Step")} {step + 1} {ui("of")} {STEPS.length} · {STEPS[step]}</p>;
   const fields = <>
@@ -258,11 +242,12 @@ export function SahasDonateForm({ slug, onClose }: { slug: string; onClose?: () 
       <label className="flex items-center gap-2 text-sm"><input type="checkbox" checked={anonymous} onChange={(e) => setAnonymous(e.target.checked)} /> <UiText>Don&apos;t show my name publicly</UiText></label>
     </section>}
     {step === 2 && <section className={box}>
-      {!panOnly80g && panFields}
       <label className="flex items-center gap-2 text-sm"><input type="checkbox" checked={wants80g} onChange={(e) => setWants80g(e.target.checked)} /> <UiText>I want an 80G receipt</UiText></label>
-      {panOnly80g && !wants80g && <p className="m-0 text-xs text-[#6B5A4E] dark:text-stone-400"><UiText>You&apos;ll get a donation certificate. Tick this only if you want an 80G receipt; it needs your PAN and address.</UiText></p>}
-      {wants80g && panOnly80g && <div className={`flex flex-col gap-3 ${onClose ? "rounded-xl bg-[#FBF7F2] p-3.5 dark:bg-zinc-900" : ""}`}>
-        {panFields}
+      {!wants80g && <p className="m-0 text-xs text-[#6B5A4E] dark:text-stone-400"><UiText>You&apos;ll get a donation certificate. Tick this only if you want an 80G receipt; it needs your PAN and address.</UiText></p>}
+      {wants80g && <div className={`flex flex-col gap-3 ${onClose ? "rounded-xl bg-[#FBF7F2] p-3.5 dark:bg-zinc-900" : ""}`}>
+      <label className="flex flex-col gap-1.5 text-sm font-semibold">PAN<input className={`${field} uppercase`} value={pan} maxLength={10} placeholder="ABCDE1234F" onChange={(e) => setPan(e.target.value.toUpperCase().replace(/[^A-Z0-9]/g, ""))} /></label>
+      {pan.length === 10 && !panOk && <p className={hint}><UiText>That PAN doesn&apos;t look right. It should be like ABCDE1234F.</UiText></p>}
+      <label className="flex flex-col gap-1 text-xs sm:text-sm font-semibold text-[#3a0716] dark:text-stone-200"><UiText>Address</UiText><input className={field} value={address} maxLength={300} onChange={(e) => setAddress(e.target.value)} autoComplete="street-address" /></label>
       </div>}
     </section>}
   </>;

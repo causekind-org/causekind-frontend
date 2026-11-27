@@ -1,7 +1,6 @@
 "use client";
 
 import { useEffect, useRef } from "react";
-import { Bricolage_Grotesque, Source_Sans_3 } from "next/font/google";
 import { ArrowRight, Check, X } from "lucide-react";
 import { Dialog, DialogClose, DialogContent, DialogDescription, DialogTitle } from "@/components/ui/dialog";
 import { AUDIENCE_OPTIONS, type RequestAudience } from "@/lib/requestAudience";
@@ -14,8 +13,6 @@ import { UiText, useUiText } from "@/components/UiText";
  * as jargon to a giver, so the door says "A person".
  */
 // The mock-up's type, scoped to this window only (owner, 2026-10-08).
-const doorDisplay = Bricolage_Grotesque({ subsets: ["latin"], weight: ["800"], display: "swap" });
-const doorBody = Source_Sans_3({ subsets: ["latin"], weight: ["400", "600", "700"], display: "swap" });
 
 /** Gradient end colour per door (data). The copy is in useDoorCopy() — ui() needs literals. */
 const DOOR_DEEP: Record<RequestAudience, string> = { everyone: "#6e2a0a", donee: "#0f2138", ngo: "#0f3a25" };
@@ -93,12 +90,12 @@ export default function AudienceDialog({
         }}
         // Three doors (2026-10-08): nearly the whole screen, dark, each choice a
         // tall panel in its role colour. Phones stack the doors.
-        className={`${doorBody.className} sm:flex sm:flex-col h-[min(820px,calc(100vh-2rem))] supports-[height:100dvh]:h-[min(820px,calc(100dvh-2rem-env(safe-area-inset-top)-env(safe-area-inset-bottom)))] sm:[@media(max-height:560px)]:h-auto sm:[@media(max-height:560px)]:max-h-[calc(100dvh-1rem)] w-[calc(100%-1.5rem)] max-w-[1240px] gap-0 overflow-y-auto rounded-none border-0 bg-transparent p-0 text-white shadow-none`}
+        className={`ck-font-body sm:flex sm:flex-col h-[min(820px,calc(100vh-2rem))] supports-[height:100dvh]:h-[min(820px,calc(100dvh-2rem-env(safe-area-inset-top)-env(safe-area-inset-bottom)))] sm:[@media(max-height:560px)]:h-auto sm:[@media(max-height:560px)]:max-h-[calc(100dvh-1rem)] w-[calc(100%-1.5rem)] max-w-[1240px] gap-0 overflow-y-auto rounded-none border-0 bg-transparent p-0 text-white shadow-none`}
       >
         <div className="flex shrink-0 items-start justify-between gap-4 px-5 pb-4 pt-6 sm:px-10 sm:pb-6 sm:pt-9 sm:[@media(max-height:760px)]:pb-3 sm:[@media(max-height:760px)]:pt-5">
           <div className="flex min-w-0 flex-col gap-1.5 sm:gap-2.5 sm:[@media(max-height:760px)]:gap-1.5">
             <p className="hidden text-xs font-bold uppercase tracking-[0.22em] text-[#e8a77c] sm:block"><UiText>Step into a door</UiText></p>
-            <DialogTitle className={`${doorDisplay.className} text-[1.9rem] font-extrabold leading-none tracking-tight text-white sm:text-[3.4rem] sm:[@media(max-height:760px)]:text-[2.6rem]`}>
+            <DialogTitle className={`ck-font-heading text-[1.9rem] font-extrabold leading-none tracking-tight text-white sm:text-[3.4rem] sm:[@media(max-height:760px)]:text-[2.6rem]`}>
               <UiText>Who would you like to help?</UiText>
             </DialogTitle>
             <DialogDescription className="text-sm text-[#cbb8aa] sm:text-base">
@@ -142,7 +139,7 @@ export default function AudienceDialog({
                 </span>
 
                 <span className="flex min-w-0 flex-1 flex-col gap-1 sm:flex-none sm:shrink-0 sm:gap-2 sm:[@media(max-height:760px)]:gap-1.5">
-                  <span className={`${doorDisplay.className} text-[1.6rem] font-extrabold leading-none sm:text-[2.5rem] sm:[@media(max-height:760px)]:text-[2rem]`}>{door.title}</span>
+                  <span className={`ck-font-heading text-[1.6rem] font-extrabold leading-none sm:text-[2.5rem] sm:[@media(max-height:760px)]:text-[2rem]`}>{door.title}</span>
                   <span className="text-[15px] leading-snug text-white/85 sm:max-w-[300px] sm:text-lg sm:[@media(max-height:760px)]:text-base">{door.body}</span>
                   <span className="mt-2 hidden items-center gap-2 text-[15px] font-bold sm:inline-flex sm:[@media(max-height:760px)]:mt-1">
                     {door.cta} <ArrowRight className="size-4" aria-hidden />

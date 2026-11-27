@@ -20,6 +20,8 @@ import { searchBlogPosts } from "@/lib/blogSearch";
 import { withHeadingIds } from "@/lib/blogToc";
 import { Search, X } from "lucide-react";
 import { blogPosts } from "../../../../data/blogData";
+import { BLOG_RELATED } from "@/data/blogRelated";
+import { categoryBySlug } from "@/lib/inKindCategories";
 
 
 
@@ -334,6 +336,12 @@ export default function BlogPostClient({ slug, content }: BlogPostClientProps) {
   const sameCategoryPosts = otherPosts.filter((p) => p.category === post.category);
   const otherCategoryPosts = otherPosts.filter((p) => p.category !== post.category);
   const recommendedPosts = [...sameCategoryPosts, ...otherCategoryPosts].slice(0, 3);
+  // Hand-picked sibling guides and the request category this guide leads to.
+  const related = BLOG_RELATED[post.slug];
+  const relatedCategory = related?.category ? categoryBySlug(related.category) : undefined;
+  const relatedPosts = (related?.posts ?? [])
+    .map((s) => blogPosts.find((p) => p.slug === s))
+    .filter((p): p is (typeof blogPosts)[number] => !!p);
   return (
     <div id="page-body" className="font-serif-mode min-h-screen bg-[#faf8f5] dark:bg-[#0c0a09] transition-colors duration-300 pt-2 md:pt-6 lg:pt-8">
       {/* Main Content Area */}
@@ -513,6 +521,45 @@ export default function BlogPostClient({ slug, content }: BlogPostClientProps) {
               // content to show.
               dangerouslySetInnerHTML={{ __html: articleHtml }}
             />
+
+            {/* Related guides: sibling posts and the matching requests page. */}
+            {(relatedCategory || relatedPosts.length > 0) && (
+              <nav aria-labelledby="related-guides" className="mt-12 rounded-3xl border border-[#b04a15]/15 dark:border-[#e07b3a]/20 bg-white/70 dark:bg-stone-900/60 p-5 sm:p-7 shadow-sm">
+                <h2 id="related-guides" className="font-sans text-xs font-bold uppercase tracking-[0.18em] text-[#b04a15] dark:text-[#e07b3a]">
+                  Related guides
+                </h2>
+                {relatedCategory && (
+                  <Link
+                    href={`/requests/category/${relatedCategory.slug}`}
+                    className="group mt-4 flex items-center justify-between gap-4 rounded-2xl bg-[#b04a15] dark:bg-[#c2571c] px-5 py-4 text-white transition-colors hover:bg-[#93390c] dark:hover:bg-[#a8481a] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-[#b04a15]"
+                  >
+                    <span className="font-sans">
+                      <span className="block text-[11px] font-semibold uppercase tracking-wider text-white/75">Ready to give?</span>
+                      <span className="block text-base sm:text-lg font-bold leading-snug">See live {relatedCategory.name.toLowerCase()} requests near you</span>
+                    </span>
+                    <span aria-hidden="true" className="shrink-0 text-xl transition-transform group-hover:translate-x-1">&rarr;</span>
+                  </Link>
+                )}
+                {relatedPosts.length > 0 && (
+                  <ul className="mt-3 divide-y divide-stone-200/80 dark:divide-stone-800">
+                    {relatedPosts.map((p) => (
+                      <li key={p.slug}>
+                        <Link
+                          href={`/blog/${p.slug}`}
+                          className="group flex items-center justify-between gap-4 py-4 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#b04a15] rounded-lg"
+                        >
+                          <span className="min-w-0">
+                            <span className="block font-sans text-[11px] font-semibold uppercase tracking-wider text-stone-500 dark:text-stone-400">{p.category}</span>
+                            <span className="mt-0.5 block text-base sm:text-[17px] font-semibold leading-snug text-stone-900 dark:text-stone-100 group-hover:text-[#b04a15] dark:group-hover:text-[#e07b3a] transition-colors">{p.title}</span>
+                          </span>
+                          <span aria-hidden="true" className="shrink-0 flex h-9 w-9 items-center justify-center rounded-full border border-stone-300 dark:border-stone-700 text-stone-500 transition-all group-hover:border-[#b04a15] group-hover:bg-[#b04a15] group-hover:text-white">&rarr;</span>
+                        </Link>
+                      </li>
+                    ))}
+                  </ul>
+                )}
+              </nav>
+            )}
 
             {/* Share Story, desktop only (lg+): same buttons as the tablet sidebar,
                 which is hidden at lg. Phones show neither, as before. */}

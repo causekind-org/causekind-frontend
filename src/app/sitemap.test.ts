@@ -81,8 +81,9 @@ describe("sitemap", () => {
   });
 
   it("still lists the blog posts", () => {
-    // Derived from blogData, so a new article appears automatically.
-    expect(urls.filter((u) => u.includes("/blog/"))).toHaveLength(blogPosts.length);
+    // Derived from blogData, so a new article appears automatically. A post
+    // whose canonical points at another post is left out.
+    expect(urls.filter((u) => u.includes("/blog/"))).toHaveLength(blogPosts.filter((p) => !p.canonicalSlug).length);
   });
 
   it("has no duplicate URLs", () => {

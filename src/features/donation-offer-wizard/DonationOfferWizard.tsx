@@ -539,6 +539,17 @@ export function DonationOfferWizard({
   // and no way to clear it.
   const photosBlocked = !purchase && screening.kind === "prohibited";
 
+  /**
+   * Continue waits on the photos step while photos upload or the AI checks them
+   * (including the moment before the check starts), the same as List an item
+   * (owner, 26 Nov 2026): a spinner and a label instead of a live button.
+   */
+  const screeningDue = !purchase && !!uploadedKey && !isUploading && screenedKeyRef.current !== uploadedKey;
+  const photosBusy: string | null = step !== "photos" || purchase ? null
+    : isUploading ? ui("Uploading photos…")
+    : screening.kind === "running" || screeningDue ? ui("Checking photos…")
+    : null;
+
   const handleContinue = useCallback(async () => {
     const stepErrors = validateOfferStep(step, model, flowType, stillNeededQuantity);
     if (step === "photos" && photosBlocked) {
@@ -862,6 +873,8 @@ export function DonationOfferWizard({
             onContinue={() => void (isLast ? handleSubmit() : handleContinue())}
             onSaveExit={() => void handleSaveExit()}
             continueLabel={isLast ? ui("Submit donation offer") : ui("Continue")}
+            advancing={!!photosBusy}
+            advancingLabel={photosBusy ?? undefined}
             isLast={isLast}
             submitting={submitting}
             submitted={submitted}

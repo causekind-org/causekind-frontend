@@ -1523,6 +1523,8 @@ export function getMyRequestVerificationDetails(id: number) {
   return request<RequestVerification | undefined>(`/api/v1/item-requests/${id}/verification-details`);
 }
 
+export type EducationPurpose = "STUDENT" | "COMMUNITY_LIBRARY" | "SELF_STUDY" | "NO_DOCUMENTS";
+
 export type RequestVerification = {
   requestingForSomeoneElse?: boolean;
   householdSize: number | null;
@@ -1542,6 +1544,10 @@ export type RequestVerification = {
   medicalCondition: string | null;
   referrerName: string | null;
   referrerContact: string | null;
+  /** Education requests only (2026-11-27): what the items are for — backend EducationPurpose. */
+  educationPurpose?: EducationPurpose | null;
+  /** Donee agreed CauseKind may contact the reference. */
+  referrerContactConsent?: boolean | null;
   altContactName: string | null;
   altContactPhone: string | null;
   detailedStory: string | null;
@@ -4486,6 +4492,9 @@ export type SaUserProfile = {
   registeredAt: string | null;
   accountState: SaAccountState;
   counts: Record<string, number>;
+  /** Whether a PAN / PAN photo exists to reveal. Absent from older backends. */
+  panOnFile?: boolean;
+  panPhotoOnFile?: boolean;
 };
 
 export type SaRecordType = "REQUEST" | "LISTING" | "OFFER" | "OFFER_RECEIVED" | "MATCH";
@@ -7039,7 +7048,8 @@ export type FundraisingStatus =
 export type FundraisingCategory = "MEDICAL" | "EDUCATION" | "EMERGENCY_HOUSEHOLD" | "OTHER";
 export type FundraisingEvidenceType =
   | "ORGANISER_ID" | "ADDRESS_PROOF" | "MEDICAL_REPORT" | "TREATMENT_ESTIMATE" | "ENROLMENT_PROOF"
-  | "FEE_STATEMENT" | "EVENT_EVIDENCE" | "CONSENT" | "RELATIONSHIP_PROOF" | "COST_PROOF" | "OTHER";
+  | "FEE_STATEMENT" | "EVENT_EVIDENCE" | "CONSENT" | "RELATIONSHIP_PROOF" | "COST_PROOF"
+  | "STUDENT_ID" | "MARKSHEET" | "NEED_PROOF" | "INSTITUTION_LETTER" | "OTHER";
 /**
  * One document requirement from the server (FundraisingEvidenceRules): met by any one of anyOf.
  * MISSING: needed now. NEXT_SUBMISSION: needed before resubmitting (sent under the old rule).
@@ -7241,7 +7251,7 @@ export type FundraiserCard = {
 export type FundraiserDetail = {
   card: FundraiserCard; story: string | null; beneficiary: string | null;
   costs: { expense: string; amount: number | null }[]; totalCosts: number; otherHelp: number;
-  acceptingDonations: boolean; platformFeePercent: number; supporters: { name: string; at: string }[];
+  acceptingDonations: boolean; platformFeePercent: number; supporters: { name: string; at: string; amount: number | null }[]; // biggest donation first (leaderboard, 2026-11-26)
   status: CampaignFlowStatus; updates: FundraiserUpdate[]; pauseNotice: string | null;
   outcome: { moneyUsed: string | null; currentSituation: string | null; publishedAt: string | null; evidence: { label: string; explanation: string | null; url: string | null }[] } | null;
   /** Every current document except identity and family ones; links are signed and expire after ~10 minutes. */

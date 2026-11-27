@@ -37,13 +37,14 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
   // Relative image paths resolve against metadataBase too, so post.image can
   // be passed through as-is whether it is a local /foo.webp or a remote URL.
   const path = `/blog/${post.slug}`;
+  const canonical = `/blog/${post.canonicalSlug ?? post.slug}`;
   const title = post.seoTitle ?? post.title;
   const description = post.seoDescription ?? post.description;
 
   return {
     title,
     description,
-    alternates: { canonical: path },
+    alternates: { canonical },
     openGraph: {
       type: "article",
       title,

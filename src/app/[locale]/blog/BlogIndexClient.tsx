@@ -732,7 +732,7 @@ function BlogListingContent() {
 
           {/* Dot indicators */}
           {/* Each dot sits in a 24px-tall tap area (Lighthouse target size,
-              Audit Report 6); the visible dots and their spacing are unchanged. */}
+              Audit Report 6); the dots look the same, a few px further apart. */}
           <div className="flex mt-6 justify-center sm:hidden">
             {insiderTips.map((_, i) => (
               <button

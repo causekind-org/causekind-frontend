@@ -75,23 +75,6 @@ describe("SahasDonateForm", () => {
     expect(screen.queryByText("Can feed up to 10 stray dogs or cats")).toBeNull();
   });
 
-  it("still asks every donor for PAN and address on other campaigns", async () => {
-    const other = campaign(TIERS);
-    other.card = { ...other.card, slug: "some-other-campaign" };
-    detail.mockResolvedValue(other);
-    render(<SahasDonateForm slug="some-other-campaign" />);
-    await screen.findByLabelText("Amount (₹)");
-    fireEvent.click(screen.getByRole("button", { name: "Continue" }));
-    fireEvent.change(screen.getByLabelText("Full name"), { target: { value: "Asha Rao" } });
-    fireEvent.change(screen.getByLabelText("Email"), { target: { value: "asha@example.com" } });
-    fireEvent.change(screen.getByLabelText("Phone"), { target: { value: "+919876543210" } });
-    fireEvent.click(screen.getByRole("button", { name: "Continue" }));
-    expect(screen.getByText(/PAN and address/)).toBeTruthy();
-    expect(screen.getByPlaceholderText("ABCDE1234F")).toBeTruthy();
-    expect(screen.getByLabelText("Address")).toBeTruthy();
-    expect(screen.getByRole("button", { name: "Check your PAN" })).toHaveProperty("disabled", true);
-  });
-
   it("keeps the old amounts when the campaign has no amounts list", async () => {
     detail.mockResolvedValue(campaign(null));
     render(<SahasDonateForm slug="feed-stray-animals" />);
@@ -99,10 +82,12 @@ describe("SahasDonateForm", () => {
     expect(screen.getByRole("button", { name: "₹251" })).toBeTruthy();
   });
 
-  it("asks for PAN and address only after the 80G tick", async () => {
-    detail.mockResolvedValue(campaign(TIERS));
-    render(<SahasDonateForm slug="feed-stray-animals" />);
-    await screen.findByLabelText("Enter your amount (₹)");
+  it("asks for PAN and address only after the 80G tick, on every campaign", async () => {
+    const other = campaign(TIERS);
+    other.card = { ...other.card, slug: "some-other-campaign" };
+    detail.mockResolvedValue(other);
+    render(<SahasDonateForm slug="some-other-campaign" />);
+    await screen.findByLabelText("Amount (₹)");
     fireEvent.click(screen.getByRole("button", { name: "Continue" }));
     fireEvent.change(screen.getByLabelText("Full name"), { target: { value: "Asha Rao" } });
     fireEvent.change(screen.getByLabelText("Email"), { target: { value: "asha@example.com" } });

@@ -1,7 +1,7 @@
 "use client";
 
 import { WizardField, controlClass } from "@/features/wizard-kit/WizardField";
-import type { OfferModel } from "../offerModel";
+import { OFFER_AGE_RANGES, type OfferModel } from "../offerModel";
 
 import { useUiText } from "@/components/UiText";
 import { useTranslations } from "next-intl";
@@ -68,13 +68,21 @@ export function OfferDetailsStep({
       {!purchase && (
       <WizardField label={ui("How old is the item?")} required hint={ui("Roughly how long you've had it or used it.")} error={errors.approximateAge}>
         {({ id, describedBy, invalid }) => (
-          <input
-            id={id} name="approximateAge" type="text" value={model.approximateAge}
+          // A dropdown, the same choices as List an item (owner, 26 Nov 2026).
+          // A value typed before this change (or copied from a listing) that is
+          // not one of the choices stays selectable, so it is never lost.
+          <select
+            id={id} name="approximateAge" value={model.approximateAge}
             onChange={e => onChange("approximateAge", e.target.value)}
             aria-describedby={describedBy} aria-invalid={invalid}
             className={controlClass}
-            placeholder={ui("e.g. 2 years")}
-          />
+          >
+            <option value="">{ui("Select how old it is")}</option>
+            {model.approximateAge && !(OFFER_AGE_RANGES as readonly string[]).includes(model.approximateAge) && (
+              <option value={model.approximateAge}>{model.approximateAge}</option>
+            )}
+            {OFFER_AGE_RANGES.map(a => <option key={a} value={a}>{a}</option>)}
+          </select>
         )}
       </WizardField>
       )}

@@ -239,13 +239,14 @@ export function MobileBottomNav() {
           brightness={60}
           opacity={0.84}
           blur={10}
-          displace={0.5}
+          displace={0}
           // Frost tint (--ck-glass-frost). Started at 0.22, where page content
           // read straight through the capsule and competed with the icons.
           // The dark rule adds a further +0.28 on top of this.
           backgroundOpacity={0.75}
           saturation={1.28}
-          distortionScale={-75}
+          // Was -75: the corners bent the page behind into a visible smudge.
+          distortionScale={-30}
           redOffset={0}
           greenOffset={4}
           blueOffset={9}

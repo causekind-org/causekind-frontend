@@ -1,5 +1,7 @@
 User-agent: *
 Allow: /
+# An old SearchAction template URL Google still retries; /blog stays open.
+Disallow: /blog?q=
 
 # The OpenSEO site-audit crawler only: skip auth pages and query-string
 # duplicates so its page budget goes to real content. Other bots unchanged.

@@ -392,6 +392,18 @@
     "useGps": "ஜிபிஎஸ் பயன்படுத்தவும்",
     "getting": "பெறுகிறது…",
     "saveProfileChanges": "சுயவிவர மாற்றங்களைச் சேமிக்கவும்",
+    "settingsTitle": "அமைப்புகள்",
+    "settingsDone": "முடிந்தது",
+    "settingsDescription": "உங்கள் பெயர், தொலைபேசி எண் மற்றும் இருப்பிடத்தைப் புதுப்பிக்கவும்.",
+    "tapToChangePhoto": "புகைப்படத்தை மாற்றத் தட்டவும்",
+    "sectionAccount": "கணக்கு",
+    "sectionLocation": "இருப்பிடம்",
+    "rowsSaveHint": "எதையாவது மாற்றினால் மேலே சேமி பொத்தான் தோன்றும்.",
+    "emailLocked": "மாற்ற முடியாது",
+    "backLabel": "பின்செல்",
+    "profilePhoto": "சுயவிவரப் படம்",
+    "photoSavesInstantly": "படத்தைத் தேர்ந்தவுடன் சேமிக்கப்படும்.",
+    "editFieldDescription": "{field} திருத்து",
     "saving": "சேமிக்கிறது…",
     "badgeFirstGiver": "முதல் கொடுப்பவர்",
     "badgeCommunityHero": "சமூக நாயகன்",
@@ -1243,12 +1255,12 @@
   },
   "trustBand": {
     "label": "CauseKind ஏன் பாதுகாப்பானது",
-    "trustedTitle": "நம்பகமான சமூகம்",
-    "trustedBody": "பாதுகாப்பானது. சரிபார்க்கப்பட்டது. நம்பகமானது.",
-    "impactTitle": "உள்ளூர் தாக்கம்",
-    "impactBody": "உங்கள் பகுதி மக்களுக்கே உதவி.",
-    "togetherTitle": "ஒன்றாக வலிமை",
-    "togetherBody": "சிறந்த சமூகம். சிறந்த நாளை."
+    "trustedTitle": "தேவைகள் சரிபார்க்கப்படுகின்றன",
+    "trustedBody": "ஒவ்வொரு கோரிக்கையும் வெளியிடப்படும் முன் எங்கள் குழு சரிபார்க்கிறது.",
+    "impactTitle": "நேரடியாகக் கைக்குக் கை",
+    "impactBody": "பொருட்கள் நேரடியாக உங்கள் அருகில் உள்ள ஒருவருக்குச் செல்கின்றன.",
+    "togetherTitle": "ஒப்படைப்பு உறுதி",
+    "togetherBody": "ஒவ்வொரு ஒப்படைப்பும் ஒருமுறைக் குறியீட்டால் (OTP) உறுதிசெய்யப்படுகிறது."
   },
   "NgoLanding": {
     "HeroStateA": {

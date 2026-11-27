@@ -2,9 +2,9 @@ import type { Metadata } from "next";
 import { NgoLandingView } from "@/components/ngo-landing/NgoLandingView";
 
 export const metadata: Metadata = {
-  title: "NGO & Partner Giving",
+  title: "Donate to Verified NGOs in India",
   description:
-    "Give items, give money, or give both to legally verified NGOs and communities in need. Closed-loop proof and AI-screened verification.",
+    "Donate items or money to legally verified NGOs in India. Every NGO is checked, and every donation comes with proof of delivery.",
   alternates: { canonical: "/ngo" },
 };
 

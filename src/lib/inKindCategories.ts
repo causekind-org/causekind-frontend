@@ -36,7 +36,7 @@ export const IN_KIND_CATEGORIES: InKindCategory[] = [
   {
     name: "Medical aid",
     slug: "medical-aid",
-    seoTitle: "Donate Medical Aid Near You",
+    seoTitle: "Medical Aid Donation: Donate for Healthcare Near You",
     seoDescription: "Donate wheelchairs, walkers, BP monitors and in-date medical consumables directly to verified people and NGOs near you. See current requests on CauseKind.",
     tagline: "Mobility, comfort and health-related support.",
     guideIntro:
@@ -72,8 +72,8 @@ export const IN_KIND_CATEGORIES: InKindCategory[] = [
   {
     name: "Education",
     slug: "education",
-    seoTitle: "Donate Books & Stationery",
-    seoDescription: "Donate books, textbooks, stationery and school bags directly to verified students, families and NGOs near you. See current requests on CauseKind.",
+    seoTitle: "Book Donation: Donate Books & Stationery Near You",
+    seoDescription: "Donate for education: give books, textbooks, stationery and school bags directly to verified students, families and NGOs near you. See requests on CauseKind.",
     tagline: "Books, stationery and the tools of a school day.",
     guideIntro:
       "Donate Books & Stationery: education requests are for books, stationery and the tools of a school day. Students ask for textbooks and guides for their current syllabus, unused notebooks, pens, geometry boxes and art supplies, and school bags with working zips and intact straps. Uniforms in common sizes help when they are cleaned and pressed, and calculators, drawing boards and lab equipment are often needed too. Story books and reference books are welcome in any local language. To make sure your donation is used, avoid textbooks from an older syllabus or a different board, books with heavy highlighting, missing pages or filled-in exercises, half-used notebooks and dried-out pens, and uniforms with a school crest that will not match the student's school.",
@@ -219,8 +219,8 @@ export const IN_KIND_CATEGORIES: InKindCategory[] = [
   {
     name: "Furniture",
     slug: "furniture",
-    seoTitle: "Donate Furniture Near You",
-    seoDescription: "Donate beds, tables, chairs, cupboards and other usable furniture directly to verified families and NGOs near you. See current requests on CauseKind.",
+    seoTitle: "Furniture Donation: Sofas, Beds & Chairs Near You",
+    seoDescription: "Donate a sofa, couch, bed, dining table or chairs to verified families and NGOs near you. See current furniture requests on CauseKind.",
     tagline: "Beds, chairs, tables and storage that still have decades left.",
     guideIntro:
       "Donate Furniture Near You: furniture requests are for beds, chairs, tables and storage that still have years of use left. People ask for beds, cots and mattresses that are clean and structurally sound, chairs, tables and desks with all legs true, and wardrobes, cupboards and shelving units. Sofas are welcome when the frame is intact and the upholstery is unstained, and flat-pack items are useful if you still have the fittings. Please avoid anything with woodworm, termite damage or signs of pests, water-damaged particleboard that will not survive another move, mattresses with stains, tears or a bed-bug history, and glass tops with chips or edge cracks. Be clear about size and weight so the receiver can plan how to collect it.",
@@ -255,8 +255,8 @@ export const IN_KIND_CATEGORIES: InKindCategory[] = [
   {
     name: "Clothing",
     slug: "clothing",
-    seoTitle: "Donate Clothes Near You",
-    seoDescription: "Donate clean, wearable clothes for children, women and men directly to verified people and NGOs near you. See current clothing requests on CauseKind.",
+    seoTitle: "Donate Old Clothes Near You: Clothes Donation in India",
+    seoDescription: "Donate old clothes near you to verified people and NGOs. Clean, wearable clothes for children, women and men, handed over locally. See requests on CauseKind.",
     tagline: "Clean, wearable clothes for every age and season.",
     guideIntro:
       "Donate Clothes Near You: clothing requests are for clean, wearable clothes for every age and season. Everyday wear in good repair, washed and folded, is always useful, and children's and infant clothing is needed often. Season-appropriate outerwear such as sweaters, jackets and shawls helps in colder months, and footwear with life left in the sole should be paired and tied together. Uniforms, workwear and modest-wear in common sizes are also requested. Please avoid torn, stained, faded or stretched-out garments, underwear and swimwear unless they are brand new and sealed, odd shoes or shoes with worn-through soles, and heavily seasonal items sent long before or after their season.",
@@ -291,7 +291,7 @@ export const IN_KIND_CATEGORIES: InKindCategory[] = [
   {
     name: "Electronics",
     slug: "electronics",
-    seoTitle: "Donate Laptops & Electronics",
+    seoTitle: "Laptop Donation: Donate Laptops & Phones Near You",
     seoDescription: "Donate working laptops, phones and tablets to verified students and NGOs near you. See current requests and how to wipe your data first on CauseKind.",
     tagline: "Working phones, laptops and appliances with real life left.",
     guideIntro:
@@ -327,7 +327,7 @@ export const IN_KIND_CATEGORIES: InKindCategory[] = [
   {
     name: "Sports",
     slug: "sports",
-    seoTitle: "Donate Sports Equipment Near You",
+    seoTitle: "Sports Equipment Donation Near You",
     seoDescription: "Donate bats, balls, bicycles, sports shoes and indoor games in playable condition directly to verified people and NGOs near you. See requests on CauseKind.",
     tagline: "Gear, cycles and fitness equipment for kids and adults.",
     guideIntro:

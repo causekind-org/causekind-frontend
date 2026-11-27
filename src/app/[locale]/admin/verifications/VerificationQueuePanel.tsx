@@ -863,7 +863,10 @@ function VerificationFormGrid({ v, isEmergency }: { v: NonNullable<AdminRequestV
     // above) — kept here since the grid below hides empty rows automatically, so this
     // still surfaces the value on older submissions without adding an empty row on new ones.
     ["Medical condition", v.medicalCondition],
+    // Education requests (2026-11-27): what the items are for decides the evidence; NO_DOCUMENTS is human-only.
+    ["Education purpose", v.educationPurpose ? ({ STUDENT: "Student", COMMUNITY_LIBRARY: "Community library / study centre", SELF_STUDY: "Self-study / competitive exam", NO_DOCUMENTS: "No documents — manual review, call the reference" } as Record<string, string>)[v.educationPurpose] ?? v.educationPurpose : null],
     ["Referrer", v.referrerName ? `${v.referrerName} (${v.referrerContact ?? "no phone"})` : null],
+    ["May contact reference", v.referrerContactConsent == null ? null : v.referrerContactConsent ? "Yes, donee agreed" : "No"],
     ["Alt. contact", v.altContactName ? `${v.altContactName} (${v.altContactPhone ?? "no phone"})` : null],
     ["Detailed story", v.detailedStory],
     ["Maps pin", v.mapsPin],

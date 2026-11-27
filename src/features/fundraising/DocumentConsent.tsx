@@ -5,6 +5,7 @@ import { ApiError, fundraisingCampaigns, type FundraisingCampaign, type Fundrais
 import { Icon } from "./ui";
 import s from "./fundraising.module.css";
 import { UiText, useUiText } from "@/components/UiText";
+import { FIELD_HELP } from "./FieldInfo";
 
 /**
  * What donors can see (owner, 2026-10-30, option A): every document except identity, family and profile
@@ -28,6 +29,12 @@ function label(type: string) {
   return t.charAt(0).toUpperCase() + t.slice(1);
 }
 
+/** The document's name, as the upload step titles it ("Medical report", "Proof of relationship"). */
+function documentName(e: FundraisingEvidence) {
+  if (e.fromProfile) return "Government ID (from your profile)";
+  return FIELD_HELP[`ev_${e.type}`]?.title ?? label(e.type);
+}
+
 const row = { display: "flex", gap: 12, alignItems: "flex-start", padding: "10px 0", borderTop: "1px solid #efe7de" } as const;
 
 /** Read-only: which of the current documents donors will see, and which always stay private. */
@@ -42,7 +49,15 @@ export function DocumentVisibility({ page, evidence }: { page: FundraisingCampai
       {current.map((e) => (
         <div key={e.id} style={row}>
           <Icon name={shown.has(e.id) ? "check" : "lock"} />
-          <span><strong>{shown.has(e.id) ? <UiText>Shown to donors</UiText> : <UiText>Always private</UiText>}</strong> — {e.fromProfile ? <UiText>Government ID</UiText> : e.fileName ?? label(e.type)}</span>
+          {/* Name first (2026-11-26, owner): every row used to read "Shown to donors — <file>.jpg",
+              so with several uploads of the same file you couldn't tell which document was which. */}
+          <span style={{ display: "flex", flexDirection: "column", gap: 2, minWidth: 0 }}>
+            <strong><UiText>{documentName(e)}</UiText></strong>
+            <span className={`${s.muted} ${s.small}`} style={{ overflowWrap: "anywhere" }}>
+              {shown.has(e.id) ? <UiText>Shown to donors</UiText> : <UiText>Always private</UiText>}
+              {!e.fromProfile && e.fileName ? <> · {e.fileName}</> : null}
+            </span>
+          </span>
         </div>
       ))}
     </section>

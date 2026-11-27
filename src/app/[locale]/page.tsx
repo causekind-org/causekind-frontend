@@ -14,18 +14,18 @@ import { FEATURES } from "@/lib/features";
 // non-www domain redirects to — and stops the two hostnames competing as
 // separate URLs for the same page.
 export const metadata: Metadata = {
-  title: { absolute: "Donate Items to Verified People & NGOs in India | CauseKind" },
+  title: { absolute: "CauseKind: Donate Items to Verified People & NGOs in India" },
   description:
-    "Give clothes, books, electronics and household items directly to verified people and NGOs near you. Simple, local, in-kind giving with CauseKind.",
+    "Donate old clothes, books, electronics & household items to verified people and NGOs near you. CauseKind is a simple, local in-kind donation platform in India.",
   alternates: { canonical: "/" },
   openGraph: {
     type: "website",
     siteName: "CauseKind",
     locale: "en_IN",
     url: "/",
-    title: "Donate Items to Verified People & NGOs in India | CauseKind",
+    title: "CauseKind: Donate Items to Verified People & NGOs in India",
     description:
-      "Give clothes, books, electronics and household items directly to verified people and NGOs near you. Simple, local, in-kind giving with CauseKind.",
+      "Donate old clothes, books, electronics & household items to verified people and NGOs near you. CauseKind is a simple, local in-kind donation platform in India.",
     images: [{ url: "/og-default.png", width: 1200, height: 630, alt: "CauseKind" }],
   },
 };

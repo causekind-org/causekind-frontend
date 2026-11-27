@@ -36,10 +36,8 @@ import {
   DialogContent,
   DialogHeader,
   DialogBody,
-  DialogFooter,
   DialogTitle,
   DialogDescription,
-  DialogClose,
 } from "@/components/ui/dialog";
 import {
   Loader2,
@@ -59,6 +57,8 @@ import {
   Sparkles,
   Star,
   RefreshCw,
+  ChevronRight,
+  Lock,
 } from "lucide-react";
 import Link from "@/components/AppLink";
 import { NewRequestLink } from "@/components/NewRequestLink";
@@ -190,6 +190,8 @@ function splitPhone(
 
 // ── component ─────────────────────────────────────────────────────────────────
 
+type EditField = "name" | "phone" | "photo" | "country" | "state" | "city";
+
 export default function ProfilePage() {
   const { user, isLoading: authLoading, updateUser } = useAuth();
   const router = useRouter();
@@ -250,6 +252,26 @@ export default function ProfilePage() {
   // the foot of the page: opening it there put the fields a screen or two below
   // the button, so the click read as doing nothing.
   const [settingsOpen, setSettingsOpen] = useState(false);
+  // Settings-rows layout: null = the row list; otherwise the one editor shown.
+  // Country, State and City share one "location" editor because changing the
+  // country clears state and city — saving it alone would fail validation.
+  const [editField, setEditField] = useState<null | EditField>(null);
+  // Values as they were when an editor opened, so Back discards unsaved edits.
+  const editSnapshot = useRef<{
+    fullName: string; dialCountry: string; phoneNumber: string; countryIso: string;
+    stateIso: string; cityValue: string; cityFreeText: string; forceFreeTextCity: boolean;
+  } | null>(null);
+  // Take the saved-values baseline each time the modal opens.
+  useEffect(() => {
+    if (settingsOpen) {
+      editSnapshot.current = {
+        fullName, dialCountry, phoneNumber, countryIso,
+        stateIso, cityValue, cityFreeText, forceFreeTextCity,
+      };
+    }
+    // Only on open: later edits must not move the baseline.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [settingsOpen]);
   const [storyExpanded, setStoryExpanded] = useState(false);
 
   // Derived option lists (memoized to avoid re-building every render)
@@ -480,6 +502,43 @@ export default function ProfilePage() {
     return [cityValue, stateIso, countryIso].filter(Boolean).join(", ");
   }
 
+  // The saved values, taken when the modal opens and after each save. The one
+  // Save button in the header shows only while the form differs from these.
+  function currentValues() {
+    return {
+      fullName, dialCountry, phoneNumber, countryIso,
+      stateIso, cityValue, cityFreeText, forceFreeTextCity,
+    };
+  }
+  const settingsDirty = (() => {
+    const s = editSnapshot.current;
+    if (!s) return false;
+    const c = currentValues();
+    return (Object.keys(c) as (keyof typeof c)[]).some((k) => c[k] !== s[k]);
+  })();
+
+  // Rows only open and close; edits are kept until Save or the modal closes.
+  function openEditor(field: EditField) {
+    setEditField(field);
+  }
+
+  // Closing the modal without saving: put the saved values back.
+  function closeEditor() {
+    const s = editSnapshot.current;
+    if (s) {
+      setFullName(s.fullName);
+      setDialCountry(s.dialCountry);
+      setPhoneNumber(s.phoneNumber);
+      setCountryIso(s.countryIso);
+      setStateIso(s.stateIso);
+      setCityValue(s.cityValue);
+      setCityFreeText(s.cityFreeText);
+      setForceFreeTextCity(s.forceFreeTextCity);
+    }
+    // Keep the baseline: the modal may stay open after Cancel.
+    setEditField(null);
+  }
+
   async function handleSave(e: React.FormEvent) {
     e.preventDefault();
 
@@ -520,7 +579,9 @@ export default function ProfilePage() {
       updateUser?.({ fullName: updated.fullName ?? undefined, phone: updated.phone ?? undefined });
       toast.success(t("successProfileUpdated"));
       if (updated.documentWarning) toast.warning(updated.documentWarning, { duration: 12000 });
-      setSettingsOpen(false);
+      // Modal stays open; what was just saved becomes the new baseline.
+      editSnapshot.current = currentValues();
+      setEditField(null);
     } catch (err) {
       toast.error(err instanceof Error ? err.message : t("errorUpdateFailed"));
     } finally {
@@ -883,195 +944,280 @@ export default function ProfilePage() {
         </aside>
       </div>
 
-      {/* Account settings, in a modal. `display: contents` on the form lets the
-          dialog's own column layout (fixed header, scrolling body, pinned
-          footer) apply to its children while the submit button stays a real
-          form submit. */}
-      <Dialog open={settingsOpen} onOpenChange={setSettingsOpen}>
-        <DialogContent className="max-w-2xl">
-          <DialogHeader>
-            <DialogTitle className={`text-3xs font-black uppercase tracking-[0.24em] ${acc.eyebrow}`}>
-              Account settings
-            </DialogTitle>
-            <DialogDescription>Update your name, phone number and location.</DialogDescription>
-          </DialogHeader>
-          <form onSubmit={handleSave} className="contents">
-            <DialogBody className="space-y-4 sm:space-y-5">
-                    {/* Avatar Upload */}
-                    <div className="flex justify-center">
-                      <AvatarUpload
-                        imageDataUrl={avatarDataUrl}
-                        initials={initials}
-                        onImageChange={handleAvatarChange}
-                        tone={isDonee ? "navy" : "copper"}
-                      />
+      {/* Account settings — "Settings rows" layout (design #4, 2026-11-25).
+          Rows expand IN PLACE (2026-11-25 rev): tapping a row opens its input or
+          dropdown right under it, with Save / Cancel there. Country, State and
+          City share one Save at the foot of the LOCATION box, because changing
+          the country clears state and city. Every Save sends the whole profile
+          via handleSave (the backend takes name + phone + city together). */}
+      <Dialog
+        open={settingsOpen}
+        onOpenChange={(open) => {
+          if (!open) closeEditor();
+          setSettingsOpen(open);
+        }}
+      >
+        <DialogContent className="max-w-md bg-[#f5f0ea] dark:bg-zinc-950" showCloseButton={false}>
+          {(() => {
+            const countryLabel = countryOptions.find((o) => o.value === countryIso)?.label ?? countryIso;
+            const stateLabel = stateOptions.find((o) => o.value === stateIso)?.label ?? stateIso;
+            const cityLabel = showCityFreeText ? cityFreeText : cityValue;
+            const dial = getDialCode(dialCountry, dialCodeOptions);
+            const phoneLabel = phoneNumber ? `${dial ? `${dial} ` : ""}${phoneNumber}` : "";
+            const notSet = <span className="text-stone-400 dark:text-zinc-500">—</span>;
+            const rowCls =
+              "flex min-h-[54px] w-full items-center gap-3 px-4 text-left transition-colors hover:bg-stone-50 dark:hover:bg-zinc-800/60 focus-visible:outline-none focus-visible:bg-stone-50 dark:focus-visible:bg-zinc-800/60";
+            const divider = "border-b border-[#f3ebe2] dark:border-zinc-800";
+            const chevron = (open: boolean) => (
+              <ChevronRight
+                className={`size-4 shrink-0 text-stone-400 transition-transform ${open ? "rotate-90" : ""}`}
+                aria-hidden
+              />
+            );
+            const toggle = (f: EditField) => (editField === f ? setEditField(null) : openEditor(f));
+
+            const locRows: { key: "country" | "state" | "city"; label: string; value: string }[] = [
+              { key: "country", label: t("country"), value: countryLabel },
+              { key: "state", label: t("stateProvince"), value: stateLabel },
+              { key: "city", label: t("cityLabel"), value: cityLabel },
+            ];
+
+            return (
+              <form onSubmit={handleSave} className="contents">
+                <DialogHeader className="flex flex-row items-center justify-between space-y-0 border-0 px-5 pb-2 pt-5 pr-5">
+                  <DialogTitle className="text-2xl font-extrabold text-stone-900 dark:text-stone-100">
+                    {t("settingsTitle")}
+                  </DialogTitle>
+                  <DialogDescription className="sr-only">{t("settingsDescription")}</DialogDescription>
+                  {settingsDirty ? (
+                    // One Save for every change, shown only once something changed.
+                    <div className="flex items-center gap-1">
+                      <button
+                        type="button"
+                        onClick={closeEditor}
+                        disabled={saving}
+                        className="h-11 px-3 text-sm font-bold text-stone-500 dark:text-zinc-400"
+                      >
+                        {tCommon("cancel")}
+                      </button>
+                      <Button
+                        type="submit"
+                        disabled={saving}
+                        className={`${acc.solidBtn} h-10 rounded-xl px-5 text-sm font-extrabold text-white`}
+                      >
+                        {saving ? <Loader2 className="size-4 animate-spin" /> : tCommon("save")}
+                      </Button>
+                    </div>
+                  ) : (
+                    <button
+                      type="button"
+                      onClick={() => { closeEditor(); setSettingsOpen(false); }}
+                      className={`h-11 px-3 text-[15px] font-extrabold ${acc.eyebrow}`}
+                    >
+                      {t("settingsDone")}
+                    </button>
+                  )}
+                </DialogHeader>
+                  <DialogBody className="space-y-4 px-4 pb-6">
+                    {/* Photo card */}
+                    <div className="overflow-hidden rounded-[18px] bg-white dark:bg-zinc-900">
+                      <button
+                        type="button"
+                        onClick={() => toggle("photo")}
+                        aria-expanded={editField === "photo"}
+                        className="flex w-full items-center gap-3.5 p-4 text-left"
+                      >
+                        <span className={`flex size-14 shrink-0 items-center justify-center overflow-hidden rounded-full text-xl font-extrabold text-white ${acc.solidBtn}`}>
+                          {avatarDataUrl
+                            // eslint-disable-next-line @next/next/no-img-element
+                            ? <img src={avatarDataUrl} alt="" className="size-full object-cover" />
+                            : initials}
+                        </span>
+                        <span className="flex min-w-0 flex-1 flex-col gap-0.5">
+                          <span className="truncate text-[17px] font-extrabold text-stone-900 dark:text-stone-100">{displayName}</span>
+                          <span className="text-[13px] text-stone-500 dark:text-zinc-400">{t("tapToChangePhoto")}</span>
+                        </span>
+                        {chevron(editField === "photo")}
+                      </button>
+                      {editField === "photo" && (
+                        <div className="flex flex-col items-center gap-3 border-t border-[#f3ebe2] px-4 pb-4 pt-3 dark:border-zinc-800">
+                          <AvatarUpload
+                            imageDataUrl={avatarDataUrl}
+                            initials={initials}
+                            onImageChange={handleAvatarChange}
+                            tone={isDonee ? "navy" : "copper"}
+                          />
+                          <p className="text-center text-xs text-stone-500 dark:text-zinc-400">{t("photoSavesInstantly")}</p>
+                        </div>
+                      )}
                     </div>
 
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-5">
-                      {/* Full Name */}
-                      <div className="space-y-1.5">
-                        <Label htmlFor="fullName" className="text-xs font-bold uppercase tracking-wider text-stone-400">
-                          {t("fullNameLabel")}
-                        </Label>
-                        <div className="relative">
-                          <User className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-stone-400" />
-                          <Input
-                            id="fullName"
-                            className={`pl-10 rounded-xl border-stone-200 py-3.5 sm:py-5 font-medium ${acc.focusRing}`}
-                            placeholder={t("fullNamePlaceholder")}
-                            value={fullName}
-                            onChange={(e) => setFullName(e.target.value)}
-                          />
-                        </div>
-                      </div>
-
-                      {/* Email (read-only) */}
-                      <div className="space-y-1.5">
-                        <Label htmlFor="email" className="text-xs font-bold uppercase tracking-wider text-stone-400">
-                          {t("emailAddress")}
-                        </Label>
-                        <div className="relative">
-                          <Mail className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-stone-400" />
-                          <Input
-                            id="email"
-                            className="pl-10 rounded-xl border-stone-200 py-3.5 sm:py-5 font-medium bg-stone-50 dark:bg-zinc-800 text-stone-400 cursor-not-allowed"
-                            value={profile?.email || ""}
-                            disabled
-                          />
-                        </div>
-                      </div>
-                    </div>
-
-                    {/* Phone with dial-code dropdown */}
-                    <div className="space-y-1.5">
-                      <Label className="text-xs font-bold uppercase tracking-wider text-stone-400 flex items-center gap-1">
-                        <Phone className="w-3.5 h-3.5" /> {t("phoneNumber")}
-                      </Label>
-                      <div className="flex gap-2">
-                        <div className="w-[96px] sm:w-[120px] shrink-0">
-                          <SearchableSelect
-                            direction="up"
-                            options={dialCodeOptions}
-                            value={dialCountry}
-                            onChange={(iso) => {
-                              setDialCountry(iso);
-                              const maxLen = PHONE_LENGTHS[iso] ?? 10;
-                              setPhoneNumber((prev) => prev.slice(0, maxLen));
-                            }}
-                            placeholder="+–"
-                            searchPlaceholder="Search country…"
-                            renderSelectedLabel={(opt) => getDialCode(opt.value, dialCodeOptions)}
-                          />
-                        </div>
-                        <Input
-                          id="phone"
-                          type="tel"
-                          inputMode="numeric"
-                          maxLength={maxPhoneLength}
-                          className={`flex-1 rounded-xl border-stone-200 py-3.5 sm:py-5 font-medium ${acc.focusRing}`}
-                          placeholder={t("phonePlaceholder")}
-                          value={phoneNumber}
-                          onChange={(e) => {
-                            const digits = e.target.value.replace(/\D/g, "").slice(0, maxPhoneLength);
-                            setPhoneNumber(digits);
-                          }}
-                        />
-                      </div>
-                    </div>
-
-                    {/* Location Selection */}
-                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4 sm:gap-5">
-                      <div className="space-y-1">
-                        <Label htmlFor="country" className="text-xs text-stone-500">{t("country")}</Label>
-                        <SearchableSelect
-                          direction="up"
-                          id="country"
-                          options={countryOptions}
-                          value={countryIso}
-                          onChange={handleCountryChange}
-                          placeholder={t("selectCountry")}
-                          searchPlaceholder="Search country…"
-                        />
-                      </div>
-
-                      <div className="space-y-1">
-                        <Label htmlFor="state" className="text-xs text-stone-500">{t("stateProvince")}</Label>
-                        {noStateOptions ? (
-                          <p className="text-xs text-stone-400 italic py-2">
-                            {t("noStatesListed")}
-                          </p>
-                        ) : (
-                          <SearchableSelect
-                            direction="up"
-                            id="state"
-                            options={stateOptions}
-                            value={stateIso}
-                            onChange={handleStateChange}
-                            placeholder={t("selectState")}
-                            disabledPlaceholder={t("selectCountryFirst")}
-                            disabled={!countryIso}
-                            searchPlaceholder="Search state…"
-                          />
-                        )}
-                      </div>
-
-                      <div className="space-y-1">
-                        <Label htmlFor="city" className="text-xs text-stone-500">{t("cityLabel")}</Label>
-                        {showCityFreeText ? (
-                          <div className="relative">
-                            <MapPin className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-stone-400" />
+                    <p className="px-1 text-xs font-extrabold tracking-[0.08em] text-stone-500 dark:text-zinc-400">{t("sectionAccount")}</p>
+                    <div className="overflow-hidden rounded-[18px] bg-white dark:bg-zinc-900">
+                      {/* Name */}
+                      <div className={divider}>
+                        <button type="button" onClick={() => toggle("name")} aria-expanded={editField === "name"} className={rowCls}>
+                          <span className="flex size-[30px] shrink-0 items-center justify-center rounded-[9px] bg-[#fbeee2] text-[#8a4318] dark:bg-[#C17A3A]/15 dark:text-[#e0a06a]"><User className="size-4" aria-hidden /></span>
+                          <span className="flex-1 font-semibold text-stone-900 dark:text-stone-100">{t("fullNameLabel")}</span>
+                          {editField !== "name" && (
+                            <span className="max-w-[45%] truncate text-sm text-stone-500 dark:text-zinc-400">{fullName || notSet}</span>
+                          )}
+                          {chevron(editField === "name")}
+                        </button>
+                        {editField === "name" && (
+                          <div className="space-y-2 px-4 pb-4">
                             <Input
-                              id="city"
-                              className={`pl-10 rounded-xl border-stone-200 py-3.5 sm:py-5 font-medium ${acc.focusRing}`}
-                              placeholder={t("enterCity")}
-                              value={cityFreeText}
-                              onChange={(e) => setCityFreeText(e.target.value)}
+                              id="fullName"
+                              aria-label={t("fullNameLabel")}
+                              autoFocus
+                              className={`rounded-xl border-stone-200 py-5 font-medium ${acc.focusRing}`}
+                              placeholder={t("fullNamePlaceholder")}
+                              value={fullName}
+                              onChange={(e) => setFullName(e.target.value)}
                             />
                           </div>
-                        ) : (
-                          <SearchableSelect
-                            direction="up"
-                            id="city"
-                            options={cityOptions}
-                            value={cityValue}
-                            onChange={setCityValue}
-                            placeholder={t("selectCity")}
-                            disabledPlaceholder={t("selectStateFirst")}
-                            disabled={!stateIso}
-                            searchPlaceholder="Search city…"
-                          />
+                        )}
+                      </div>
+
+                      {/* Email — read-only */}
+                      <div className={`flex min-h-[54px] w-full items-center gap-3 px-4 ${divider}`}>
+                        <span className="flex size-[30px] shrink-0 items-center justify-center rounded-[9px] bg-[#e7edf5] text-[#1f3a5f] dark:bg-blue-400/15 dark:text-blue-300"><Mail className="size-4" aria-hidden /></span>
+                        <span className="flex-1 font-semibold text-stone-900 dark:text-stone-100">{t("emailAddress")}</span>
+                        <span className="max-w-[50%] truncate text-[13px] text-stone-500 dark:text-zinc-400">{displayEmail}</span>
+                        <Lock className="size-3.5 shrink-0 text-stone-400" aria-label={t("emailLocked")} />
+                      </div>
+
+                      {/* Phone */}
+                      <div>
+                        <button type="button" onClick={() => toggle("phone")} aria-expanded={editField === "phone"} className={rowCls}>
+                          <span className="flex size-[30px] shrink-0 items-center justify-center rounded-[9px] bg-[#e6f1ea] text-[#2f6b4f] dark:bg-emerald-400/15 dark:text-emerald-300"><Phone className="size-4" aria-hidden /></span>
+                          <span className="flex-1 font-semibold text-stone-900 dark:text-stone-100">{t("phoneNumber")}</span>
+                          {editField !== "phone" && (
+                            <span className="max-w-[45%] truncate text-sm text-stone-500 dark:text-zinc-400">{phoneLabel || notSet}</span>
+                          )}
+                          {chevron(editField === "phone")}
+                        </button>
+                        {editField === "phone" && (
+                          <div className="space-y-2 px-4 pb-4">
+                            <div className="flex gap-2">
+                              <div className="w-[110px] shrink-0">
+                                <SearchableSelect
+                                  options={dialCodeOptions}
+                                  value={dialCountry}
+                                  onChange={(iso) => {
+                                    setDialCountry(iso);
+                                    const maxLen = PHONE_LENGTHS[iso] ?? 10;
+                                    setPhoneNumber((prev) => prev.slice(0, maxLen));
+                                  }}
+                                  placeholder="+–"
+                                  searchPlaceholder="Search country…"
+                                  renderSelectedLabel={(opt) => getDialCode(opt.value, dialCodeOptions)}
+                                />
+                              </div>
+                              <Input
+                                id="phone"
+                                type="tel"
+                                inputMode="numeric"
+                                aria-label={t("phoneNumber")}
+                                autoFocus
+                                maxLength={maxPhoneLength}
+                                className={`flex-1 rounded-xl border-stone-200 py-5 font-medium ${acc.focusRing}`}
+                                placeholder={t("phonePlaceholder")}
+                                value={phoneNumber}
+                                onChange={(e) => setPhoneNumber(e.target.value.replace(/\D/g, "").slice(0, maxPhoneLength))}
+                              />
+                            </div>
+                          </div>
                         )}
                       </div>
                     </div>
 
-            </DialogBody>
+                    <p className="px-1 text-xs font-extrabold tracking-[0.08em] text-stone-500 dark:text-zinc-400">{t("sectionLocation")}</p>
+                    <div className="rounded-[18px] bg-white dark:bg-zinc-900">
+                      {locRows.map((row, i) => {
+                        const open = editField === row.key;
+                        return (
+                          <div key={row.key} className={i < 2 ? divider : ""}>
+                            <button
+                              type="button"
+                              onClick={() => toggle(row.key)}
+                              aria-expanded={open}
+                              className={`${rowCls} ${i === 0 ? "rounded-t-[18px]" : ""}`}
+                            >
+                              <span className="flex-1 font-semibold text-stone-900 dark:text-stone-100">{row.label}</span>
+                              {!open && (
+                                <span className="max-w-[50%] truncate text-sm text-stone-500 dark:text-zinc-400">{row.value || notSet}</span>
+                              )}
+                              {chevron(open)}
+                            </button>
+                            {open && (
+                              <div className="px-4 pb-4">
+                                {row.key === "country" && (
+                                  <SearchableSelect
+                                    id="country"
+                                    placement="inline"
+                                    options={countryOptions}
+                                    value={countryIso}
+                                    onChange={(v) => { handleCountryChange(v); setEditField("state"); }}
+                                    placeholder={t("selectCountry")}
+                                    searchPlaceholder="Search country…"
+                                  />
+                                )}
+                                {row.key === "state" && (noStateOptions ? (
+                                  <p className="py-2 text-xs italic text-stone-400">{t("noStatesListed")}</p>
+                                ) : (
+                                  <SearchableSelect
+                                    id="state"
+                                    placement="inline"
+                                    options={stateOptions}
+                                    value={stateIso}
+                                    onChange={(v) => { handleStateChange(v); setEditField("city"); }}
+                                    placeholder={t("selectState")}
+                                    disabledPlaceholder={t("selectCountryFirst")}
+                                    disabled={!countryIso}
+                                    searchPlaceholder="Search state…"
+                                  />
+                                ))}
+                                {row.key === "city" && (showCityFreeText ? (
+                                  <div className="relative">
+                                    <MapPin className="absolute left-3 top-1/2 size-4 -translate-y-1/2 text-stone-400" />
+                                    <Input
+                                      id="city"
+                                      aria-label={t("cityLabel")}
+                                      autoFocus
+                                      className={`rounded-xl border-stone-200 py-5 pl-10 font-medium ${acc.focusRing}`}
+                                      placeholder={t("enterCity")}
+                                      value={cityFreeText}
+                                      onChange={(e) => setCityFreeText(e.target.value)}
+                                    />
+                                  </div>
+                                ) : (
+                                  <SearchableSelect
+                                    id="city"
+                                    placement="inline"
+                                    options={cityOptions}
+                                    value={cityValue}
+                                    onChange={setCityValue}
+                                    placeholder={t("selectCity")}
+                                    disabledPlaceholder={t("selectStateFirst")}
+                                    disabled={!stateIso}
+                                    searchPlaceholder="Search city…"
+                                  />
+                                ))}
+                              </div>
+                            )}
+                          </div>
+                        );
+                      })}
+                    </div>
 
-            <DialogFooter>
-              <DialogClose asChild>
-                <Button
-                  type="button"
-                  variant="outline"
-                  className="rounded-xl py-4 font-bold text-sm"
-                  disabled={saving}
-                >
-                  {tCommon("cancel")}
-                </Button>
-              </DialogClose>
-              <Button
-                type="submit"
-                className={`${acc.solidBtn} text-white rounded-xl py-4 font-extrabold text-sm shadow-md flex items-center justify-center gap-2 transition-colors`}
-                disabled={saving}
-              >
-                {saving ? (
-                  <>
-                    <Loader2 className="size-4 animate-spin" /> {t("saving")}
-                  </>
-                ) : (
-                  t("saveProfileChanges")
-                )}
-              </Button>
-            </DialogFooter>
-          </form>
+                    <p className="px-1 text-xs text-stone-500 dark:text-zinc-400">
+                      {t("rowsSaveHint")}
+                    </p>
+                  </DialogBody>
+              </form>
+            );
+          })()}
         </DialogContent>
       </Dialog>
     </div>

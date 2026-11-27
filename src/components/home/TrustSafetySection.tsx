@@ -34,7 +34,7 @@ const TRUST_CARDS: TrustCardData[] = [
   {
     id: "donor",
     roleTitle: "FOR DONORS",
-    roleSubtitle: "Give with absolute confidence",
+    roleSubtitle: "Know who you are giving to",
     roleColor: "#B5480F",
     accentBg: "bg-[var(--ck-role-accent,#B5480F)]/10 text-[var(--ck-role-accent,#B5480F)] dark:bg-[var(--ck-role-accent,#B5480F)]/20 dark:text-[#E07A5F]",
     borderHover: "hover:border-[#B5480F]/50 hover:shadow-[#B5480F]/10",
@@ -57,7 +57,7 @@ const TRUST_CARDS: TrustCardData[] = [
     icon: HandHeart,
     points: [
       "Your exact address is never shown publicly.",
-      "Ask with dignity — no public begging, share your story only if you choose to.",
+      "Visitors see only your first name — never your photo or phone number.",
       "CauseKind is completely free for you, always.",
     ],
   },
@@ -72,7 +72,7 @@ const TRUST_CARDS: TrustCardData[] = [
     icon: Building2,
     points: [
       "Every NGO is checked with official documents before it can post.",
-      "Donors know your requests are genuine.",
+      "Donors can see that your NGO passed this check.",
       "You get a clear record of every item received.",
     ],
   },
@@ -110,7 +110,7 @@ function TrustSafetyMobile({ seamless = false }: { seamless?: boolean }) {
         Built on trust, </LandingText><em><LandingText>for everyone.</LandingText></em>
       </h2>
       <p data-reveal-item style={stagger(2)} className={m.lede}><LandingText>
-        Clear verification, complete privacy protection, and transparent community handovers.
+        Needs are reviewed before they go live, exact addresses stay private, and each handover is confirmed with a one-time code.
       </LandingText></p>
 
       <LandingAttributes><ol className={m.stack} aria-label="Trust and safety for each role">
@@ -146,7 +146,7 @@ function TrustSafetyMobile({ seamless = false }: { seamless?: boolean }) {
                 <footer className={m.foot}>
                   <span className={m.footLabel}>
                     <BadgeCheck className="w-3.5 h-3.5" aria-hidden="true" /><LandingText>
-                    Guaranteed protocol
+                    Trust check
                   </LandingText></span>
                   <span className={m.footIndex}>0<LandingText>{idx + 1}</LandingText> / 03</span>
                 </footer>
@@ -261,40 +261,14 @@ function TrustSafetyFull({
         }
       );
 
-      // Step D: Cards Fan Out / Deal - START MUCH EARLIER
-      cardsRef.current.forEach((card, index) => {
-        if (!card) return;
-        const rotOffset = index === 0 ? -4 : index === 2 ? 4 : 0;
-        const xOffset = index === 0 ? -30 : index === 2 ? 30 : 0;
-
-        tl.fromTo(
-          card,
-          {
-            opacity: 0,
-            y: 40,
-            x: xOffset,
-            rotation: rotOffset,
-            scale: 0.92,
-          },
-          {
-            opacity: 1,
-            y: 0,
-            x: 0,
-            rotation: 0,
-            scale: 1,
-            duration: 0.65,
-            ease: "power3.out",
-          },
-          0.3 + (index * 0.1) // Start at 0.3s, stagger by 0.1s
-        );
-      });
-
-      // Step E: Stagger checkmarks inside cards
+      // Cards: a plain fade in (2026-11-26, redesign step 6b). They used to be
+      // "dealt" like playing cards — tilted, slid in from the sides and scaled —
+      // with each checkmark popping in after. One visual language: plain cards.
       tl.fromTo(
-        ".card-point-check",
-        { scale: 0, opacity: 0 },
-        { scale: 1, opacity: 1, duration: 0.25, stagger: 0.04, ease: "back.out(2)" },
-        0.7
+        cardsRef.current.filter(Boolean),
+        { opacity: 0 },
+        { opacity: 1, duration: 0.4, ease: "power1.out" },
+        0.2
       );
 
       // Step F: Animate Counter Stats
@@ -362,7 +336,7 @@ function TrustSafetyFull({
             Built on trust, for everyone.
           </LandingText></h2>
           <p className="mt-1 text-xs sm:text-sm text-stone-600 dark:text-stone-400 max-w-xl mx-auto"><LandingText>
-            Clear verification, complete privacy protection, and transparent community handovers.
+            Needs are reviewed before they go live, exact addresses stay private, and each handover is confirmed with a one-time code.
           </LandingText></p>
         </div>
 
@@ -431,7 +405,7 @@ function TrustSafetyFull({
 
                 {/* Card Subtle Bottom Indicator */}
                 <div className="mt-4 pt-3 border-t border-stone-100 dark:border-stone-800/80 flex items-center justify-between text-[11px] font-medium text-stone-600 dark:text-stone-300">
-                  <span><LandingText>Guaranteed protocol</LandingText></span>
+                  <span><LandingText>Trust check</LandingText></span>
                   <span className="font-mono text-[10px] text-stone-600 dark:text-stone-300">0<LandingText>{idx + 1}</LandingText>/03</span>
                 </div>
               </div>
