@@ -145,6 +145,8 @@ export function HomeFundraisers() {
   const railRef = useRef<HTMLDivElement>(null);
   const previousLabel = useLandingTranslation("Previous fundraisers");
   const nextLabel = useLandingTranslation("More fundraisers");
+  /** Which fundraiser the big card shows; the arrows and dots below it move it. */
+  const [active, setActive] = useState(0);
 
   useEffect(() => {
     if (isDonee) return;
@@ -165,6 +167,7 @@ export function HomeFundraisers() {
   if (isDonee) return null;
   const count = cards?.length ?? 0;
   const rest = cards ? cards.slice(1) : [];
+  const current = Math.min(active, Math.max(count - 1, 0));
 
   return (
     <section
@@ -211,9 +214,39 @@ export function HomeFundraisers() {
         <div className="h-[420px] animate-pulse rounded-3xl border border-[#ece4da] bg-stone-200/40 dark:border-zinc-700 dark:bg-zinc-800/40" />
       ) : count > 0 ? (
         <div className="flex flex-col gap-6">
-          <SpotlightCard card={cards[0]} diwali={diwali} />
+          {/* The big card plus arrows and dots, the same pager as Real people.
+              Real needs. (owner, 27 Nov 2026). Card content and style unchanged. */}
+          <div>
+            <SpotlightCard key={cards[current].id} card={cards[current]} diwali={diwali} />
+            {count > 1 && (
+              <nav aria-label="Fundraisers" className="mt-3 flex items-center justify-center gap-2">
+                <button type="button" aria-label={previousLabel} disabled={current === 0}
+                  onClick={() => setActive(current - 1)}
+                  className="flex h-11 w-11 shrink-0 cursor-pointer items-center justify-center rounded-full border border-current text-[var(--ck-home-ink,#b04a15)] disabled:cursor-not-allowed disabled:opacity-30 focus-visible:outline-2">
+                  <ChevronLeft size={20} aria-hidden="true" />
+                </button>
+                <div className="flex min-w-0 items-center overflow-x-auto">
+                  {cards.map((card, index) => (
+                    <button key={card.id} type="button" aria-label={`Fundraiser ${index + 1} of ${count}`}
+                      aria-current={index === current ? "true" : undefined}
+                      onClick={() => setActive(index)}
+                      className="flex h-11 w-8 shrink-0 cursor-pointer items-center justify-center text-[var(--ck-home-ink,#b04a15)] focus-visible:outline-2">
+                      <span className={`h-2 w-2 rounded-full bg-current ${index === current ? "opacity-100" : "opacity-30"}`} />
+                    </button>
+                  ))}
+                </div>
+                <button type="button" aria-label={nextLabel} disabled={current === count - 1}
+                  onClick={() => setActive(current + 1)}
+                  className="flex h-11 w-11 shrink-0 cursor-pointer items-center justify-center rounded-full border border-current text-[var(--ck-home-ink,#b04a15)] disabled:cursor-not-allowed disabled:opacity-30 focus-visible:outline-2">
+                  <ChevronRight size={20} aria-hidden="true" />
+                </button>
+                <span className="sr-only" aria-live="polite">{`${current + 1} of ${count}`}</span>
+              </nav>
+            )}
+          </div>
           {rest.length > 0 ? (
-            <div className="flex flex-col gap-3">
+            // Phones page through the big card instead; the rail stays on md and up.
+            <div className="hidden flex-col gap-3 md:flex">
               <div className="flex items-center justify-between gap-3">
                 <span className="text-xs font-bold uppercase tracking-[0.14em] text-stone-600 dark:text-stone-400">
                   <LandingText>More fundraisers</LandingText>
