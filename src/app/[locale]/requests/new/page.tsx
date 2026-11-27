@@ -583,37 +583,6 @@ function NewRequestForm() {
     ...(medical && !REQUIRED_DOCS[tier].some((d) => d.type === "PROOF_OF_NEED") ? [{ type: "PROOF_OF_NEED" as VerificationDocumentType, label: "" }] : []),
   ].map((d) => ({ ...d, label: categoryDocLabel(category, d.type, d.label) }));
 
-  // Education: the evidence follows what the items are for (2026-11-27). Mirrors backend
-  // TierService.educationEvidenceGap — keep the two in step.
-  const education = (category ?? "").trim().toLowerCase() === "education";
-  const educationPurpose: EducationPurpose | null = verification.educationPurpose ?? null;
-  const educationSlots: { type: VerificationDocumentType; label: string }[] =
-    educationPurpose === "STUDENT" ? [{ type: "PROOF_OF_NEED", label: ui("Student proof: school or college ID, fee receipt, admission letter or this year's marksheet (any one)") }]
-    : educationPurpose === "SELF_STUDY" ? [{ type: "PROOF_OF_NEED", label: ui("Exam form or admit card, or a coaching fee receipt (any one)") }]
-    : educationPurpose === "COMMUNITY_LIBRARY" ? [
-        { type: "OFFICIAL_LETTER", label: ui("Library registration certificate") },
-        { type: "SITUATION_PHOTO", label: ui("Photo of the library") },
-        { type: "REFERENCE_LETTER", label: ui("Letter from a local authority (sarpanch, ward member, panchayat or school principal)") },
-      ]
-    : [];
-  const slots = education ? [...docSlots.filter((d) => REUSABLE_PROFILE_DOCS.includes(d.type)), ...educationSlots] : docSlots;
-  const slotRequired = (t: VerificationDocumentType) =>
-    education ? (educationPurpose === "STUDENT" || educationPurpose === "SELF_STUDY") && t === "PROOF_OF_NEED" : mandatoryDocs.includes(t);
-  function educationGap(): string | null {
-    if (!education) return null;
-    if (!educationPurpose) return ui("Tell us what the educational items are for.");
-    if (educationPurpose === "STUDENT") return isDocComplete("PROOF_OF_NEED") ? null : ui("Please upload one student proof: school or college ID, fee receipt, admission letter or this year's marksheet.");
-    if (educationPurpose === "SELF_STUDY") return isDocComplete("PROOF_OF_NEED") ? null : ui("Please upload your exam form or admit card, or a coaching fee receipt.");
-    if (educationPurpose === "COMMUNITY_LIBRARY") {
-      return isDocComplete("OFFICIAL_LETTER") || (isDocComplete("SITUATION_PHOTO") && isDocComplete("REFERENCE_LETTER")) ? null
-        : ui("Please upload the library's registration certificate, or both a photo of the library and a letter from a local authority.");
-    }
-    if (!verification.detailedStory?.trim()) return ui("Please explain why the items are needed.");
-    if (!verification.referrerName?.trim() || !refComplete) return ui("Please give a reference's name and phone number.");
-    if (isSelfReference) return refLiveError;
-    if (!verification.referrerContactConsent) return ui("Please confirm we may contact your reference.");
-    return null;
-  }
 
   // Step 2 — household & situation (RequestVerification form)
   const [verification, setVerification] = useState<Partial<RequestVerification>>({});
@@ -645,6 +614,38 @@ function NewRequestForm() {
   useEffect(() => {
     setVerification((v) => ({ ...v, referrerContact: refPhone ? `${refDialCode}${refPhone}` : "" }));
   }, [refPhone, refDialCode]);
+
+  // Education: the evidence follows what the items are for (2026-11-27). Mirrors backend
+  // TierService.educationEvidenceGap — keep the two in step.
+  const education = (category ?? "").trim().toLowerCase() === "education";
+  const educationPurpose: EducationPurpose | null = verification.educationPurpose ?? null;
+  const educationSlots: { type: VerificationDocumentType; label: string }[] =
+    educationPurpose === "STUDENT" ? [{ type: "PROOF_OF_NEED", label: ui("Student proof: school or college ID, fee receipt, admission letter or this year's marksheet (any one)") }]
+    : educationPurpose === "SELF_STUDY" ? [{ type: "PROOF_OF_NEED", label: ui("Exam form or admit card, or a coaching fee receipt (any one)") }]
+    : educationPurpose === "COMMUNITY_LIBRARY" ? [
+        { type: "OFFICIAL_LETTER", label: ui("Library registration certificate") },
+        { type: "SITUATION_PHOTO", label: ui("Photo of the library") },
+        { type: "REFERENCE_LETTER", label: ui("Letter from a local authority (sarpanch, ward member, panchayat or school principal)") },
+      ]
+    : [];
+  const slots = education ? [...docSlots.filter((d) => REUSABLE_PROFILE_DOCS.includes(d.type)), ...educationSlots] : docSlots;
+  const slotRequired = (t: VerificationDocumentType) =>
+    education ? (educationPurpose === "STUDENT" || educationPurpose === "SELF_STUDY") && t === "PROOF_OF_NEED" : mandatoryDocs.includes(t);
+  function educationGap(): string | null {
+    if (!education) return null;
+    if (!educationPurpose) return ui("Tell us what the educational items are for.");
+    if (educationPurpose === "STUDENT") return isDocComplete("PROOF_OF_NEED") ? null : ui("Please upload one student proof: school or college ID, fee receipt, admission letter or this year's marksheet.");
+    if (educationPurpose === "SELF_STUDY") return isDocComplete("PROOF_OF_NEED") ? null : ui("Please upload your exam form or admit card, or a coaching fee receipt.");
+    if (educationPurpose === "COMMUNITY_LIBRARY") {
+      return isDocComplete("OFFICIAL_LETTER") || (isDocComplete("SITUATION_PHOTO") && isDocComplete("REFERENCE_LETTER")) ? null
+        : ui("Please upload the library's registration certificate, or both a photo of the library and a letter from a local authority.");
+    }
+    if (!verification.detailedStory?.trim()) return ui("Please explain why the items are needed.");
+    if (!verification.referrerName?.trim() || !refComplete) return ui("Please give a reference's name and phone number.");
+    if (isSelfReference) return refLiveError;
+    if (!verification.referrerContactConsent) return ui("Please confirm we may contact your reference.");
+    return null;
+  }
 
   // Default the reference dial country to the GPS-detected country (until the user types)
   useEffect(() => {
