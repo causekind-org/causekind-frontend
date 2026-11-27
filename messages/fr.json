@@ -4358,6 +4358,8 @@
     "qtyNeeded": "{quantity} nécessaires",
     "metaRequestTitle": "Demande",
     "metaRequestDescription": "Une demande d’objets à {city}. Parcourez librement ; connectez-vous quand vous êtes prêt à proposer un objet.",
+    "metaRequestDescriptionNgo": "{org} a besoin de {item} à {city}. Consultez la demande vérifiée et proposez un objet sur CauseKind.",
+    "metaRequestNgoFallback": "Une ONG vérifiée",
     "india": "Inde",
     "requestedBy": "Demandé par {who}",
     "metaCategoryNotFound": "Catégorie introuvable",

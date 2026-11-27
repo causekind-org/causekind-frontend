@@ -80,7 +80,8 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   });
 
   // Add dynamic blog posts
-  blogPosts.forEach((post) => {
+  // A post with canonicalSlug points at another post, so it is not listed.
+  blogPosts.filter((post) => !post.canonicalSlug).forEach((post) => {
     sitemapEntries.push({
       url: `${baseUrl}/blog/${post.slug}`,
       lastModified: new Date(post.dateModified ?? post.datePublished),

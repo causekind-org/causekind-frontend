@@ -4362,6 +4362,8 @@
     "qtyNeeded": "{quantity} चाहिए",
     "metaRequestTitle": "अनुरोध",
     "metaRequestDescription": "{city} में सामान का अनुरोध। आराम से देखें; सामान देने के लिए तैयार हों तब साइन इन करें।",
+    "metaRequestDescriptionNgo": "{org} को {city} में {item} की ज़रूरत है। सत्यापित अनुरोध देखें और CauseKind पर सामान दें।",
+    "metaRequestNgoFallback": "एक सत्यापित NGO",
     "india": "भारत",
     "requestedBy": "अनुरोधकर्ता: {who}",
     "metaCategoryNotFound": "श्रेणी नहीं मिली",

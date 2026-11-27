@@ -65,7 +65,15 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const indexable = res.req.requesterType === "NGO";
   return {
     title: capTitle(res.req.title),
-    description: mt("metaRequestDescription", { city: res.req.city || mt("india") }),
+    // NGO requests are indexable, so each gets its own description (who needs
+    // what, where) instead of one shared sentence with only the city swapped.
+    description: indexable
+      ? mt("metaRequestDescriptionNgo", {
+          org: res.req.organizationName?.trim() || mt("metaRequestNgoFallback"),
+          item: res.req.title.trim(),
+          city: res.req.city || mt("india"),
+        }).slice(0, 160)
+      : mt("metaRequestDescription", { city: res.req.city || mt("india") }),
     alternates: { canonical: `/requests/${res.req.id}` },
     ...(indexable ? {} : { robots: { index: false, follow: true } }),
   };

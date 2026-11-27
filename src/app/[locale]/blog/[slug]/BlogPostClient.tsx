@@ -20,6 +20,8 @@ import { searchBlogPosts } from "@/lib/blogSearch";
 import { withHeadingIds } from "@/lib/blogToc";
 import { Search, X } from "lucide-react";
 import { blogPosts } from "../../../../data/blogData";
+import { BLOG_RELATED } from "@/data/blogRelated";
+import { categoryBySlug } from "@/lib/inKindCategories";
 
 
 
@@ -334,6 +336,12 @@ export default function BlogPostClient({ slug, content }: BlogPostClientProps) {
   const sameCategoryPosts = otherPosts.filter((p) => p.category === post.category);
   const otherCategoryPosts = otherPosts.filter((p) => p.category !== post.category);
   const recommendedPosts = [...sameCategoryPosts, ...otherCategoryPosts].slice(0, 3);
+  // Hand-picked sibling guides and the request category this guide leads to.
+  const related = BLOG_RELATED[post.slug];
+  const relatedCategory = related?.category ? categoryBySlug(related.category) : undefined;
+  const relatedPosts = (related?.posts ?? [])
+    .map((s) => blogPosts.find((p) => p.slug === s))
+    .filter((p): p is (typeof blogPosts)[number] => !!p);
   return (
     <div id="page-body" className="font-serif-mode min-h-screen bg-[#faf8f5] dark:bg-[#0c0a09] transition-colors duration-300 pt-2 md:pt-6 lg:pt-8">
       {/* Main Content Area */}
@@ -513,6 +521,29 @@ export default function BlogPostClient({ slug, content }: BlogPostClientProps) {
               // content to show.
               dangerouslySetInnerHTML={{ __html: articleHtml }}
             />
+
+            {/* Related guides: sibling posts and the matching requests page. */}
+            {(relatedCategory || relatedPosts.length > 0) && (
+              <nav aria-labelledby="related-guides" className="mt-10 border-t border-stone-200 dark:border-stone-800 pt-6">
+                <h2 id="related-guides" className="font-display-lg text-xl text-[#b04a15] dark:text-[#e07b3a] mb-3 font-bold">Related guides</h2>
+                <ul className="space-y-2 text-stone-700 dark:text-stone-300">
+                  {relatedCategory && (
+                    <li>
+                      <Link href={`/requests/category/${relatedCategory.slug}`} className="font-semibold text-[#b04a15] dark:text-orange-400 hover:underline">
+                        See live {relatedCategory.name.toLowerCase()} requests near you
+                      </Link>
+                    </li>
+                  )}
+                  {relatedPosts.map((p) => (
+                    <li key={p.slug}>
+                      <Link href={`/blog/${p.slug}`} className="hover:text-[#b04a15] dark:hover:text-[#e07b3a] hover:underline">
+                        {p.title}
+                      </Link>
+                    </li>
+                  ))}
+                </ul>
+              </nav>
+            )}
 
             {/* Share Story, desktop only (lg+): same buttons as the tablet sidebar,
                 which is hidden at lg. Phones show neither, as before. */}

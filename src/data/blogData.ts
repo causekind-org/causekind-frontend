@@ -29,6 +29,12 @@ export interface BlogPost {
    * what makes them eligible for the FAQ rich result in search.
    */
   faq?: { question: string; answer: string }[];
+  /**
+   * Set when another post covers the same topic better: this page stays
+   * readable but its canonical points at /blog/<canonicalSlug>, and it is
+   * left out of the sitemap, so Google indexes one page, not two.
+   */
+  canonicalSlug?: string;
 }
 
 export const blogPosts: BlogPost[] = [
@@ -194,6 +200,8 @@ export const blogPosts: BlogPost[] = [
       },
   {
     slug: "safely-wipe-and-donate-smartphones-laptops",
+    // Same topic as the dedicated data-erasing guide; that one is canonical.
+    canonicalSlug: "how-to-erase-personal-data-before-donation-india",
     title: "Bridging the Digital Divide: How to Safely Wipe and Donate Your Old Smartphones and Laptops",
     description: "The device in your drawer is not clutter. It is someone's education. Let's get it there. Learn how to securely wipe and donate old devices.",
     category: "Giving Smarter",

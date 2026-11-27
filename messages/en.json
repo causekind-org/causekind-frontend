@@ -5349,6 +5349,8 @@
     "qtyNeeded": "{quantity} needed",
     "metaRequestTitle": "Request",
     "metaRequestDescription": "An in-kind request in {city}. Browse freely; sign in when you’re ready to offer an item.",
+    "metaRequestDescriptionNgo": "{org} needs {item} in {city}. See the verified request and offer an item on CauseKind.",
+    "metaRequestNgoFallback": "A verified NGO",
     "india": "India",
     "requestedBy": "Requested by {who}",
     "metaCategoryNotFound": "Category not found",
