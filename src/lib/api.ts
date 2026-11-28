@@ -5497,6 +5497,7 @@ export interface NgoDraftDto {
   documents?: Record<string, UploadedFileDto | null>;
   logo?: UploadedFileDto | null;
   officePhoto?: UploadedFileDto | null;
+  coverPhoto?: UploadedFileDto | null;
   activityPhotos?: (UploadedFileDto | null)[];
   updatedAt?: string | null;
 }
@@ -5699,6 +5700,7 @@ export function submitNgoApplication(payload: {
   documents: Record<string, UploadedFileDto | null>;
   logo: UploadedFileDto | null;
   officePhoto: UploadedFileDto | null;
+  coverPhoto?: UploadedFileDto | null;
   activityPhotos: (UploadedFileDto | null)[];
 }) {
   return request<NgoSubmitResponse>("/api/v1/ngo-registration/submit", {

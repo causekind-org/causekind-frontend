@@ -133,25 +133,8 @@ export function TimeWheels({ draft, setDraft, tone, compact = false }: {
       <Wheel tone={tone} compact={compact} label="Hour" items={HOURS} index={draft.hour - 1} onIndex={i => setDraft(d => ({ ...d, hour: i + 1 }))} />
       <span aria-hidden className={cn("relative z-10 font-semibold", compact ? "text-base" : "text-2xl", t.colon)}>:</span>
       <Wheel tone={tone} compact={compact} label="Minute" items={MINUTES} index={draft.minute} onIndex={i => setDraft(d => ({ ...d, minute: i }))} />
-      {/* AM / PM as two clear buttons, not a third wheel: on the wheel it was easy to leave
-          "AM" and save night hours (1:00 AM - 6:00 AM) by mistake. */}
-      <div role="radiogroup" aria-label="AM or PM" className={cn("relative z-10 ml-2 flex flex-col", compact ? "gap-1" : "gap-1.5")}>
-        {PERIODS.map((p, i) => {
-          const on = (i === 1) === draft.pm;
-          return (
-            <button key={p} type="button" role="radio" aria-checked={on}
-              onClick={() => setDraft(d => ({ ...d, pm: i === 1 }))}
-              className={cn(
-                "rounded-xl border font-bold tabular-nums transition-colors",
-                compact ? "h-8 w-12 text-sm" : "h-11 w-16 text-base",
-                on ? cn("border-transparent text-white", tone === "ngo" ? "bg-ngo-700" : "bg-[#b04a15]")
-                  : "border-stone-300 bg-white text-stone-600 hover:bg-stone-50 dark:border-zinc-700 dark:bg-zinc-900 dark:text-stone-300",
-              )}>
-              {p}
-            </button>
-          );
-        })}
-      </div>
+      {/* AM / PM scrolls like the hour and minute (the selected one sits in the green band). */}
+      <Wheel tone={tone} compact={compact} label="AM or PM" items={PERIODS} index={draft.pm ? 1 : 0} onIndex={i => setDraft(d => ({ ...d, pm: i === 1 }))} />
     </div>
   );
 }

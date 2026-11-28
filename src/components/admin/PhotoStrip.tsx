@@ -12,6 +12,8 @@ import { ChevronLeft, ChevronRight, X } from "lucide-react";
  */
 export function PhotoStrip({ images, label }: { images: string[]; label?: string }) {
   const [openIdx, setOpenIdx] = useState<number | null>(null);
+  const [failedSrc, setFailedSrc] = useState<string | null>(null);
+  const [retry, setRetry] = useState(0);
 
   const close = useCallback(() => setOpenIdx(null), []);
   const step = useCallback(
@@ -83,12 +85,20 @@ export function PhotoStrip({ images, label }: { images: string[]; label?: string
             </button>
           )}
           {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img
+          {failedSrc === images[openIdx] ? (
+            <div role="alert" className="rounded-xl bg-white p-6 text-center text-stone-800" onClick={(e) => e.stopPropagation()}>
+              <p>This document could not be loaded. Reopen the request to refresh its access link.</p>
+              <button type="button" className="mt-3 rounded-lg border px-4 py-2" onClick={() => { setFailedSrc(null); setRetry((n) => n + 1); }}>Retry</button>
+            </div>
+          ) : <img
+            key={`${openIdx}-${retry}`}
+            data-managed-image-error
             src={images[openIdx]}
+            onError={() => setFailedSrc(images[openIdx])}
             alt={`Photo ${openIdx + 1} (full size)`}
             onClick={(e) => e.stopPropagation()}
             className="max-h-[90vh] max-w-[90vw] rounded-xl object-contain shadow-2xl"
-          />
+          />}
           {images.length > 1 && (
             <button
               type="button"

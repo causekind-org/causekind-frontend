@@ -4487,7 +4487,7 @@
     "dueBy": "Vence el {date}",
     "enlargePhotoN": "Ampliar la foto {n}",
     "fieldsNeedAttention": "{count, plural, one {# campo requiere tu atención.} other {# campos requieren tu atención.}}",
-    "fileTooLarge": "{name} supera los 5 MB.",
+    "fileTooLarge": "{name} supera los 10 MB.",
     "forGroup": "Para {count} {group}",
     "groupReached": "{group} alcanzados",
     "handoverPhoto": "Foto de entrega {n}",

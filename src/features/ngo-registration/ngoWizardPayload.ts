@@ -104,6 +104,7 @@ export function buildDraftPayload(form: NGOFormState, currentStep: string): Part
     documents,
     logo: toDto(form.logo),
     officePhoto: toDto(form.officePhoto),
+    coverPhoto: toDto(form.coverPhoto ?? null),
     activityPhotos: form.activityPhotos.map(toDto),
   };
 }
@@ -131,6 +132,7 @@ export function buildSubmitPayload(form: NGOFormState) {
     documents: documentsFor(form.legalStructure, form.documents),
     logo: toDto(form.logo),
     officePhoto: toDto(form.officePhoto),
+    coverPhoto: toDto(form.coverPhoto ?? null),
     activityPhotos: form.activityPhotos.map(toDto),
   };
 }
@@ -160,6 +162,7 @@ export function applyDraft(prev: NGOFormState, draft: NgoDraftDto): NGOFormState
     authorizationLetter: fromDto(draft.authorizationLetter) || prev.authorizationLetter,
     logo: fromDto(draft.logo) || prev.logo,
     officePhoto: fromDto(draft.officePhoto) || prev.officePhoto,
+    coverPhoto: fromDto(draft.coverPhoto ?? null) || prev.coverPhoto || null,
     activityPhotos:
       draft.activityPhotos && draft.activityPhotos.length > 0
         ? [0, 1, 2].map((i) => fromDto(draft.activityPhotos?.[i]))

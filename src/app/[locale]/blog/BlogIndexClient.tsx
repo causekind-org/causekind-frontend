@@ -223,9 +223,11 @@ function BlogListingContent() {
 
   // Category filtering happens first, then search relevance ranking runs on
   // top of it — the two combine rather than override each other.
+  // Posts with a canonicalSlug are duplicates of another post: not listed.
+  const listedPosts = blogPosts.filter((post) => !post.canonicalSlug);
   const categoryScopedPosts = selectedCategory === ALL_CATEGORIES
-    ? blogPosts
-    : blogPosts.filter((post) => post.category === selectedCategory);
+    ? listedPosts
+    : listedPosts.filter((post) => post.category === selectedCategory);
 
   const filteredPosts = searchQuery.trim() === ""
     ? categoryScopedPosts
@@ -253,7 +255,7 @@ function BlogListingContent() {
         "url": "https://www.causekind.com/logo-filled.webp",
       },
     },
-    "blogPost": blogPosts.map((post) => ({
+    "blogPost": blogPosts.filter((post) => !post.canonicalSlug).map((post) => ({
       "@type": "BlogPosting",
       "headline": post.title,
       "description": post.description,

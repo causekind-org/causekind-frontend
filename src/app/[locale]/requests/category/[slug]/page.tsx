@@ -9,7 +9,7 @@ import { SeoLinkSection } from "@/components/SeoLinkSection";
 // entry, so the page has its own text even when few requests are live.
 const CATEGORY_GUIDES: Record<string, { heading?: string; intro: string; links: { name: string; href: string }[] }> = {
   clothing: {
-    intro: "Want to donate old clothes near you? Give clean, wearable clothes for children, women and men directly to verified people and NGOs nearby. You and the receiver agree a handover time and place in the app. See the current clothing requests above, or read a guide first.",
+    intro: "Looking for clothes donation near you, or want to donate old clothes? Give clean, wearable clothes for children, women and men directly to verified people and NGOs nearby. You and the receiver agree a handover time and place in the app, so there is no donation centre to find. See the current clothing requests above, or read a guide first.",
     links: [
       { name: "Complete guide to donating clothes in India", href: "/blog/complete-guide-donating-clothes-india" },
       { name: "Where to donate clothes near you", href: "/blog/where-to-donate-clothes-near-me-india" },
@@ -27,7 +27,7 @@ const CATEGORY_GUIDES: Record<string, { heading?: string; intro: string; links: 
     ],
   },
   electronics: {
-    intro: "Donate working laptops, phones and tablets to verified students and NGOs near you. Wipe your personal data first: the guides below show how.",
+    intro: "Laptop donation helps students most: donate working laptops, phones and tablets to verified students and NGOs near you. Wipe your personal data first: the guides below show how.",
     links: [
       { name: "How to donate laptops and electronics", href: "/blog/how-to-donate-laptops-electronics-india" },
       { name: "How to erase personal data before donating", href: "/blog/how-to-erase-personal-data-before-donation-india" },
@@ -37,7 +37,7 @@ const CATEGORY_GUIDES: Record<string, { heading?: string; intro: string; links: 
     ],
   },
   household: {
-    intro: "Donate utensils, bedding, fans and everyday household items to families and NGOs near you. Complete sets and items that work today help most: a family setting up a home needs a pressure cooker that seals, not one missing its whistle.",
+    intro: "Donate utensils, fans and everyday household items, or make a bedding donation of clean sheets and pillows, to families and NGOs near you. Complete sets and items that work today help most: a family setting up a home needs a pressure cooker that seals, not one missing its whistle.",
     links: [
       { name: "How to donate kitchen utensils", href: "/blog/how-to-donate-kitchen-utensils-india" },
       { name: "What to do with old items", href: "/blog/what-to-do-with-old-items-india" },
@@ -45,7 +45,7 @@ const CATEGORY_GUIDES: Record<string, { heading?: string; intro: string; links: 
     ],
   },
   relief: {
-    intro: "Relief requests come after floods, fires and cold waves, when families need blankets, clean clothes, bedding and basic supplies quickly. Give items that are ready to use straight away, and check the requests above for what is needed in each place right now.",
+    intro: "Relief requests come after floods, fires and cold waves, when families need blankets, clean clothes, bedding and basic supplies quickly. A bedding donation helps most in a cold wave. Give items that are ready to use straight away, and check the requests above for what is needed in each place right now.",
     links: [
       { name: "How to donate blankets", href: "/blog/how-to-donate-blankets-india" },
       { name: "Monsoon giving: the most neglected season", href: "/blog/monsoon-giving-most-neglected-season" },
@@ -54,7 +54,7 @@ const CATEGORY_GUIDES: Record<string, { heading?: string; intro: string; links: 
     ],
   },
   education: {
-    intro: "Donate books, textbooks, stationery and school bags to students and schools near you. The best time is just before a new school year, when families buy everything at once; current-syllabus textbooks and complete stationery kits help most.",
+    intro: "Book donation made local: give books, textbooks, stationery and school bags to students, schools and libraries near you. The best time is just before a new school year, when families buy everything at once; current-syllabus textbooks and complete stationery kits help most.",
     links: [
       { name: "How to donate books in India", href: "/blog/how-to-donate-books-india" },
       { name: "What students need in January and February", href: "/blog/what-students-need-in-january-and-february" },

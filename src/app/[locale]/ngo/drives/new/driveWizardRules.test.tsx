@@ -306,7 +306,7 @@ describe("drive wizard", () => {
     api.getNgoDriveDetail.mockResolvedValue(drive());
     render(<NgoDrivePage />);
     fireEvent.click(await screen.findByRole("button", { name: /To \(time\)/ }));
-    fireEvent.click(screen.getByRole("radio", { name: "AM" }));
+    fireEvent.click(screen.getByRole("option", { name: "AM" }));
     fireEvent.click(screen.getByRole("button", { name: "Save" }));
     expect(screen.getByText("End time must be after start time")).toBeInTheDocument();
     expect(screen.getByRole("button", { name: /Save & Continue/ })).toHaveAttribute("aria-disabled", "true");

@@ -23,7 +23,7 @@ function ShowValue({ field, value, idProofUrls }: { field: string; value?: strin
   if (!value) return <>—</>;
   if (field.startsWith("documents.")) {
     const url = idProofUrls?.[value];
-    return url ? <a href={url} target="_blank" rel="noopener noreferrer" data-testid="admin-doc-file" className="font-semibold text-emerald-700 underline">Open file</a> : <>File #{value}</>;
+    return url ? <DocFile url={url} /> : <span className="text-stone-500">File #{value} (link not available)</span>;
   }
   if (field !== "representatives") return <>{value}</>;
   let reps: Rep[];
@@ -42,6 +42,24 @@ function ShowValue({ field, value, idProofUrls }: { field: string; value?: strin
         </li>
       ))}
     </ul>
+  );
+}
+
+/** A document: an image preview when the file is an image (hidden if it isn't), and a clear button to open it. */
+function DocFile({ url }: { url: string }) {
+  const [isImage, setIsImage] = useState(true);
+  return (
+    <div className="space-y-2">
+      {isImage && (
+        // eslint-disable-next-line @next/next/no-img-element -- signed URL
+        <img src={url} alt="" onError={() => setIsImage(false)}
+          className="h-40 w-full rounded-lg border border-stone-200 bg-white object-contain dark:border-zinc-700" />
+      )}
+      <a href={url} target="_blank" rel="noopener noreferrer" data-testid="admin-doc-file"
+        className="inline-flex min-h-[36px] items-center gap-1.5 rounded-lg border border-stone-300 bg-white px-3 text-xs font-bold text-stone-800 hover:bg-stone-50 dark:border-zinc-600 dark:bg-zinc-900 dark:text-stone-100">
+        Open file <span aria-hidden>↗</span>
+      </a>
+    </div>
   );
 }
 
@@ -106,26 +124,49 @@ export function NgoProfileChangesPanel({ onChange }: { onChange?: () => void } =
         ) : (
           <ul className="mt-4 space-y-3">
             {[reviewing].map(({ request: r, organizationName, slug, idProofUrls, decidedBy }) => (
-              <li key={r.id} data-testid="admin-profile-change" className="rounded-lg border border-stone-200 p-4 dark:border-zinc-700">
-                <p className="text-sm font-bold ck-user-text">{organizationName}{slug && <a href={`/ngos/${slug}`} className="ml-2 text-xs font-semibold text-emerald-700 underline">public page</a>}</p>
-                <p className="mt-1 text-xs font-bold uppercase tracking-wide text-stone-500">{fieldName(r.field)}</p>
-                <dl className="mt-2 grid gap-2 text-sm sm:grid-cols-2">
-                  <div><dt className="text-xs text-stone-500">Current</dt><dd className="ck-user-text"><ShowValue field={r.field} value={r.oldValue} idProofUrls={idProofUrls} /></dd></div>
-                  <div><dt className="text-xs text-stone-500">Requested</dt><dd className="ck-user-text"><ShowValue field={r.field} value={r.newValue} idProofUrls={idProofUrls} /></dd></div>
+              <li key={r.id} data-testid="admin-profile-change" className="overflow-hidden rounded-2xl border border-stone-200 dark:border-zinc-700">
+                {/* Who and what */}
+                <div className="flex flex-wrap items-start justify-between gap-3 border-b border-stone-200 bg-stone-50 px-5 py-4 dark:border-zinc-700 dark:bg-zinc-800/60">
+                  <div className="min-w-0">
+                    <p className="text-base font-bold ck-user-text">{organizationName}</p>
+                    <p className="mt-1 inline-flex rounded-full bg-[#10233a]/10 px-2.5 py-0.5 text-xs font-bold text-[#10233a] dark:bg-white/10 dark:text-stone-100">
+                      Wants to change: {fieldName(r.field)}
+                    </p>
+                  </div>
+                  {slug && <a href={`/ngos/${slug}`} target="_blank" rel="noopener noreferrer"
+                    className="inline-flex min-h-[32px] items-center rounded-lg border border-stone-300 bg-white px-3 text-xs font-semibold text-stone-700 hover:bg-stone-50 dark:border-zinc-600 dark:bg-zinc-900 dark:text-stone-200">View public page ↗</a>}
+                </div>
+
+                {/* Before / after */}
+                <dl className="grid gap-4 p-5 text-sm sm:grid-cols-2">
+                  <div className="rounded-xl border border-stone-200 bg-white p-4 dark:border-zinc-700 dark:bg-zinc-900">
+                    <dt className="mb-2 text-xs font-bold uppercase tracking-wide text-stone-500">Current</dt>
+                    <dd className="ck-user-text break-words"><ShowValue field={r.field} value={r.oldValue} idProofUrls={idProofUrls} /></dd>
+                  </div>
+                  <div className="rounded-xl border-2 border-emerald-300 bg-emerald-50/60 p-4 dark:border-emerald-800 dark:bg-emerald-950/20">
+                    <dt className="mb-2 text-xs font-bold uppercase tracking-wide text-emerald-800 dark:text-emerald-300">Requested</dt>
+                    <dd className="ck-user-text break-words"><ShowValue field={r.field} value={r.newValue} idProofUrls={idProofUrls} /></dd>
+                  </div>
                 </dl>
-                {r.reason && <p className="mt-2 text-xs text-stone-600">NGO&apos;s reason: {r.reason}</p>}
-                <DecisionLine status={r.status} by={decidedBy} at={r.decidedAt} reason={r.adminReason} />
+                {r.reason && <p className="mx-5 -mt-1 mb-4 rounded-lg bg-stone-50 px-3 py-2 text-sm text-stone-700 dark:bg-zinc-800 dark:text-stone-200"><span className="font-semibold">NGO&apos;s reason:</span> {r.reason}</p>}
+                <div className="px-5"><DecisionLine status={r.status} by={decidedBy} at={r.decidedAt} reason={r.adminReason} /></div>
+
+                {/* Decision */}
                 {r.status === "PENDING" && (
-                  <div className="mt-3 flex flex-wrap items-end gap-2">
-                    <button type="button" disabled={busy === r.id} onClick={() => void decide(r.id, true)}
-                      className="min-h-[36px] rounded-lg bg-emerald-700 px-3 text-xs font-bold text-white disabled:opacity-50">Approve</button>
-                    <input aria-label="Reason" placeholder="Reason (needed to reject)" value={reasons[r.id] ?? ""}
+                  <div className="mt-2 space-y-3 border-t border-stone-200 bg-stone-50/60 px-5 py-4 dark:border-zinc-700 dark:bg-zinc-800/40">
+                    <p className="text-xs text-stone-600 dark:text-stone-300">Approving updates the NGO&apos;s verified profile straight away. To reject, write a reason the NGO will see.</p>
+                    <textarea aria-label="Reason" placeholder="Reason (needed to reject)" rows={2} value={reasons[r.id] ?? ""}
                       onChange={(e) => setReasons((p) => ({ ...p, [r.id]: e.target.value }))}
-                      className="min-h-[36px] flex-1 rounded-lg border border-stone-300 px-2 text-xs dark:border-zinc-700 dark:bg-zinc-900" />
-                    <button type="button" disabled={busy === r.id} onClick={() => void decide(r.id, false)}
-                      className="min-h-[36px] rounded-lg border border-red-300 px-3 text-xs font-bold text-red-700 disabled:opacity-50">Reject</button>
+                      className="block w-full rounded-lg border border-stone-300 bg-white px-3 py-2 text-sm dark:border-zinc-700 dark:bg-zinc-900" />
+                    <div className="flex flex-wrap justify-end gap-2">
+                      <button type="button" disabled={busy === r.id} onClick={() => void decide(r.id, false)}
+                        className="min-h-[40px] rounded-lg border border-red-300 bg-white px-4 text-sm font-bold text-red-700 hover:bg-red-50 disabled:opacity-50 dark:bg-zinc-900">Reject</button>
+                      <button type="button" disabled={busy === r.id} onClick={() => void decide(r.id, true)}
+                        className="min-h-[40px] rounded-lg bg-emerald-700 px-5 text-sm font-bold text-white hover:bg-emerald-800 disabled:opacity-50">Approve</button>
+                    </div>
                   </div>
                 )}
+                {r.status !== "PENDING" && <div className="h-4" />}
               </li>
             ))}
           </ul>

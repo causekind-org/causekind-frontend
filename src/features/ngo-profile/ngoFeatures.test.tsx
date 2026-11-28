@@ -241,11 +241,12 @@ describe("3. About the NGO card and public page", () => {
 });
 
 describe("4. past activity", () => {
-  it("the add form: required fields and a photo, no short summary or consent; saves then uploads the photo", async () => {
+  it("the add form: required fields, a photo and the consent tick, no short summary; saves then uploads the photo", async () => {
     render(<PastActivityForm onSaved={() => {}} />);
     expect(screen.queryByLabelText(/summary/i)).not.toBeInTheDocument();
     expect(screen.queryByText(/Short summary/i)).not.toBeInTheDocument();
-    expect(screen.queryByRole("checkbox")).not.toBeInTheDocument();
+    // The only checkbox is the photo consent.
+    expect(screen.getAllByRole("checkbox")).toHaveLength(1);
     fireEvent.change(screen.getByLabelText(/Activity name/i), { target: { value: "Meal drive" } });
     fireEvent.change(screen.getByLabelText(/Activity date/i), { target: { value: "2026-09-01" } });
     fireEvent.change(screen.getByLabelText(/What work did you do/i), { target: { value: "Distributed 300 meals." } });
@@ -264,9 +265,14 @@ describe("4. past activity", () => {
     const saved = { id: 5, title: "Meal drive", activityDate: "2026-09-01", description: "Distributed 300 meals.", status: "PENDING", sortOrder: 0, media: [] };
     api.createNgoActivity.mockResolvedValue(saved);
     api.uploadNgoActivityPhoto.mockResolvedValue({ ...saved, media: [{ id: 1, mediaType: "IMAGE", url: "https://s/1.webp", status: "APPROVED" }] });
+    // Consent is required before saving.
+    fireEvent.click(screen.getByRole("button", { name: "Save activity" }));
+    expect(await screen.findByText(/Confirm that the people in the photos agreed/)).toBeInTheDocument();
+    expect(api.createNgoActivity).not.toHaveBeenCalled();
+    fireEvent.click(within(screen.getByTestId("activity-consent")).getByRole("checkbox"));
     fireEvent.click(screen.getByRole("button", { name: "Save activity" }));
     await waitFor(() => expect(api.uploadNgoActivityPhoto).toHaveBeenCalledWith(5, expect.anything()));
-    expect(api.createNgoActivity).toHaveBeenCalledWith({ title: "Meal drive", activityDate: "2026-09-01", description: "Distributed 300 meals." });
+    expect(api.createNgoActivity).toHaveBeenCalledWith({ title: "Meal drive", activityDate: "2026-09-01", description: "Distributed 300 meals.", consentGiven: true });
   });
 
   it("a saved activity: labelled date, Under review while pending, no edit pen, photo opens the preview, delete asks first", async () => {

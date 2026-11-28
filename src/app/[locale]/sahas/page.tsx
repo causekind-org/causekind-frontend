@@ -5,7 +5,7 @@ import { SahasIntroCard } from "@/features/sahas/SahasIntroCard";
 // Server wrapper so the page has its own title, description and canonical.
 export const metadata: Metadata = {
   title: "Sahas Charitable Trust Campaigns",
-  description: "Give to campaigns run by Sahas Charitable Trust, a registered non-profit based in Palghar, Maharashtra.",
+  description: "Donate to Sahas Charitable Trust, an 80G-registered NGO trust based in Palghar, Maharashtra. Give to its campaigns on CauseKind.",
   alternates: { canonical: "/sahas" },
 };
 
@@ -16,7 +16,7 @@ export default function SahasHubPage() {
     "@context": "https://schema.org",
     "@type": "CollectionPage",
     name: "Sahas Charitable Trust Campaigns | CauseKind",
-    description: "Give to campaigns run by Sahas Charitable Trust, a registered non-profit based in Palghar, Maharashtra.",
+    description: "Donate to Sahas Charitable Trust, an 80G-registered NGO trust based in Palghar, Maharashtra. Give to its campaigns on CauseKind.",
     url: "https://www.causekind.com/sahas",
   };
 
