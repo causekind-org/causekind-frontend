@@ -52,7 +52,7 @@ export function correctionFieldInfo(key: string): CorrectionFieldInfo {
   if (rep && REP_PART_IDS[rep[2]]) fieldId = `rep-${rep[1]}-${REP_PART_IDS[rep[2]]}`;
   if (legacyRep) fieldId = `rep-0-${REP_PART_IDS[legacyRep]}`;
   const isFile = key.startsWith("documents.") || key.startsWith("activityPhotos.")
-    || ["authorizationLetter", "logo", "officePhoto"].includes(key) || (!!rep && rep[2] === "idProof");
+    || ["authorizationLetter", "logo", "officePhoto", "coverPhoto"].includes(key) || (!!rep && rep[2] === "idProof");
   return { key, label: correctionFieldLabel(key), step: correctionFieldStep(key), fieldId, isFile };
 }
 
@@ -75,7 +75,7 @@ export function correctionFieldValue(data: NGOFormState, key: string): string {
   }
   if (key.startsWith("documents.")) return fileId(data.documents?.[key.slice(10)]);
   if (key.startsWith("activityPhotos.")) return fileId(data.activityPhotos?.[Number(key.slice(15))]);
-  if (key === "authorizationLetter" || key === "logo" || key === "officePhoto") return fileId(data[key]);
+  if (key === "authorizationLetter" || key === "logo" || key === "officePhoto" || key === "coverPhoto") return fileId(data[key] ?? null);
   const v = (data as unknown as Record<string, unknown>)[key];
   return typeof v === "string" ? v.trim() : v == null ? "" : String(v);
 }
@@ -227,7 +227,7 @@ export function fillFlaggedFileSlots(
       const photos = [...next.activityPhotos];
       const i = Number(key.slice(15));
       if (Number.isInteger(i) && i >= 0) { photos[i] = file; next = { ...next, activityPhotos: photos }; }
-    } else if (key === "authorizationLetter" || key === "logo" || key === "officePhoto") next = { ...next, [key]: file };
+    } else if (key === "authorizationLetter" || key === "logo" || key === "officePhoto" || key === "coverPhoto") next = { ...next, [key]: file };
   }
   return next;
 }

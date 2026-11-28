@@ -50,6 +50,8 @@ export function PastActivityForm({ onSaved, onCancel, activity }: {
   const [title, setTitle] = useState(activity?.title ?? "");
   const [date, setDate] = useState(activity?.activityDate ?? "");
   const [work, setWork] = useState(activity?.description ?? "");
+  // Required: the people in the photos agreed to be shown, or their faces are blurred.
+  const [consent, setConsent] = useState(Boolean(activity?.consentGiven));
   // Saved photos still kept; the removals are sent on Save.
   const [kept, setKept] = useState<NgoActivityMedia[]>(() => (activity?.media ?? []).filter((m) => m.mediaType === "IMAGE" && m.url));
   const room = MAX_ACTIVITY_PHOTOS - kept.length;
@@ -81,9 +83,10 @@ export function PastActivityForm({ onSaved, onCancel, activity }: {
     if (!work.trim()) return setError("Tell donors what work you did.");
     if (tooLong) return;
     if (photos.length + kept.length === 0) return setError("Add at least one photo.");
+    if (!consent) return setError("Confirm that the people in the photos agreed to be shown, or that their faces are blurred.");
     setBusy(true);
     try {
-      const body = { title: title.trim(), activityDate: date, description: work.trim() };
+      const body = { title: title.trim(), activityDate: date, description: work.trim(), consentGiven: true };
       let saved = activity ? await updateNgoActivity(activity.id, body) : await createNgoActivity(body);
       if (activity) {
         for (const m of activity.media) {
@@ -143,6 +146,14 @@ export function PastActivityForm({ onSaved, onCancel, activity }: {
         <input ref={input} type="file" accept="image/jpeg, image/png, image/webp" multiple className="hidden" data-testid="activity-photo-input"
           onChange={(e) => { addFiles(e.target.files); e.target.value = ""; }} />
       </div>
+      <label className="flex items-start gap-2.5 rounded-lg border border-stone-200 bg-stone-50 p-3 text-xs text-stone-700 dark:border-zinc-700 dark:bg-zinc-800/60 dark:text-stone-200" data-testid="activity-consent">
+        <input type="checkbox" checked={consent} onChange={(e) => setConsent(e.target.checked)} disabled={busy}
+          className="mt-0.5 h-4 w-4 shrink-0 accent-ngo-700" aria-describedby="activity-consent-hint" />
+        <span>
+          <span className="font-bold">The people in these photos agreed to be shown, or their faces are blurred.</span> <span className="text-red-500">*</span>
+          <span id="activity-consent-hint" className="mt-0.5 block text-stone-500 dark:text-stone-400">For children, a parent or guardian agreed. CauseKind shows these photos on your public page.</span>
+        </span>
+      </label>
       {error && <p role="alert" className="text-xs font-semibold text-red-600 dark:text-red-400">{error}</p>}
       <div className="flex justify-end gap-2">
         {onCancel && <button type="button" onClick={onCancel} disabled={busy} className="min-h-[40px] rounded-lg border border-stone-300 px-3 text-xs font-semibold dark:border-zinc-700">Cancel</button>}

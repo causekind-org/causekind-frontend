@@ -4491,7 +4491,7 @@
     "dueBy": "{date} तक देना है",
     "enlargePhotoN": "फ़ोटो {n} बड़ी करें",
     "fieldsNeedAttention": "{count, plural, one {# फ़ील्ड पर ध्यान देना है।} other {# फ़ील्ड पर ध्यान देना है।}}",
-    "fileTooLarge": "{name} 5 MB से बड़ी है।",
+    "fileTooLarge": "{name} 10 MB से बड़ी है।",
     "forGroup": "{count} {group} के लिए",
     "groupReached": "{group} तक पहुँचे",
     "handoverPhoto": "सौंपने की फ़ोटो {n}",

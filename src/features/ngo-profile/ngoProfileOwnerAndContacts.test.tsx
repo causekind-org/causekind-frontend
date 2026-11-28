@@ -182,12 +182,13 @@ describe("admin: Profile changes tab", () => {
 
 describe("handover contacts", () => {
   const lockedMessage = "Not yet";
-  it("Call dials the primary; a picker lets the donor call someone else", () => {
+  it("one row per person with their own Call button; the first is the primary contact", () => {
     render(<HandoverContactsCall label="Call NGO" lockedMessage={lockedMessage} phone="+919876543210" contacts={[
       { name: "Rahul", phone: "+919876543210" }, { name: "Asha", phone: "+918123456789", role: "Volunteer lead" }]} />);
-    expect(screen.getByText("Primary")).toBeInTheDocument();
+    expect(screen.getAllByTestId("handover-contact-row")).toHaveLength(2);
+    expect(screen.getByText("Primary contact")).toBeInTheDocument();
+    expect(screen.getByText("Volunteer lead")).toBeInTheDocument();
     expect(screen.getByRole("link", { name: /Call Rahul/ })).toHaveAttribute("href", "tel:+919876543210");
-    fireEvent.change(screen.getByLabelText("Who to call"), { target: { value: "1" } });
     expect(screen.getByRole("link", { name: /Call Asha/ })).toHaveAttribute("href", "tel:+918123456789");
   });
 

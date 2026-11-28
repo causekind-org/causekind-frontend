@@ -65,35 +65,49 @@ export function HandoverContactPanel({ vm, onTogglePermission }: {
 }
 
 /**
- * Who handles the handover (NGO drives can list up to 5 people, first = primary) and the Call
- * button: it dials the primary, or whoever is picked when there are several. Phones are only
- * there once calls are allowed; names and roles always show.
+ * Who handles the handover (NGO drives can list up to 5 people, first = primary): one row per
+ * person with their initials, name, role / Primary tag and their own Call button. Phones are
+ * only there once calls are allowed; names and roles always show.
  */
 export function HandoverContactsCall({ contacts, phone, label, lockedMessage }: {
   contacts?: { name: string; phone: string | null; role?: string | null }[] | null;
   phone: string | null; label: string; lockedMessage: string;
 }) {
-  const [picked, setPicked] = useState(0);
   const list = contacts ?? [];
   if (list.length <= 1) return <CallAction phone={(list[0]?.phone ?? phone)?.replace(/[^\d+]/g, "") || null} label={label} lockedMessage={lockedMessage} />;
-  const who = list[Math.min(picked, list.length - 1)];
+  const anyPhone = list.some((c) => c.phone);
   return (
-    <div className="space-y-2" data-testid="handover-contacts">
-      <ul className="space-y-1 text-sm text-stone-700 dark:text-stone-300">
-        {list.map((c, i) => (
-          <li key={`${c.name}-${i}`}>{c.name}{i === 0 && <span className="ml-1.5 text-2xs font-bold text-emerald-700">Primary</span>}</li>
-        ))}
+    <div className="space-y-3" data-testid="handover-contacts">
+      <p className="text-xs text-stone-500 dark:text-stone-400">
+        {anyPhone ? "Call whoever is easiest. Your number shows on their phone." : lockedMessage}
+      </p>
+      <ul className="divide-y divide-stone-100 overflow-hidden rounded-xl border border-stone-200 dark:divide-zinc-800 dark:border-zinc-700">
+        {list.map((c, i) => {
+          const tel = c.phone?.replace(/[^\d+]/g, "") || null;
+          const initials = c.name.split(/\s+/).filter(Boolean).slice(0, 2).map((w) => w[0]?.toUpperCase()).join("") || "?";
+          return (
+            <li key={`${c.name}-${i}`} data-testid="handover-contact-row" className="flex items-center gap-3 bg-white px-3 py-2.5 dark:bg-zinc-900">
+              <span aria-hidden className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-[var(--handover-soft)] text-xs font-bold text-[var(--handover-accent)]">{initials}</span>
+              <span className="min-w-0 flex-1">
+                <span className="block truncate text-sm font-semibold text-stone-800 dark:text-stone-100">{c.name}</span>
+                <span className="block truncate text-xs text-stone-500 dark:text-stone-400">
+                  {i === 0 ? <span className="font-bold text-emerald-700 dark:text-emerald-400">Primary contact</span> : (c.role || "Handover contact")}
+                </span>
+              </span>
+              {tel ? (
+                <a href={`tel:${tel}`} aria-label={`Call ${c.name}`}
+                  className="inline-flex min-h-[36px] shrink-0 items-center gap-1.5 rounded-full bg-[var(--handover-accent)] px-3 text-xs font-bold text-[var(--handover-on-accent)] hover:brightness-110 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--handover-ring)]">
+                  <PhoneCall className="h-3.5 w-3.5" aria-hidden /> Call
+                </a>
+              ) : (
+                <span className="inline-flex shrink-0 items-center gap-1 text-2xs font-semibold text-stone-400" title={lockedMessage}>
+                  <Lock className="h-3 w-3" aria-hidden /> Chat only
+                </span>
+              )}
+            </li>
+          );
+        })}
       </ul>
-      {list.some((c) => c.phone) && (
-        <label className="block text-xs font-semibold text-stone-600 dark:text-stone-300">
-          Who to call
-          <select aria-label="Who to call" value={picked} onChange={(e) => setPicked(Number(e.target.value))}
-            className="mt-1 block w-full min-h-[40px] rounded-lg border border-stone-300 bg-white px-2 text-sm dark:border-zinc-700 dark:bg-zinc-900">
-            {list.map((c, i) => <option key={i} value={i}>{c.name}{i === 0 ? " · primary" : ""}</option>)}
-          </select>
-        </label>
-      )}
-      <CallAction phone={who.phone?.replace(/[^\d+]/g, "") || null} label={`Call ${who.name}`} lockedMessage={lockedMessage} />
     </div>
   );
 }

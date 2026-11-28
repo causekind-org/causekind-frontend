@@ -293,6 +293,8 @@ export interface NGOFormState {
   // Step 4 — Photos
   logo: UploadedFile | null;
   officePhoto: UploadedFile | null;
+  /** Optional wide banner for the public NGO page (step 4). */
+  coverPhoto?: UploadedFile | null;
   activityPhotos: (UploadedFile | null)[];
   /** Past activities (with a photo) the NGO has saved; loaded from the server, never part of the draft. */
   pastActivitiesWithPhoto?: number;
@@ -326,6 +328,7 @@ export const INITIAL_NGO_FORM: NGOFormState = {
   authorizationLetter: null,
   logo: null,
   officePhoto: null,
+  coverPhoto: null,
   activityPhotos: [null, null, null],
   confirmationChecked: false,
   emailOtp: "",
@@ -669,6 +672,7 @@ const CORRECTION_FIELD_LABELS: Record<string, string> = {
   authorizationLetter: "Authorization document",
   logo: "Organization logo",
   officePhoto: "Office photo",
+  coverPhoto: "Cover photo",
 };
 
 /** Readable name of a correction item key ("documents.trust-deed" → "Registered Trust Deed"). */

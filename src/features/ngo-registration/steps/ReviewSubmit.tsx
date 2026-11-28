@@ -72,6 +72,7 @@ export function ReviewSubmit({ data, onChange, onBack, onEditStep, onSubmit, isS
     add("auth", authorizationDocumentLabel(data.legalStructure), data.authorizationLetter, "document");
     add("logo", "Logo", data.logo, "photo");
     add("office", "Office photo", data.officePhoto, "photo");
+    add("cover", "Cover photo", data.coverPhoto ?? null, "photo");
     data.activityPhotos.forEach((f, i) => add(`activity-${i}`, `Activity photo ${i + 1}`, f, "photo"));
     return out;
   }, [data, docs]);
@@ -368,6 +369,10 @@ export function ReviewSubmit({ data, onChange, onBack, onEditStep, onSubmit, isS
             <div className="rounded-lg bg-white dark:bg-zinc-800/60 p-2.5 border border-stone-100 dark:border-zinc-800">
               <p className="text-3xs uppercase text-stone-400 font-semibold">Office Photo</p>
               <div className="mt-1">{fileChip("office", data.officePhoto, "None")}</div>
+            </div>
+            <div className="rounded-lg bg-white dark:bg-zinc-800/60 p-2.5 border border-stone-100 dark:border-zinc-800">
+              <p className="text-3xs uppercase text-stone-400 font-semibold">Cover Photo</p>
+              <div className="mt-1">{fileChip("cover", data.coverPhoto ?? null, "Not added (optional)")}</div>
             </div>
             <div data-testid="review-past-activity" className="rounded-lg bg-white dark:bg-zinc-800/60 p-2.5 border border-stone-100 dark:border-zinc-800 sm:col-span-3">
               <p className="text-3xs uppercase text-stone-400 font-semibold">Past activity</p>

@@ -6,6 +6,7 @@ import { ArrowLeft, ArrowRight, Camera, ImagePlus, Upload, Loader2, AlertCircle,
 import {
   IS_NGO_DEMO_MODE,
   type NGOFormState,
+  type UploadedFile,
   getNgoStillNeededItems,
 } from "@/features/ngo-registration/ngoRegistrationModel";
 import { NGO_PHOTO_RULE, uploadNgoPhoto, getNgoFilePreviewUrl } from "@/lib/api";
@@ -635,6 +636,10 @@ export function OrgPhotos({ data, onChange, onBack, onContinue, corrections }: O
           )}
         </div>
 
+        {/* Cover photo (optional): the wide banner at the top of the NGO's public page. */}
+        <CoverPhotoField file={data.coverPhoto ?? null} note={corrections?.coverPhoto}
+          onChange={(coverPhoto) => onChange({ coverPhoto })} />
+
         {/* 3. Past activity (required): at least one activity with a photo, the same form as /profile.
             Reviewed with the application; approval makes it live. */}
         <PastActivitySection required onCountChange={(n) => onChange({ pastActivitiesWithPhoto: n })} />
@@ -815,6 +820,88 @@ export function OrgPhotos({ data, onChange, onBack, onContinue, corrections }: O
           </button>
         </div>
       </div>
+    </div>
+  );
+}
+
+
+/**
+ * Optional cover photo: a wide photo of the team or the work, shown as the banner at the top of
+ * the NGO's public page (it was an empty green block without one). Uploaded like the logo
+ * (type "cover"); moved to the profile with the application.
+ */
+function CoverPhotoField({ file, note, onChange }: {
+  file: UploadedFile | null;
+  note?: string;
+  onChange: (file: UploadedFile | null) => void;
+}) {
+  const inputRef = useRef<HTMLInputElement>(null);
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [localUrl, setLocalUrl] = useState<string | null>(null);
+
+  async function upload(files: FileList | null) {
+    const f = files?.[0];
+    if (inputRef.current) inputRef.current.value = "";
+    if (!f) return;
+    const refused = checkNgoPhotoFile(f);
+    if (refused) { setError(refused); return; }
+    setError(null);
+    setBusy(true);
+    try { setLocalUrl(URL.createObjectURL(f)); } catch { setLocalUrl(null); }
+    try {
+      const res = await uploadNgoPhoto(f, "cover");
+      onChange({ name: f.name, photoId: res.photoId, s3Url: res.s3Url, s3Key: res.s3Key, size: f.size, mimeType: f.type, demo: false });
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Cover photo upload failed. Please try another image.");
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  async function preview() {
+    if (localUrl) { window.open(localUrl, "_blank", "noopener"); return; }
+    if (file?.photoId != null) {
+      const url = await getNgoFilePreviewUrl("photo", file.photoId).catch(() => null);
+      if (url) window.open(url, "_blank", "noopener");
+    }
+  }
+
+  return (
+    <div className="space-y-2" data-testid="ngo-cover-photo">
+      <div>
+        <p className="text-sm font-semibold text-stone-700 dark:text-stone-300">
+          Cover photo <span className="font-normal text-stone-400">(optional)</span>
+        </p>
+        <p className="text-3xs text-stone-400 dark:text-stone-500">
+          A wide photo of your team or your work (landscape). It appears at the top of your public page. No identifiable faces of children without consent.
+        </p>
+        <CorrectionNote note={note} field="coverPhoto" />
+      </div>
+      <input ref={inputRef} type="file" accept=".png,.jpg,.jpeg,.webp" className="sr-only" id="ngo-cover-upload"
+        disabled={busy} onChange={(e) => void upload(e.target.files)} />
+      {busy ? (
+        <div className="flex items-center gap-2 rounded-xl border border-ngo-300 bg-[#FAF7F2] p-4 text-xs font-bold text-stone-800 dark:border-emerald-900/60 dark:bg-[#141E18] dark:text-stone-200">
+          <Loader2 className="h-4 w-4 animate-spin text-ngo-700" /> Uploading cover photo…
+        </div>
+      ) : file ? (
+        <UploadedFilePreview file={file} label="Cover photo" kind="photo" localBlobUrl={localUrl}
+          onPreview={() => void preview()}
+          onReplace={() => inputRef.current?.click()}
+          onRemove={() => { setLocalUrl(null); onChange(null); setError(null); }} />
+      ) : (
+        <button type="button" onClick={() => inputRef.current?.click()} aria-label="Upload cover photo"
+          className="flex w-full flex-col items-center justify-center gap-1.5 rounded-xl border-2 border-dashed border-stone-200 bg-[#FAF7F2] py-5 hover:border-ngo-700/50 dark:border-zinc-700 dark:bg-[#141E18]">
+          <ImagePlus className="h-5 w-5 text-stone-400" aria-hidden />
+          <span className="text-2xs font-semibold text-stone-600 dark:text-stone-300">Click to add a cover photo</span>
+          <span className="text-3xs text-stone-400">Landscape · JPG, PNG, WebP · Max 10 MB</span>
+        </button>
+      )}
+      {error && (
+        <p role="alert" className="flex items-center gap-1.5 text-2xs font-semibold text-red-700 dark:text-red-300">
+          <AlertCircle className="h-3.5 w-3.5 shrink-0" /> {error}
+        </p>
+      )}
     </div>
   );
 }

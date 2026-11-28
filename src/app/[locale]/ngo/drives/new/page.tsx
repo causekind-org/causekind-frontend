@@ -783,7 +783,7 @@ const [altContact, setAltContact] = useState("");
     try {
       const uploadedItems: DrivePhotoItem[] = [];
       for (const file of files) {
-        if (file.size > 5 * 1024 * 1024) {
+        if (file.size > 10 * 1024 * 1024) {
           toast.error(df("fileTooLarge", { name: file.name }));
           continue;
         }
@@ -807,7 +807,7 @@ const [altContact, setAltContact] = useState("");
     const file = e.target.files?.[0];
     e.target.value = "";
     if (!file) return;
-    if (file.size > 5 * 1024 * 1024) { toast.error(df("fileTooLarge", { name: file.name })); return; }
+    if (file.size > 10 * 1024 * 1024) { toast.error(df("fileTooLarge", { name: file.name })); return; }
     setCoverUploading(true);
     try {
       const { url, previewUrl } = await uploadNgoDriveReferencePhoto(await compressImageIfNeeded(file));
@@ -849,7 +849,7 @@ const [altContact, setAltContact] = useState("");
     const idx = replaceIndex.current;
     replaceIndex.current = null;
     if (!file || idx == null) return;
-    if (file.size > 5 * 1024 * 1024) { toast.error(`${file.name} is larger than 5 MB.`); return; }
+    if (file.size > 10 * 1024 * 1024) { toast.error(`${file.name} is larger than 10 MB.`); return; }
     setPhotoUploading(true);
     try {
       const { url, previewUrl } = await uploadNgoDriveReferencePhoto(await compressImageIfNeeded(file));
@@ -1614,7 +1614,7 @@ const [altContact, setAltContact] = useState("");
               />
               <input id="photo-replace-upload" type="file" accept="image/jpeg, image/png, image/webp" className="hidden" onChange={handleReplacePhoto} />
             </div>
-            <p className="text-2xs text-stone-400"><UiText>Show donors the kind of items you want, e.g. a sample blanket. Up to 5 images, 5 MB each.</UiText></p>
+            <p className="text-2xs text-stone-400"><UiText>Show donors the kind of items you want, e.g. a sample blanket. Up to 5 images, 10 MB each.</UiText></p>
           </div>
         </section>
       </div>

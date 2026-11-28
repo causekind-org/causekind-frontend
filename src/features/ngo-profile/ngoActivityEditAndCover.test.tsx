@@ -54,8 +54,9 @@ describe("Editing an activity", () => {
     fireEvent.change(name, { target: { value: "Blanket drive 2" } });
     fireEvent.click(within(form).getAllByRole("button", { name: /Remove/i })[0]);
     fireEvent.click(within(form).getByRole("button", { name: "Yes, remove" }));
+    fireEvent.click(within(within(form).getByTestId("activity-consent")).getByRole("checkbox"));
     fireEvent.click(within(form).getByRole("button", { name: "Save changes" }));
-    await waitFor(() => expect(updateNgoActivity).toHaveBeenCalledWith(3, { title: "Blanket drive 2", activityDate: "2026-01-02", description: "We gave blankets." }));
+    await waitFor(() => expect(updateNgoActivity).toHaveBeenCalledWith(3, { title: "Blanket drive 2", activityDate: "2026-01-02", description: "We gave blankets.", consentGiven: true }));
     expect(removeNgoActivityMedia).toHaveBeenCalledWith(3, 9);
     const card = await screen.findByTestId("past-activity-card");
     expect(card).toHaveTextContent("Blanket drive 2");
@@ -150,6 +151,7 @@ describe("A past activity the admin refused", () => {
     const form = screen.getByTestId("past-activity-form");
     expect(within(form).getByLabelText(/Activity name/)).toHaveValue("Blanket drive");
     fireEvent.change(within(form).getByLabelText(/Activity name/), { target: { value: "Blanket drive, blurred" } });
+    fireEvent.click(within(within(form).getByTestId("activity-consent")).getByRole("checkbox"));
     fireEvent.click(within(form).getByRole("button", { name: "Save changes" }));
     await waitFor(() => expect(updateNgoActivity).toHaveBeenCalledWith(3, expect.objectContaining({ title: "Blanket drive, blurred" })));
     expect(await screen.findByText("Under review")).toBeInTheDocument();

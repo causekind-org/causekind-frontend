@@ -5478,7 +5478,7 @@
     "dueBy": "Due by {date}",
     "enlargePhotoN": "Enlarge photo {n}",
     "fieldsNeedAttention": "{count, plural, one {# field needs your attention.} other {# fields need your attention.}}",
-    "fileTooLarge": "{name} is larger than 5 MB.",
+    "fileTooLarge": "{name} is larger than 10 MB.",
     "forGroup": "For {count} {group}",
     "groupReached": "{group} reached",
     "handoverPhoto": "Handover photo {n}",
