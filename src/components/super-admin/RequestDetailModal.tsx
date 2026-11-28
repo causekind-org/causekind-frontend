@@ -31,6 +31,10 @@ export function RequestDetailModal({
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [zoomed, setZoomed] = useState<string | null>(null);
+  const [previewFailed, setPreviewFailed] = useState(false);
+  const [previewRetry, setPreviewRetry] = useState(0);
+
+  useEffect(() => { setPreviewFailed(false); }, [zoomed]);
 
   useEffect(() => {
     let cancelled = false;
@@ -189,7 +193,12 @@ export function RequestDetailModal({
           onClick={(e) => { e.stopPropagation(); setZoomed(null); }}
         >
           {/* eslint-disable-next-line @next/next/no-img-element -- presigned URL */}
-          <img src={zoomed} alt="Full size" className="max-h-full max-w-full rounded-lg" />
+          {previewFailed ? (
+            <div role="alert" className="rounded-xl bg-white p-6 text-center text-stone-800" onClick={(e) => e.stopPropagation()}>
+              <p>This document could not be loaded. Reopen the request to refresh its access link.</p>
+              <button type="button" className="mt-3 rounded-lg border px-4 py-2" onClick={() => { setPreviewFailed(false); setPreviewRetry((n) => n + 1); }}>Retry</button>
+            </div>
+          ) : <img key={`${zoomed}-${previewRetry}`} data-managed-image-error src={zoomed} alt="Full size" onError={() => setPreviewFailed(true)} className="max-h-full max-w-full rounded-lg" />}
         </div>
       )}
     </div>

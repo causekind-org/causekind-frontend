@@ -25,6 +25,8 @@ export function StoredImageFallback() {
     const onError = (e: Event) => {
       const img = e.target;
       if (!(img instanceof HTMLImageElement)) return;
+      // Interactive viewers own their error/retry UI and must retain the original URL.
+      if (img.hasAttribute("data-managed-image-error")) return;
       const src = img.currentSrc || img.src;
       if (!src || src.startsWith("data:") || !isStoredFileUrl(src)) return;
       img.srcset = "";
